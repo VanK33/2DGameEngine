@@ -1,0 +1,31 @@
+# Compiled object files
+*.o
+
+# Executables
+*.exe
+*.out
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Build directories
+build/
+
+# Mac OS artifacts
+.DS_Store
+
+# Windows artifacts
+Thumbs.db
+
+# Temporary files
+*~
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
