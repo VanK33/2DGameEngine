@@ -83,3 +83,19 @@ make
 
 MVP not yet implemented.  
 ✅ **First milestone**: `Renderer` + `ECS` + `ResourceManager`.
+
+
+## 🤖 Notes for Codex
+
+- Use modular architecture with one system per file  
+- ECS components should be lightweight and POD-like  
+- Avoid global states — pass context explicitly where possible  
+- Systems should be update-driven, called from GameLoop  
+- Prefer composition over inheritance for entity behavior
+
+
+## 🙌 Author
+
+**Jeff Ma**  
+MSCS student focused on game engine design and agentic AI systems.  
+Built for learning, extensibility, and experimentation.
