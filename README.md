@@ -65,26 +65,13 @@ Core design principles:
 ## 📊 Module Interaction (Simplified)
 
 ```text
-GameLoop
-  ├── InputSystem
-  ├── EventSystem
-  ├── SceneManager
-  │    └── Scene (interface)
-  │         ├── GameScene (defined by game)
-  │         └── MenuScene (defined by game)
-  └── Renderer
-         └── Draw(sprite, transform, etc.)
-```
-
-
-Jeff2DEngine/
+2DEngine/
 ├── src/
 │   ├── core/             # Game loop, time, scene manager
 │   ├── ecs/              # Entities, components, and systems
 │   ├── graphics/         # Rendering logic (uses SDL3)
 │   ├── input/            # Input abstraction
 │   ├── events/           # Event system (pub/sub)
-│   ├── collision/        # AABB, SAT, etc.
 │   ├── resources/        # Texture/audio/font manager
 │   ├── scenes/           # Scene/state interface & implementations
 │   └── main.cpp
@@ -92,3 +79,7 @@ Jeff2DEngine/
 ├── external/             # SDL3 or third-party deps
 ├── CMakeLists.txt
 └── README.md
+```
+
+
+
