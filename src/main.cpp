@@ -1,33 +1,36 @@
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
+#include "graphics/Renderer.hpp"
+#include "resources/ResourceManager.hpp"
+#include <iostream>
 
-int main(int argc, char* argv[]) {
-    // Initialize SDL
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_Log("SDL could not initialize! SDL_Error: %s", SDL_GetError());
-        fprintf(stderr, "[DEBUG] SDL_GetError: %s\n", SDL_GetError());
+int main() {
+    graphics::Renderer renderer;
+    if (!renderer.Init("Jeff2DEngine", 800, 600)) {
         return 1;
     }
 
-    SDL_Window *window = SDL_CreateWindow("Jeff2DEngine", 800, 600, 0);
-    if (!window) {
-        SDL_Log("SDL_CreateWindow Error: %s", SDL_GetError());
-        SDL_Quit();
+    resources::ResourceManager resourceManager(renderer.GetSDLRenderer());
+    SDL_Texture* texture = resourceManager.LoadTexture("assets/hero.png"); // 确保该图存在
+
+    if (!texture) {
         return 1;
     }
 
     bool running = true;
-    SDL_Event e;
+    SDL_Event event;
+
     while (running) {
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_EVENT_QUIT) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             }
         }
-        SDL_Delay(16);
+
+        renderer.BeginFrame();
+        renderer.DrawTexture(texture, 100, 100, 64, 64);
+        renderer.EndFrame();
     }
 
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    resourceManager.UnloadAll();
+    renderer.Shutdown();
     return 0;
 }
