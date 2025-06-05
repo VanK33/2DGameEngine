@@ -1,5 +1,8 @@
 #include "graphics/Renderer.hpp"
 #include "resources/ResourceManager.hpp"
+#include "scenes/SceneManager.hpp"
+#include "scenes/TestScene.hpp"
+#include "scenes/WhiteScene.hpp"
 #include <iostream>
 
 int main() {
@@ -8,29 +11,39 @@ int main() {
         return 1;
     }
 
-    resources::ResourceManager resourceManager(renderer.GetSDLRenderer());
-    SDL_Texture* texture = resourceManager.LoadTexture("../assets/test.jpg");
-
-    if (!texture) {
-        return 1;
-    }
+    scene::SceneManager sceneManager;
+    sceneManager.RegisterScene("TestScene", []() {
+        return std::make_unique<scene::TestScene>();
+    });
+    
+    sceneManager.RegisterScene("WhiteScene", []() {
+        return std::make_unique<scene::WhiteScene>();
+    });
+    sceneManager.RequestSceneChange("TestScene");
 
     bool running = true;
     SDL_Event event;
-
+    Uint64 lastTime = SDL_GetTicks();
+    
     while (running) {
+        Uint64 currentTime = SDL_GetTicks();
+        float deltaTime = (currentTime - lastTime) / 1000.0f;
+        lastTime = currentTime;
+
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             }
+            sceneManager.HandleEvent(event);
         }
 
+        sceneManager.Update(deltaTime);
+
         renderer.BeginFrame();
-        renderer.DrawTexture(texture, 100, 100, 64, 64);
+        sceneManager.Render(renderer.GetSDLRenderer());
         renderer.EndFrame();
     }
 
-    resourceManager.UnloadAll();
     renderer.Shutdown();
     return 0;
 }
