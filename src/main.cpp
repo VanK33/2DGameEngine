@@ -9,7 +9,7 @@ int main() {
     }
 
     resources::ResourceManager resourceManager(renderer.GetSDLRenderer());
-    SDL_Texture* texture = resourceManager.LoadTexture("assets/hero.png"); // 确保该图存在
+    SDL_Texture* texture = resourceManager.LoadTexture("../assets/test.jpg"); // 确保该图存在
 
     if (!texture) {
         return 1;

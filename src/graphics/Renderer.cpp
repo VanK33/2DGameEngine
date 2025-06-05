@@ -13,7 +13,7 @@ Renderer::~Renderer() {
 }
 
 bool Renderer::Init(const std::string& windowTitle, int width, int height) {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         std::cerr << "[Renderer] Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return false;
     }
