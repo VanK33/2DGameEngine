@@ -1,4 +1,7 @@
+// src/scenes/SceneManager.cpp
+
 #include "SceneManager.hpp"
+#include "SceneEvents.hpp"
 #include <iostream>
 
 namespace scene {
@@ -71,6 +74,21 @@ void SceneManager::RequestSceneChange(const std::string& sceneId) {
 
 std::string SceneManager::GetCurrentSceneId() const {
     return currentScene_ ? currentScene_->GetSceneId() : "";
+}
+
+void SceneManager::onEvent(const std::shared_ptr<game::events::Event>& event) {
+    if (event->getType() == game::events::EventType::SCENE_CHANGE) {
+        auto data = std::static_pointer_cast<game::events::SceneChangeData>(event->getData());
+        RequestSceneChange(data->targetSceneId);
+    }
+}
+
+
+void SceneManager::SetEventManager(game::events::EventManager* manager) {
+    eventManager_ = manager;
+    if (eventManager_) {
+        eventManager_->subscribe(game::events::EventType::SCENE_CHANGE, this);
+    }
 }
 
 std::unique_ptr<Scene> SceneManager::CreateScene(const std::string& sceneId) {

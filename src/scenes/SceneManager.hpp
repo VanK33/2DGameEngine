@@ -8,13 +8,14 @@
 #include <unordered_map>
 #include <string>
 #include <SDL3/SDL.h>
+#include "EventListener.hpp"
 
 
 namespace scene {
 
 using SceneFactory = std::function<std::unique_ptr<Scene>()>;
 
-class SceneManager {
+class SceneManager : public game::events::EventListener {
 public:
     SceneManager();
     ~SceneManager();
@@ -33,11 +34,17 @@ public:
 
     std::string GetCurrentSceneId() const;
 
+    void onEvent(const std::shared_ptr<game::events::Event>& event) override;
+
+    void SetEventManager(game::events::EventManager* manager);
+
 private:
     std::unique_ptr<Scene> CreateScene(const std::string& sceneId);
     
     std::unique_ptr<Scene> currentScene_;
     std::unordered_map<std::string, SceneFactory> sceneFactories_;
+
+    game::events::EventManager* eventManager_ = nullptr;
     
     std::string nextSceneId_;
     bool sceneChangeRequested_ = false;

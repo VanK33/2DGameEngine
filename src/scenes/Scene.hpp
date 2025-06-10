@@ -4,6 +4,7 @@
 
 #include <SDL3/SDL.h>
 #include <string>
+#include "EventManager.hpp"
 
 namespace scene {
 
@@ -17,9 +18,12 @@ public:
     virtual void HandleEvent(const SDL_Event& event) = 0;
     virtual std::string GetSceneId() const = 0;  // 场景标识符
 
+    void SetEventManager(game::events::EventManager* manager) {
+        eventManager_ = manager;
+    }
+
 protected:
-    // Scene可以请求场景切换（通过事件系统）
-    void RequestSceneChange(const std::string& sceneId);
+    game::events::EventManager* eventManager_ = nullptr; 
 };
 
 

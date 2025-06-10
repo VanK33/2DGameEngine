@@ -18,7 +18,7 @@ public:
      * Called by EventManager when a subscribed event is dispatched.
      * @param event The event being received
      */
-    virtual void onEvent(std::shared_ptr<Event> event) = 0;
+    virtual void onEvent(const std::shared_ptr<Event>& event) = 0;
 };
 
 } // namespace events
