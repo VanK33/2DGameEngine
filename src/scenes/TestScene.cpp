@@ -25,7 +25,7 @@ void TestScene::Render(SDL_Renderer* renderer) {
 void TestScene::HandleEvent(const SDL_Event& event) {
     if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_SPACE) {
         std::cout << "[TestScene] Space pressed, switching to WhiteScene\n";
-        RequestSceneChange("WhiteScene");  // 使用字符串ID
+        // RequestSceneChange("WhiteScene");  // 使用字符串ID
     }
 }
 
