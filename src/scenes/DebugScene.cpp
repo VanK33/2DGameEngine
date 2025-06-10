@@ -1,31 +1,32 @@
-// src/scenes/DebugsScene.cpp
-
 #include "DebugScene.hpp"
 #include "events/Event.hpp"
 #include "events/EventType.hpp"
 #include "events/SceneEvents.hpp"
 #include <iostream>
-#include <SDL3/SDL.h>
 
 namespace scene {
 
-DebugScene::DebugScene(std::string id) : sceneId_(std::move(id)) {}
+DebugScene::DebugScene(const std::string& id, SDL_Renderer* renderer) : sceneId_(id), resourceManager_(renderer) {}
 
 void DebugScene::Load() {
-    std::cout << "[DebugScene] Loaded: " << sceneId_ << std::endl;
+    std::cout << "[DebugScene] Loaded: " << sceneId_ << "\n";
+
+    texture_ = resourceManager_.LoadTexture("assets/test.jpg");
+    if (!texture_) {
+        std::cerr << "[DebugScene] Failed to load texture!\n";
+    }
 }
 
 void DebugScene::Unload() {
-    std::cout << "[DebugScene] Unloaded: " << sceneId_ << std::endl;
+    resourceManager_.UnloadAll();
 }
 
-void DebugScene::Update(float /*deltaTime*/) {
-    // Nothing yet
-}
+void DebugScene::Update(float /*deltaTime*/) {}
 
 void DebugScene::Render(SDL_Renderer* renderer) {
-    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
-    SDL_RenderClear(renderer);
+    if (texture_) {
+        SDL_RenderTexture(renderer, texture_, nullptr, &dstRect_);
+    }
 }
 
 void DebugScene::HandleEvent(const SDL_Event& event) {
@@ -36,9 +37,7 @@ void DebugScene::HandleEvent(const SDL_Event& event) {
         auto payload = std::make_shared<game::events::SceneChangeData>(next);
         if (eventManager_) {
             eventManager_->publish(std::make_shared<game::events::Event>(
-                game::events::EventType::SCENE_CHANGE,
-                payload
-            ));
+                game::events::EventType::SCENE_CHANGE, payload));
         }
     }
 }
@@ -47,4 +46,4 @@ std::string DebugScene::GetSceneId() const {
     return sceneId_;
 }
 
-} // namespace scene
+}  // namespace scene

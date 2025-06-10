@@ -84,7 +84,9 @@ std::string SceneManager::GetCurrentSceneId() const {
 void SceneManager::onEvent(const std::shared_ptr<game::events::Event>& event) {
     if (event->getType() == game::events::EventType::SCENE_CHANGE) {
         auto data = std::static_pointer_cast<game::events::SceneChangeData>(event->getData());
-        RequestSceneChange(data->targetSceneId);
+        if (data) {
+            RequestSceneChange(data->targetSceneId);
+        }
     }
 }
 

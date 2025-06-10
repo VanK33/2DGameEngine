@@ -1,18 +1,17 @@
-// src/scenes/DebugScene.hpp
+//src//scenes/SpirteScene.hpp
 
 #pragma once
 
 #include "Scene.hpp"
-#include "events/EventManager.hpp"
 #include "resources/ResourceManager.hpp"
 #include <SDL3/SDL.h>
 #include <string>
 
 namespace scene {
 
-class DebugScene : public Scene {
+class SpriteScene : public Scene {
 public:
-    DebugScene(const std::string& id, SDL_Renderer* renderer);
+    SpriteScene(const std::string& id, SDL_Renderer* renderer);
     void Load() override;
     void Unload() override;
     void Update(float deltaTime) override;
@@ -22,12 +21,10 @@ public:
 
 private:
     std::string sceneId_;
-    game::events::EventManager* eventManager_ = nullptr;
     resources::ResourceManager resourceManager_;
-
-    SDL_Texture* texture_ = nullptr;
-    SDL_FRect dstRect_ = { 100.0f, 100.0f, 128.0f, 128.0f };
+    SDL_Texture* sprite_ = nullptr;
+    SDL_FRect spriteRect_ = { 100.0f, 100.0f, 128.0f, 128.0f }; // location +
+    float moveSpeed_ = 200.0f; // pixel / s
 };
 
-}  // namespace scene
-
+} // namespace scene

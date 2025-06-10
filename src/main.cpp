@@ -1,6 +1,7 @@
 #include "graphics/Renderer.hpp"
 #include "resources/ResourceManager.hpp"
 #include "scenes/SceneManager.hpp"
+#include "events/EventManager.hpp"
 #include "scenes/DebugScene.hpp"
 #include <iostream>
 
@@ -10,16 +11,29 @@ int main() {
         return 1;
     }
 
-    game::events::EventManager eventManager;
-    scene::SceneManager sceneManager;
-    sceneManager.SetEventManager(&eventManager); 
+    // ✅ 创建 ResourceManager（依赖 renderer 的 SDL_Renderer）
+    resources::ResourceManager resourceManager(renderer.GetSDLRenderer());
 
-    sceneManager.RegisterScene("DebugA", []() {
-        return std::make_unique<scene::DebugScene>("DebugA");
+    // 测试加载纹理
+    SDL_Texture* tex = resourceManager.LoadTexture("assets/test.jpg"); // 替换为你的图片路径
+    if (!tex) {
+        std::cerr << "[main] Failed to load texture.\n";
+    } else {
+        std::cout << "[main] Texture loaded successfully.\n";
+    }
+
+    scene::SceneManager sceneManager;
+    game::events::EventManager eventManager;
+    sceneManager.SetEventManager(&eventManager);
+
+    sceneManager.RegisterScene("DebugA", [&renderer]() {
+    return std::make_unique<scene::DebugScene>("DebugA", renderer.GetSDLRenderer());
     });
-    sceneManager.RegisterScene("DebugB", []() {
-        return std::make_unique<scene::DebugScene>("DebugB");
+
+    sceneManager.RegisterScene("DebugB", [&renderer]() {
+    return std::make_unique<scene::DebugScene>("DebugB", renderer.GetSDLRenderer());
     });
+
     sceneManager.RequestSceneChange("DebugA");
 
     bool running = true;
@@ -37,15 +51,21 @@ int main() {
             }
             sceneManager.HandleEvent(event);
         }
-        
-        eventManager.update();
+
         sceneManager.Update(deltaTime);
 
         renderer.BeginFrame();
+
+        if (tex) {
+            SDL_FRect dst = { 0.0f, 0.0f, 128.0f, 128.0f };
+            SDL_RenderTexture(renderer.GetSDLRenderer(), tex, nullptr, &dst);
+        }
+
         sceneManager.Render(renderer.GetSDLRenderer());
         renderer.EndFrame();
     }
 
+    resourceManager.UnloadAll();  // 清理
     renderer.Shutdown();
     return 0;
 }
