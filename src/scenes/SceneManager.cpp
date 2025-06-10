@@ -1,7 +1,7 @@
 // src/scenes/SceneManager.cpp
 
 #include "SceneManager.hpp"
-#include "SceneEvents.hpp"
+#include "events/SceneEvents.hpp"
 #include <iostream>
 
 namespace scene {
@@ -27,6 +27,11 @@ void SceneManager::SetScene(std::unique_ptr<Scene> newScene) {
     
     if (currentScene_) {
         std::cout << "[SceneManager] Loading scene: " << currentScene_->GetSceneId() << std::endl;
+
+        if (eventManager_) {
+            currentScene_->SetEventManager(eventManager_);
+        }
+
         currentScene_->Load();
     }
 }

@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <SDL3/SDL.h>
-#include "EventListener.hpp"
+#include "events/EventListener.hpp"
 
 
 namespace scene {

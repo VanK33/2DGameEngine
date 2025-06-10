@@ -4,7 +4,7 @@
 
 #include <SDL3/SDL.h>
 #include <string>
-#include "EventManager.hpp"
+#include "events/EventManager.hpp"
 
 namespace scene {
 

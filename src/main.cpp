@@ -1,8 +1,7 @@
 #include "graphics/Renderer.hpp"
 #include "resources/ResourceManager.hpp"
 #include "scenes/SceneManager.hpp"
-#include "scenes/TestScene.hpp"
-#include "scenes/WhiteScene.hpp"
+#include "scenes/DebugScene.hpp"
 #include <iostream>
 
 int main() {
@@ -11,15 +10,17 @@ int main() {
         return 1;
     }
 
+    game::events::EventManager eventManager;
     scene::SceneManager sceneManager;
-    sceneManager.RegisterScene("TestScene", []() {
-        return std::make_unique<scene::TestScene>();
+    sceneManager.SetEventManager(&eventManager); 
+
+    sceneManager.RegisterScene("DebugA", []() {
+        return std::make_unique<scene::DebugScene>("DebugA");
     });
-    
-    sceneManager.RegisterScene("WhiteScene", []() {
-        return std::make_unique<scene::WhiteScene>();
+    sceneManager.RegisterScene("DebugB", []() {
+        return std::make_unique<scene::DebugScene>("DebugB");
     });
-    sceneManager.RequestSceneChange("TestScene");
+    sceneManager.RequestSceneChange("DebugA");
 
     bool running = true;
     SDL_Event event;
@@ -36,7 +37,8 @@ int main() {
             }
             sceneManager.HandleEvent(event);
         }
-
+        
+        eventManager.update();
         sceneManager.Update(deltaTime);
 
         renderer.BeginFrame();

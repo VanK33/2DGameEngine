@@ -35,3 +35,5 @@ add_executable(2DEngine ${ENGINE_SOURCES})
 target_include_directories(2DEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_link_libraries(2DEngine PRIVATE SDL3::SDL3 SDL3_image::SDL3_image)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
