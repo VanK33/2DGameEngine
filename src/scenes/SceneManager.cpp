@@ -18,6 +18,9 @@ void SceneManager::RegisterScene(const std::string& sceneId, SceneFactory factor
 }
 
 void SceneManager::SetScene(std::unique_ptr<Scene> newScene) {
+    std::cout << "[SceneManager] Switching from " 
+              << GetCurrentSceneId() << " to " << newScene->GetSceneId() << "\n";
+              
     if (currentScene_) {
         std::cout << "[SceneManager] Unloading scene: " << currentScene_->GetSceneId() << std::endl;
         currentScene_->Unload();
@@ -29,7 +32,11 @@ void SceneManager::SetScene(std::unique_ptr<Scene> newScene) {
         std::cout << "[SceneManager] Loading scene: " << currentScene_->GetSceneId() << std::endl;
 
         if (eventManager_) {
+            std::cout << "[SceneManager] Setting EventManager for scene..." << std::endl;
             currentScene_->SetEventManager(eventManager_);
+            std::cout << "[SceneManager] EventManager set successfully!" << std::endl;
+        } else {
+            std::cout << "[SceneManager] ERROR: eventManager_ is null!" << std::endl;
         }
 
         currentScene_->Load();

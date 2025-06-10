@@ -8,6 +8,8 @@ namespace events {
 void EventManager::subscribe(EventType type, EventListener* listener) {
     std::lock_guard<std::mutex> lock(listenersMutex_);
     listeners_[type].insert(listener);
+    std::cout << "[EventManager] Subscribed listener for type " << (int)type 
+              << ", total listeners: " << listeners_[type].size() << std::endl;
 }
 
 void EventManager::unsubscribe(EventType type, EventListener* listener) {
@@ -24,38 +26,46 @@ void EventManager::unsubscribe(EventType type, EventListener* listener) {
 void EventManager::publish(std::shared_ptr<Event> event) {
     std::lock_guard<std::mutex> lock(queueMutex_);
     eventQueue_.push(event);
+    std::cout << "[EventManager] Published event type " << (int)event->getType() 
+              << ", queue size: " << eventQueue_.size() << std::endl;
 }
 
 void EventManager::update() {
     std::queue<std::shared_ptr<Event>> queueCopy;
-
     {
-        // Copy the event queue under lock, then release quickly
         std::lock_guard<std::mutex> lock(queueMutex_);
         std::swap(queueCopy, eventQueue_);
     }
-
-    // Now process the copied queue safely
+    
+    // std::cout << "[EventManager] Processing " << queueCopy.size() << " events" << std::endl;
+    
     while (!queueCopy.empty()) {
         auto event = queueCopy.front();
         queueCopy.pop();
-
+        
         std::unordered_set<EventListener*> listenersCopy;
-
         {
             std::lock_guard<std::mutex> lock(listenersMutex_);
             auto it = listeners_.find(event->getType());
             if (it != listeners_.end()) {
                 listenersCopy = it->second;
+                std::cout << "[EventManager] Found " << listenersCopy.size() 
+                          << " listeners for event type " << (int)event->getType() << std::endl;
+            } else {
+                std::cout << "[EventManager] No listeners found for event type " 
+                          << (int)event->getType() << std::endl;
             }
         }
-
+        
         // Dispatch to each listener safely
         for (auto* listener : listenersCopy) {
-            if (!listener) continue;
-
+            if (!listener) {
+                std::cout << "[EventManager] Warning: null listener!" << std::endl;
+                continue;
+            }
             try {
-                listener->onEvent(event);  // shared_ptr<Event>
+                std::cout << "[EventManager] Dispatching to listener..." << std::endl;
+                listener->onEvent(event);
             } catch (const std::exception& e) {
                 std::cerr << "[EventManager] Listener threw exception: " << e.what() << std::endl;
             } catch (...) {

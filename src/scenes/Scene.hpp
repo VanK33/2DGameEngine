@@ -17,10 +17,9 @@ public:
     virtual void Render(SDL_Renderer* renderer) = 0;
     virtual void HandleEvent(const SDL_Event& event) = 0;
     virtual std::string GetSceneId() const = 0;  // 场景标识符
+    // Abstract base class for all scenes. Requires derived classes to override all virtual methods.
+    virtual void SetEventManager(game::events::EventManager* manager) = 0;
 
-    void SetEventManager(game::events::EventManager* manager) {
-        eventManager_ = manager;
-    }
 
 protected:
     game::events::EventManager* eventManager_ = nullptr; 

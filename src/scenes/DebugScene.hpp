@@ -18,6 +18,7 @@ public:
     void Update(float deltaTime) override;
     void Render(SDL_Renderer* renderer) override;
     void HandleEvent(const SDL_Event& event) override;
+    void SetEventManager(game::events::EventManager* manager) override;
     std::string GetSceneId() const override;
 
 private:

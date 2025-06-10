@@ -1,5 +1,5 @@
+#include "SceneManager.hpp"
 #include "graphics/Renderer.hpp"
-#include "resources/ResourceManager.hpp"
 #include "scenes/SceneManager.hpp"
 #include "events/EventManager.hpp"
 #include "scenes/DebugScene.hpp"
@@ -11,19 +11,10 @@ int main() {
         return 1;
     }
 
-    // ✅ 创建 ResourceManager（依赖 renderer 的 SDL_Renderer）
-    resources::ResourceManager resourceManager(renderer.GetSDLRenderer());
-
-    // 测试加载纹理
-    SDL_Texture* tex = resourceManager.LoadTexture("assets/test.jpg"); // 替换为你的图片路径
-    if (!tex) {
-        std::cerr << "[main] Failed to load texture.\n";
-    } else {
-        std::cout << "[main] Texture loaded successfully.\n";
-    }
-
     scene::SceneManager sceneManager;
     game::events::EventManager eventManager;
+    std::cout << "[Main] Listeners for SCENE_CHANGE: " 
+          << eventManager.getListenerCount(game::events::EventType::SCENE_CHANGE) << std::endl;
     sceneManager.SetEventManager(&eventManager);
 
     sceneManager.RegisterScene("DebugA", [&renderer]() {
@@ -52,20 +43,15 @@ int main() {
             sceneManager.HandleEvent(event);
         }
 
+        eventManager.update();
         sceneManager.Update(deltaTime);
 
         renderer.BeginFrame();
-
-        if (tex) {
-            SDL_FRect dst = { 0.0f, 0.0f, 128.0f, 128.0f };
-            SDL_RenderTexture(renderer.GetSDLRenderer(), tex, nullptr, &dst);
-        }
 
         sceneManager.Render(renderer.GetSDLRenderer());
         renderer.EndFrame();
     }
 
-    resourceManager.UnloadAll();  // 清理
     renderer.Shutdown();
     return 0;
 }
