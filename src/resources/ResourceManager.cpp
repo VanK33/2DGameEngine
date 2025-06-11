@@ -1,6 +1,7 @@
 // src/resources/ResourceManager.cpp
 
 #include "ResourceManager.hpp"
+#include "utils/PathUtils.hpp"
 #include <SDL3_image/SDL_image.h>
 #include <iostream>
 #include <filesystem>
@@ -25,19 +26,20 @@ SDL_Log("[Timing] Loaded %s in %lld ms", filePath.c_str(),
 
 SDL_Texture* ResourceManager::LoadTexture(const std::string& filePath) {
 
+    std::string fullPath = utils::GetAssetsPath() + filePath;
     std::string normalizedPath = NormalizePath(filePath);
     SDL_Texture* cached = GetTexture(normalizedPath);
     if (cached) {
         return cached;
     }
 
-    SDL_Texture* texture = IMG_LoadTexture(renderer_, filePath.c_str());
+    SDL_Texture* texture = IMG_LoadTexture(renderer_, fullPath.c_str());
     if (!texture) {
         SDL_Log("[ResourceManager] Failed to load image: %s — %s", normalizedPath.c_str(), SDL_GetError());
         return fallbackTexture_;
     }
 
-    textureCache_[filePath] = texture;
+    textureCache_[normalizedPath] = texture;
     return texture;
 }
 
