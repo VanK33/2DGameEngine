@@ -8,6 +8,7 @@
                 "${workspaceFolder}/src/events",
                 "${workspaceFolder}/src/scenes",
                 "${workspaceFolder}/src/resources",
+                "${workspaceFolder}/src/graphics",
                 "/opt/homebrew/include"
             ],
             "defines": [],

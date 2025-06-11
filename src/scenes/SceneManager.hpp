@@ -10,7 +10,6 @@
 #include <SDL3/SDL.h>
 #include "events/EventListener.hpp"
 
-
 namespace scene {
 
 using SceneFactory = std::function<std::unique_ptr<Scene>()>;

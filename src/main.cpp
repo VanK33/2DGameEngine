@@ -1,5 +1,6 @@
-#include "SceneManager.hpp"
+#include "scenes/SceneManager.hpp"
 #include "graphics/Renderer.hpp"
+#include "graphics/SpriteRenderer.hpp"
 #include "scenes/SceneManager.hpp"
 #include "events/EventManager.hpp"
 #include "scenes/DebugScene.hpp"
@@ -13,16 +14,19 @@ int main() {
 
     scene::SceneManager sceneManager;
     game::events::EventManager eventManager;
+
+    auto spriteRenderer = std::make_unique<graphics::SpriteRenderer>(renderer.GetSDLRenderer());
+
     std::cout << "[Main] Listeners for SCENE_CHANGE: " 
           << eventManager.getListenerCount(game::events::EventType::SCENE_CHANGE) << std::endl;
     sceneManager.SetEventManager(&eventManager);
 
-    sceneManager.RegisterScene("DebugA", [&renderer]() {
-    return std::make_unique<scene::DebugScene>("DebugA", renderer.GetSDLRenderer());
+    sceneManager.RegisterScene("DebugA", [&renderer, &spriteRenderer]() {
+    return std::make_unique<scene::DebugScene>("DebugA", renderer.GetSDLRenderer(), spriteRenderer.get());
     });
 
-    sceneManager.RegisterScene("DebugB", [&renderer]() {
-    return std::make_unique<scene::DebugScene>("DebugB", renderer.GetSDLRenderer());
+    sceneManager.RegisterScene("DebugB", [&renderer, &spriteRenderer]() {
+    return std::make_unique<scene::DebugScene>("DebugB", renderer.GetSDLRenderer(), spriteRenderer.get());
     });
 
     sceneManager.RequestSceneChange("DebugA");
