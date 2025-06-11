@@ -15,10 +15,11 @@ void DebugScene::Load() {
     assert(spriteRenderer_ && "SpriteRenderer not set!");
 
     std::vector<std::string> imagePaths = {
-        utils::GetAssetsPath() + "img1.jpg",
-        utils::GetAssetsPath() + "img2.jpg",
-        utils::GetAssetsPath() + "img3.jpg"
+        "img1.jpg",
+        "img2.jpg",
+        "img3.jpg"
     };
+
     for (const auto& path : imagePaths) {
         SDL_Texture* tex = resourceManager_.LoadTexture(path);
         if (tex) {
@@ -42,7 +43,19 @@ void DebugScene::Unload() {
     currentTextureIndex_ = 0;
 }
 
-void DebugScene::Update(float /*deltaTime*/) {}
+void DebugScene::Update(float /*deltaTime*/) {
+    if (!textures_.empty() && inputManager_) {
+        if (inputManager_->IsKeyDown(SDLK_RIGHT)) {
+            currentTextureIndex_ = (currentTextureIndex_ + 1) % textures_.size();
+            SDL_Log("[DebugScene] Switched to texture index: %d", currentTextureIndex_);
+        }
+
+        if (inputManager_->IsKeyDown(SDLK_LEFT)) {
+            currentTextureIndex_ = (currentTextureIndex_ - 1 + textures_.size()) % textures_.size();
+            SDL_Log("[DebugScene] Switched to texture index: %d", currentTextureIndex_);
+        }
+    }
+}
 
 void DebugScene::Render(SDL_Renderer* /*renderer*/) {
     if (!textures_.empty() && spriteRenderer_) {

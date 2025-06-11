@@ -39,6 +39,14 @@ void SceneManager::SetScene(std::unique_ptr<Scene> newScene) {
             std::cout << "[SceneManager] ERROR: eventManager_ is null!" << std::endl;
         }
 
+        if (inputManager_) {
+            std::cout << "[SceneManager] Setting InputManager for scene..." << std::endl;
+            currentScene_->SetInputManager(inputManager_);
+            std::cout << "[SceneManager] InputManager set successfully!" << std::endl;
+        } else {
+            std::cout << "[SceneManager] ERROR: InputManager is null!" << std::endl;
+        }
+
         currentScene_->Load();
     }
 }
@@ -111,6 +119,10 @@ std::unique_ptr<Scene> SceneManager::CreateScene(const std::string& sceneId) {
         return it->second();  // 调用工厂函数
     }
     return nullptr;
+}
+
+void SceneManager::SetInputManager(input::InputManager* manager) {
+    inputManager_ = manager;
 }
 
 } // namespace scene

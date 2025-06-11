@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <string>
 #include "events/EventManager.hpp"
+#include "input/InputManager.hpp"
 
 namespace scene {
 
@@ -19,6 +20,7 @@ public:
     virtual std::string GetSceneId() const = 0;  // 场景标识符
     // Abstract base class for all scenes. Requires derived classes to override all virtual methods.
     virtual void SetEventManager(game::events::EventManager* manager) = 0;
+    virtual void SetInputManager(input::InputManager* manager) = 0;
 
 
 protected:

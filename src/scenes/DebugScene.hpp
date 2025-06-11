@@ -6,6 +6,7 @@
 #include "events/EventManager.hpp"
 #include "resources/ResourceManager.hpp"
 #include "graphics/SpriteRenderer.hpp"
+#include "input/InputManager.hpp"
 #include <SDL3/SDL.h>
 #include <string>
 #include <vector>
@@ -21,6 +22,9 @@ public:
     void Render(SDL_Renderer* renderer) override;
     void HandleEvent(const SDL_Event& event) override;
     void SetEventManager(game::events::EventManager* manager) override;
+    void SetInputManager(input::InputManager* manager) {
+    inputManager_ = manager;
+    }
     std::string GetSceneId() const override;
 
 private:
@@ -34,6 +38,8 @@ private:
 
     std::vector<SDL_Texture*> textures_;
     int currentTextureIndex_ = 0;
+
+    input::InputManager* inputManager_ = nullptr;
 };
 
 }  // namespace scene
