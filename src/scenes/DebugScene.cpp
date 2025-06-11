@@ -14,13 +14,13 @@ void DebugScene::Load() {
     std::cout << "[DebugScene] Loaded: " << sceneId_ << "\n";
     assert(spriteRenderer_ && "SpriteRenderer not set!");
 
-    std::vector<std::string> imagePaths = {
+    imagePaths_ = {
         "img1.jpg",
         "img2.jpg",
         "img3.jpg"
     };
 
-    for (const auto& path : imagePaths) {
+    for (const auto& path : imagePaths_) {
         SDL_Texture* tex = resourceManager_.LoadTexture(path);
         if (tex) {
             textures_.push_back(tex);
@@ -32,17 +32,22 @@ void DebugScene::Load() {
         currentTextureIndex_ = 0;
     }
 
-
-
     dstRect_ = {100.0f, 100.0f, 256.0f, 256.0f}; 
 }
 
 void DebugScene::Unload() {
-    textures_.clear();
-    currentTextureIndex_ = 0;
-    
-    resourceManager_.UnloadAll();
+    // release ex
+    // resourceManager->ReleaseTexture("example.png");
 
+    for (const auto& path : imagePaths_) {
+        resourceManager_.ReleaseTexture(path);
+    }
+
+    textures_.clear();
+    imagePaths_.clear();
+    currentTextureIndex_ = 0;
+
+    resourceManager_.PrintCacheStatus(); // debugger
 }
 
 void DebugScene::Update(float /*deltaTime*/) {

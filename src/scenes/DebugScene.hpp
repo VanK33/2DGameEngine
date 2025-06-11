@@ -37,6 +37,7 @@ private:
     SDL_FRect dstRect_;
 
     std::vector<SDL_Texture*> textures_;
+    std::vector<std::string> imagePaths_;
     int currentTextureIndex_ = 0;
 
     input::InputManager* inputManager_ = nullptr;
