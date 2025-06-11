@@ -54,6 +54,9 @@ int main() {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             }   
+            
+            inputManager.HandleEvent(event);
+            sceneManager.HandleEvent(event);
         }
 
 
@@ -62,12 +65,6 @@ int main() {
         lastTime = currentTime;
 
         inputManager.Update();
-
-        while (SDL_PollEvent(&event)) {
-            inputManager.HandleEvent(event);
-            sceneManager.HandleEvent(event);
-        }
-
         eventManager.update();
         sceneManager.Update(deltaTime);
 
