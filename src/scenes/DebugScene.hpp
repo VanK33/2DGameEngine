@@ -22,7 +22,7 @@ public:
     void Render(SDL_Renderer* renderer) override;
     void HandleEvent(const SDL_Event& event) override;
     void SetEventManager(game::events::EventManager* manager) override;
-    void SetInputManager(input::InputManager* manager) {
+    void SetInputManager(input::InputManager* manager) override {
     inputManager_ = manager;
     }
     std::string GetSceneId() const override;
