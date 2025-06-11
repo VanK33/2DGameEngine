@@ -9,13 +9,14 @@ SpriteScene::SpriteScene(const std::string& id, SDL_Renderer* renderer)
     : sceneId_(id), resourceManager_(renderer) {}
 
 void SpriteScene::Load() {
-    sprite_ = resourceManager_.LoadTexture("assets/test.png");
+    sprite_ = resourceManager_.LoadTexture("img1.jpg");
     if (!sprite_) {
         std::cerr << "[SpriteScene] Failed to load sprite.\n";
     }
 }
 
 void SpriteScene::Unload() {
+    sprite_ = nullptr;
     resourceManager_.UnloadAll();
 }
 

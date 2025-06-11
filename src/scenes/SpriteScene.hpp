@@ -25,6 +25,9 @@ private:
     SDL_Texture* sprite_ = nullptr;
     SDL_FRect spriteRect_ = { 100.0f, 100.0f, 128.0f, 128.0f }; // location +
     float moveSpeed_ = 200.0f; // pixel / s
+
+    game::events::EventManager* eventManager_ = nullptr;
+    input::InputManager* inputManager_ = nullptr;
 };
 
 } // namespace scene

@@ -7,6 +7,7 @@
 #include "input/InputManager.hpp"
 #include <iostream>
 
+
 int main() {
     graphics::Renderer renderer;
     if (!renderer.Init("Jeff2DEngine", 800, 600)) {
@@ -48,6 +49,14 @@ int main() {
     Uint64 lastTime = SDL_GetTicks();
     
     while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_EVENT_QUIT) {
+                running = false;
+            }   
+        }
+
+
         Uint64 currentTime = SDL_GetTicks();
         float deltaTime = (currentTime - lastTime) / 1000.0f;
         lastTime = currentTime;
@@ -55,8 +64,7 @@ int main() {
         inputManager.Update();
 
         while (SDL_PollEvent(&event)) {
-        inputManager.HandleEvent(event);
-        sceneManager.HandleEvent(event);
+            inputManager.HandleEvent(event);
             sceneManager.HandleEvent(event);
         }
 
@@ -69,6 +77,6 @@ int main() {
         renderer.EndFrame();
     }
 
-    renderer.Shutdown();
+    // renderer.Shutdown();
     return 0;
 }

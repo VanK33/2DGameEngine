@@ -1,10 +1,8 @@
-// src/utilis/PathUtils.hpp
-
+// src/utils/PathUtils.hpp
 #pragma once
 #include <string>
 
 namespace utils {
-
-std::string GetAssetsPath();
-
+  /// Returns "<exe-dir>/assets/" (cached after the first SDL_GetBasePath() call).
+  std::string GetAssetsPath();
 }

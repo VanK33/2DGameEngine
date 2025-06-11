@@ -9,7 +9,7 @@
 #include <string>
 #include <SDL3/SDL.h>
 #include "events/EventListener.hpp"
-#include "input/Inputmanager.hpp"
+#include "input/InputManager.hpp"
 
 namespace scene {
 

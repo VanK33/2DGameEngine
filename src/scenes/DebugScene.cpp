@@ -38,9 +38,11 @@ void DebugScene::Load() {
 }
 
 void DebugScene::Unload() {
-    resourceManager_.UnloadAll();
     textures_.clear();
     currentTextureIndex_ = 0;
+    
+    resourceManager_.UnloadAll();
+
 }
 
 void DebugScene::Update(float /*deltaTime*/) {
