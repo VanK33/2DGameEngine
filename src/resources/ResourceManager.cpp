@@ -27,7 +27,7 @@ SDL_Log("[Timing] Loaded %s in %lld ms", filePath.c_str(),
 SDL_Texture* ResourceManager::LoadTexture(const std::string& filePath) {
 
     std::string fullPath = utils::GetAssetsPath() + filePath;
-    std::string normalizedPath = NormalizePath(filePath);
+    std::string normalizedPath = NormalizePath(fullPath);
     SDL_Texture* cached = GetTexture(normalizedPath);
     if (cached) {
         return cached;
@@ -44,18 +44,18 @@ SDL_Texture* ResourceManager::LoadTexture(const std::string& filePath) {
 }
 
 SDL_Texture* ResourceManager::UnloadTexture(const std::string& filePath) {
-    
-    std::string normalizedPath = NormalizePath(filePath);
+    std::string fullPath = utils::GetAssetsPath() + filePath;
+    std::string normalizedPath = NormalizePath(fullPath);
     auto it = textureCache_.find(normalizedPath);
-    if (it !=textureCache_.end()) {
+    if (it != textureCache_.end()) {
         if (it->second) {
             SDL_DestroyTexture(it->second);
         }
         textureCache_.erase(it);
         SDL_Log("[ResourceManager] Unloaded texture : %s", normalizedPath.c_str());
     }
+    return nullptr;
 }
-
 std::string ResourceManager::NormalizePath(const std::string& path) const {
     try {
         return std::filesystem::absolute(path).lexically_normal().string();
@@ -65,13 +65,10 @@ std::string ResourceManager::NormalizePath(const std::string& path) const {
 }
 
 SDL_Texture* ResourceManager::GetTexture(const std::string& filePath) const {
-    
-    std::string normalizedPath = NormalizePath(filePath);
+    std::string fullPath = utils::GetAssetsPath() + filePath;
+    std::string normalizedPath = NormalizePath(fullPath);
     auto it = textureCache_.find(normalizedPath);
-    if (it != textureCache_.end()) {
-        return it->second;
-    }
-    return nullptr;
+    return (it != textureCache_.end()) ? it->second : nullptr;
 }
 
 void ResourceManager::SetFallbackTexture(SDL_Texture* texture) {
@@ -82,10 +79,12 @@ void ResourceManager::UnloadAll() {
     for (auto& pair : textureCache_) {
         if (pair.second) {
             SDL_DestroyTexture(pair.second);
+            pair.second = nullptr;
         }
     }
     textureCache_.clear();
     SDL_Log("[ResourceManager] Unloaded all textures.");
 }
+
 
 } // namespace resources
