@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 
+namespace engine {
 namespace ECS {
 
 class Entity {
@@ -53,3 +54,4 @@ private:
 };
 
 } // namespace ECS 
+} // namespace engine

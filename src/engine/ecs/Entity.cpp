@@ -1,5 +1,6 @@
 #include "Entity.hpp"
 
+namespace engine {
 namespace ECS {
 
 Entity::Entity(EntityID id)
@@ -27,3 +28,4 @@ Entity& Entity::operator=(Entity&& other) noexcept {
 
 
 } // namespace ECS
+} // namespace engine
