@@ -1,85 +1,88 @@
-# CS5850 2D Game Engine Design
+# CS5850 2D Game Engine
 
-A standalone, reusable 2D game engine built in modern C++ using SDL3.  
-Designed for learning, extensibility, and powering multiple 2D games through modular architecture.
-
----
-
-## 🎯 Goals
-
-- Understand the architecture of a 2D game engine  
-- Build reusable and extensible engine modules  
-- Learn graphics programming, system design, and ECS patterns  
-- Enable future integration with scripting, AI agents, and planners  
-- Maintain clear separation between **engine** and **game-specific logic**
+A modular, reusable 2D game engine in modern C++ (using SDL3).  
+**Designed for learning, extensibility, and clean separation between engine and game/demo code.**
 
 ---
 
-## 🧱 Core Modules (MVP)
-
-| Module                  | Description                                                                 | Scope   |
-|-------------------------|-----------------------------------------------------------------------------|---------|
-| `Renderer`              | Handles sprite drawing (using **SDL3**)                                     | Engine  |
-| `EntityComponentSystem` | Manages entities and their components in a decoupled fashion                | Engine  |
-| `ResourceManager`       | Caches and reuses textures, audio, and other assets                         | Engine  |
-| `InputSystem`           | Handles keyboard/mouse input and maps to in-game actions                    | Engine  |
-| `EventSystem`           | Decoupled publisher-subscriber system for game events                       | Engine  |
-| `CollisionSystem`       | Supports AABB collision checks (SAT/Pixel-based planned later)              | Engine  |
-| `SceneManager`          | Switches between different game scenes/states (menu, game, etc.)            | Engine  |
-| `GameLoop`              | Controls the frame cycle (input → update → render)                          | Engine  |
-
----
-
-## 🧩 Planned Extensions
-
-- 🌀 **Animation System** – Sprite sheet-based animations  
-- 🧠 **Scripting (Lua)** – Integrate Lua for behavior customization  
-- 🎵 **Audio System** – Music and SFX via SDL3 audio or OpenAL  
-- ⏱ **Time System** – Delta time, time scaling (for slow-mo, replay)  
-- 🧪 **Debug Tools** – FPS counter, component viewer, on-screen logging  
-- 💾 **Save/Load System** – Store game progress and preferences  
-- 🧰 **Editor Toolchain** – Basic map or entity editor for prototyping  
-- 🌐 **Networking** – Experimental multiplayer support (optional)
-
-⚠️ All future features will be designed as **optional extensions**, keeping the core engine lightweight and reusable.
-
----
-
-## 🧠 Engine Design Philosophy
-
-This engine is **game-agnostic** and designed to be reused across multiple projects.
-
-Core design principles:
-- Keep all systems modular, loosely coupled, and self-contained
-- Avoid embedding game-specific logic in engine code
-- Let future games define their own:
-  - Entities and components
-  - Scenes and game-specific systems
-  - Input mappings and behavior
-- Support clean layering:
-  - `Engine Core`: modules that apply to any 2D game
-  - `Game Layer`: game-specific logic, scenes, and assets
-
----
-
-## 📊 Module Interaction (Simplified)
+## 📁 Directory Structure (2024 Latest)
 
 ```text
-2DEngine/
-├── src/
-│   ├── core/             # Game loop, time, scene manager
-│   ├── ecs/              # Entities, components, and systems
-│   ├── graphics/         # Rendering logic (uses SDL3)
-│   ├── input/            # Input abstraction
-│   ├── events/           # Event system (pub/sub)
-│   ├── resources/        # Texture/audio/font manager
-│   ├── scenes/           # Scene/state interface & implementations
-│   └── main.cpp
-├── assets/               # Sprites, sounds, config
-├── external/             # SDL3 or third-party deps
-├── CMakeLists.txt
-└── README.md
+src/
+├── engine/                    # Engine Core (Reusable SDK)
+│   ├── core/
+│   │   ├── ecs/              # ECS Base: World, System, Entity, Component
+│   │   ├── scene/            # SceneManager, Scene Base
+│   │   └── event/            # EventSystem
+│   ├── graphics/
+│   │   ├── renderer/         # Renderer Base
+│   │   └── sprite/           # SpriteRenderer
+│   ├── input/                # InputManager
+│   ├── resource/             # ResourceManager
+│   └── PathUtils.hpp/cpp     # Utility Classes
+│
+├── sandbox/                  # Feature Demos and Integration Tests
+│   └── testbed/              # Various Test Scenes (e.g., DebugScene, SpriteScene)
+│
+├── examples/                 # Minimal/Basic Usage Examples
+│   └── README.md
+│
+├── tests/                    # Unit Tests
+│
+├── assets/                   # Asset Files
+└── CMakeLists.txt
 ```
+
+---
+
+## 🧱 Core Modules
+
+- **ECS**: Entity-Component-System architecture, decoupling game objects and behaviors
+- **Renderer**: 2D rendering based on SDL3
+- **ResourceManager**: Unified resource management and caching (e.g., textures)
+- **InputManager**: Input abstraction
+- **EventSystem**: Event publish/subscribe mechanism
+- **SceneManager**: Scene switching and management
+- **Utilities**: Path handling and other utilities
+
+---
+
+## 🧩 Extensions and Demos
+
+- `sandbox/testbed/` contains debug scenes, rendering tests, etc.
+- `examples/` provides minimal runnable examples for quick onboarding
+
+---
+
+## 🛠️ Build and Dependencies
+
+- **Dependencies**: SDL3, SDL3_image (automatically fetched via CMake)
+- **Build**:
+  ```sh
+  mkdir build && cd build
+  cmake ..
+  make
+  ./bin/2DEngine
+  ```
+
+---
+
+## 🧠 Design Philosophy
+
+- **Separation of Engine and Game Logic**: Core code contains no game-specific logic
+- **Modularity**: Each subsystem is independent, facilitating extension and maintenance
+- **Testability**: All core functionalities have dedicated test scenes
+
+---
+
+## 📚 References and Contributions
+
+- PRs and suggestions are welcome!
+- For detailed API and usage, see `examples/` and module comments
+
+---
+
+For more detailed module descriptions or contribution guidelines, feel free to add them at the end of this README.
 
 
 
