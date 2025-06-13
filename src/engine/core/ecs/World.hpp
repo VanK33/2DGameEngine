@@ -1,4 +1,4 @@
-// src/ecs/World.hpp
+// src/engine/core/ecs/World.hpp
 
 #pragma once
 
