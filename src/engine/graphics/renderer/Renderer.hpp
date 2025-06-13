@@ -12,14 +12,12 @@ public:
     ~Renderer();
 
     bool Init(const std::string& windowTitle, int width, int height);
-
     void Shutdown();
-
+    
     void BeginFrame();
-
     void EndFrame();
 
-    void DrawTexture(SDL_Texture* texture, int x, int y, int width, int height);
+    void DrawTexture(SDL_Texture* texture, int x, int y, int width, int height, float rotation);
 
     SDL_Renderer* GetSDLRenderer() const { return renderer_; }
 

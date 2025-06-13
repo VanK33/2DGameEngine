@@ -1,4 +1,4 @@
-// src/graphics/SpriteRenderer.hpp
+// src/engine/graphics/sprite/SpriteRenderer.hpp
 
 #pragma once
 

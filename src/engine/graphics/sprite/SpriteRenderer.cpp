@@ -1,4 +1,4 @@
-// src/graphics/SprintRenderer.cpp
+// src/engine/graphics/sprite/SpriteRenderer.cpp
 
 #include "SpriteRenderer.hpp"
 #include <SDL3/SDL.h>

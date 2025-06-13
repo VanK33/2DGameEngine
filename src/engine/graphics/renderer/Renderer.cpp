@@ -56,13 +56,13 @@ void Renderer::EndFrame() {
     SDL_RenderPresent(renderer_);
 }
 
-void Renderer::DrawTexture(SDL_Texture* texture, int x, int y, int width, int height) {
+void Renderer::DrawTexture(SDL_Texture* texture, int x, int y, int width, int height, float rotation = 0.0f) {
     if (!texture) return;
 
     SDL_FRect dstRect = { static_cast<float>(x), static_cast<float>(y),
                           static_cast<float>(width), static_cast<float>(height) };
 
-    SDL_RenderTexture(renderer_, texture, nullptr, &dstRect);
+    SDL_RenderTextureRotated(renderer_, texture, nullptr, &dstRect, rotation, nullptr, SDL_FLIP_NONE);
 }
 
 } // namespace engine::graphics
