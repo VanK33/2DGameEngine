@@ -99,4 +99,4 @@ size_t EventManager::getQueueSize() const {
     return eventQueue_.size();
 }
 
-} // namespace engine::events
+} // namespace engine::event
