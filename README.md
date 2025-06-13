@@ -5,7 +5,7 @@ A modular, reusable 2D game engine in modern C++ (using SDL3).
 
 ---
 
-## 📁 Directory Structure (2024 Latest)
+## 📁 Directory Structure
 
 ```text
 src/
