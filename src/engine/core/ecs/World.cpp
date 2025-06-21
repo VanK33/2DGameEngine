@@ -3,23 +3,22 @@
 
 namespace engine::ECS {
 
-void World::AddSystem(SystemPtr system) {
-    systems_.push_back(system);
-    system->Init();
-}
-
 void World::Update(float deltaTime) {
-    for (const auto& system : systems_) {
-        if (system->IsEnabled()) {
-            system->Update(deltaTime);
-        }
+    if (!IsPaused()) {
+        systemManager_.Update(deltaTime);
     }
 }
 
-void World::Shutdown() {
-    for (auto& system : systems_) {
-        system->Shutdown();
-    }
+void World::ClearAllEntities() {
+    entityFactory_.ClearAll();
+}
+
+size_t World::GetEntityCount() const {
+    return entityFactory_.GetActiveEntityCount();
+}
+
+bool World::HasEntity(EntityID id) const {
+    return entityFactory_.IsValid(id);
 }
 
 } // namespace engine::ECS

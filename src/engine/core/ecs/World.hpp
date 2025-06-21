@@ -3,26 +3,43 @@
 #pragma once
 
 #include "System.hpp"
+#include "EntityFactory.hpp"
+#include "ComponentManager.hpp"
+#include "SystemManager.hpp"
+#include "WorldState.hpp"
 #include <vector>
 #include <memory>
 
-namespace engine {
-namespace ECS {
+namespace engine::ECS {
 
 class World {
 public:
-    using SystemPtr = std::shared_ptr<System>;
-
     World() = default;
     ~World() = default;
 
-    void AddSystem(SystemPtr system);
+    // ECS Integration
+    EntityFactory& GetEntityFactory() { return entityFactory_; }
+    ComponentManager& GetComponentManager() { return componentManager_; }
+    SystemManager& GetSystemManager() { return systemManager_; }
+    
+    // Entity management
+    void ClearAllEntities();
+    size_t GetEntityCount() const;
+    bool HasEntity(EntityID id) const;
+    
+    // Scene management
+    void Pause() { worldState_.SetPaused(true); }
+    void Resume() { worldState_.SetPaused(false); }
+    bool IsPaused() const { return worldState_.IsPaused(); }
+
+    // Update (simplified)
     void Update(float deltaTime);
-    void Shutdown();
 
 private:
-    std::vector<SystemPtr> systems_;
+    EntityFactory entityFactory_;
+    ComponentManager componentManager_;
+    SystemManager systemManager_;
+    WorldState worldState_;
 };
 
-} // namespace ECS
-} // namespace engine
+} // namespace engine::ECS

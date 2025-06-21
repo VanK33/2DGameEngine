@@ -4,6 +4,7 @@
 namespace engine::ECS {
 
 void WorldState::SetPaused(bool paused) {
-    paused_ = 
+    paused_ = paused;
 }
-}
+
+} // namespace engine::ECS

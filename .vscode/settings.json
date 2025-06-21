@@ -41,6 +41,10 @@
         "sstream": "cpp",
         "variant": "cpp",
         "algorithm": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "vector": "cpp",
+        "__split_buffer": "cpp",
+        "deque": "cpp",
+        "list": "cpp"
     }
 }
