@@ -11,6 +11,15 @@
 #include <string>
 #include <vector>
 
+// ECS test modification
+#include "engine/core/ecs/World.hpp"
+#include "engine/core/ecs/components/Transform2D.hpp"
+#include "engine/core/ecs/components/Sprite2D.hpp"
+#include "engine/core/ecs/components/Collider2D.hpp"
+#include "engine/core/ecs/components/Velocity2D.hpp"
+#include "engine/core/ecs/components/Lifetime.hpp"
+#include "engine/core/ecs/components/Tag.hpp"
+
 namespace scene {
 
 class DebugScene : public engine::scene::Scene {
@@ -41,6 +50,19 @@ private:
     int currentTextureIndex_ = 0;
 
     engine::input::InputManager* inputManager_ = nullptr;
+
+    // ECS tests
+    engine::ECS::World world_;
+    std::vector<engine::ECS::EntityID> testEntities_;
+    bool ecsTestMode_ = false;
+    int currentTest_ = 0;
+
+    void RunECSTests();
+    void TestEntityFactory();
+    void TestComponentManager();
+    void TestWorldIntegration();
+    void TestSystemManager();
+    void DisplayECSTestResults();
 };
 
 }  // namespace scene
