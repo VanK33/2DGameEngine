@@ -2,8 +2,7 @@
 
 #pragma once
 
-namespace engine {
-namespace ECS {
+namespace engine::ECS {
 
 class System {
 public:
@@ -24,5 +23,4 @@ protected:
     bool enabled_ = true;
 };
 
-} // namespace ECS    
-} // namespace engine
+} // namespace engine::ECS

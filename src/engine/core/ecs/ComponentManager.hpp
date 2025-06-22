@@ -5,9 +5,11 @@
 #include <memory>
 #include <stdexcept>
 #include <functional>
+#include <vector>
+#include <algorithm>
+#include <set>
 
-namespace engine {
-namespace ECS {
+namespace engine::ECS {
 
 using EntityID = uint32_t;
 
@@ -78,6 +80,56 @@ public:
         if (store) store->ForEach(fn);
     }
 
+    template<typename T>
+    std::vector<EntityID> GetEntitiesWithComponent() {
+        std::vector<EntityID> entities;
+        auto store = GetStore<T>();
+        if (store) {
+            store->ForEach([&entities](EntityID id, T&) {
+                entities.push_back(id);
+            });
+        }
+        return entities;
+    }
+
+    template<typename T, typename U>
+    std::vector<EntityID> GetEntitiesWithComponents() {
+        auto entitiesT = GetEntitiesWithComponent<T>();
+        auto entitiesU = GetEntitiesWithComponent<U>();
+        
+        std::vector<EntityID> result;
+        std::sort(entitiesT.begin(), entitiesT.end());
+        std::sort(entitiesU.begin(), entitiesU.end());
+        
+        std::set_intersection(entitiesT.begin(), entitiesT.end(),
+                             entitiesU.begin(), entitiesU.end(),
+                             std::back_inserter(result));
+        return result;
+    }
+
+    template<typename T, typename U, typename V>
+    std::vector<EntityID> GetEntitiesWithComponents() {
+        auto entitiesT = GetEntitiesWithComponent<T>();
+        auto entitiesU = GetEntitiesWithComponent<U>();
+        auto entitiesV = GetEntitiesWithComponent<V>();
+
+        std::vector<EntityID> result;
+        std::sort(entitiesT.begin(), entitiesT.end());
+        std::sort(entitiesU.begin(), entitiesU.end());
+        std::sort(entitiesV.begin(), entitiesV.end());
+        
+        std::set_intersection(entitiesT.begin(), entitiesT.end(),
+                             entitiesU.begin(), entitiesU.end(),
+                             std::back_inserter(result));
+
+        std::vector<EntityID> finalResult;
+        std::sort(result.begin(), result.end());
+        std::set_intersection(result.begin(), result.end(),
+                             entitiesV.begin(), entitiesV.end(),
+                             std::back_inserter(finalResult));
+        return finalResult;
+    }
+
 private:
     std::unordered_map<std::type_index, std::unique_ptr<IComponentStore>> stores_;
 
@@ -99,5 +151,4 @@ private:
     }
 };
 
-} // namespace ECS
-} //namespace engine
+} // namespace engine::ECS
