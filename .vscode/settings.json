@@ -45,6 +45,16 @@
         "vector": "cpp",
         "__split_buffer": "cpp",
         "deque": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "queue": "cpp",
+        "__hash_table": "cpp",
+        "__node_handle": "cpp",
+        "array": "cpp",
+        "optional": "cpp",
+        "__tree": "cpp",
+        "any": "cpp",
+        "condition_variable": "cpp",
+        "iomanip": "cpp",
+        "set": "cpp"
     }
 }

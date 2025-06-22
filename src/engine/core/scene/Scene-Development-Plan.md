@@ -33,7 +33,7 @@ This document outlines the **essential enhancements** needed for the Scene syste
 
 ---
 
-## 🚀 Phase 1: ECS Integration (CRITICAL - Week 1)
+## 🚀 Phase 1: ECS Integration (CRITICAL)
 
 ### 1.1 Scene-ECS Integration - **MUST HAVE**
 **Files to Modify:**
@@ -69,7 +69,7 @@ protected:
 
 **Why Critical:** Scenes need to create and manage entities. **Essential for Task 1 and Task 2.**
 
-**Implementation Time:** 2-3 hours
+**Status:** 📋 **PLANNED** - Next implementation priority
 
 ### 1.2 Enhanced SceneManager - **MUST HAVE**
 **Files to Modify:**
@@ -107,11 +107,11 @@ private:
 
 **Why Critical:** Need unified access to ECS from scene management. **Essential for engine API.**
 
-**Implementation Time:** 1-2 hours
+**Status:** 📋 **PLANNED** - After Scene-ECS integration
 
 ---
 
-## 🎨 Phase 2: Scene Configuration & Setup (HIGH - Week 1)
+## 🎨 Phase 2: Scene Configuration & Setup (HIGH)
 
 ### 2.1 Scene Configuration System - **MUST HAVE**
 **Files to Create:**
@@ -144,7 +144,7 @@ public:
 
 **Why Critical:** Need standardized scene setup for different game states. **Essential for Task 2.**
 
-**Implementation Time:** 2-3 hours
+**Status:** 📋 **PLANNED** - After ECS integration
 
 ### 2.2 Scene State Persistence - **MUST HAVE**
 **Files to Create:**
@@ -174,11 +174,11 @@ public:
 
 **Why Critical:** Need to preserve important entities between scenes. **Essential for game flow.**
 
-**Implementation Time:** 3-4 hours
+**Status:** 📋 **PLANNED** - After configuration system
 
 ---
 
-## ⚡ Phase 3: Performance & Optimization (MEDIUM - Week 2)
+## ⚡ Phase 3: Performance & Optimization (MEDIUM)
 
 ### 3.1 Scene Performance Monitoring - **SHOULD HAVE**
 **Files to Create:**
@@ -211,9 +211,9 @@ private:
 };
 ```
 
-**Why Important:** Need to monitor scene performance for 3-digit entity counts. **Performance requirement.**
+**Why Important:** Need to monitor scene performance for optimization. **Useful for debugging.**
 
-**Implementation Time:** 2-3 hours
+**Status:** 📋 **PLANNED** - After core features
 
 ### 3.2 Scene Entity Pooling - **SHOULD HAVE**
 **Files to Create:**
@@ -223,192 +223,68 @@ private:
 ```cpp
 class SceneEntityPool {
 public:
-    SceneEntityPool(size_t initialSize = 100);
-    
+    void PreallocateEntities(size_t count);
     ecs::EntityID GetEntity();
     void ReturnEntity(ecs::EntityID id);
-    void Preallocate(size_t count);
     void Clear();
     
     size_t GetAvailableCount() const;
-    size_t GetActiveCount() const;
+    size_t GetTotalCount() const;
     
 private:
-    std::vector<ecs::EntityID> availableEntities_;
+    std::queue<ecs::EntityID> availableEntities_;
     std::unordered_set<ecs::EntityID> activeEntities_;
-    ecs::World* world_ = nullptr;
+    size_t totalAllocated_ = 0;
 };
 ```
 
-**Why Important:** Optimize entity creation/destruction for high-frequency operations. **Performance for zombie games.**
+**Why Important:** Improve performance for frequent entity creation/destruction. **Optimization for Task 1.**
 
-**Implementation Time:** 2-3 hours
+**Status:** 📋 **PLANNED** - Performance optimization phase
 
 ---
 
-## 🔧 Phase 4: Integration & API Enhancement (HIGH - Week 2)
-
-### 4.1 Engine API Integration - **MUST HAVE**
-**Files to Modify:**
-- `SceneManager.hpp/cpp` (extend existing)
-
-**Features (Minimal):**
-```cpp
-class SceneManager {
-public:
-    // Enhanced API for Task 2
-    bool Initialize(const std::string& defaultScene = "");
-    void Shutdown();
-    
-    // Scene lifecycle
-    bool LoadScene(const std::string& sceneId);
-    void UnloadCurrentScene();
-    void RestartCurrentScene();
-    
-    // Scene information
-    std::vector<std::string> GetAvailableScenes() const;
-    bool HasScene(const std::string& sceneId) const;
-    
-    // Scene events
-    void OnSceneLoaded(const std::string& sceneId);
-    void OnSceneUnloaded(const std::string& sceneId);
-};
-```
-
-**Why Critical:** Need clean API for engine integration. **Essential for Task 2.**
-
-**Implementation Time:** 2-3 hours
-
-### 4.2 Scene Event System - **SHOULD HAVE**
-**Files to Create:**
-- `SceneEvents.hpp` (extend existing)
-
-**Features (Minimal):**
-```cpp
-// Additional scene events
-enum class SceneEventType {
-    SCENE_LOADED,
-    SCENE_UNLOADED,
-    SCENE_PAUSED,
-    SCENE_RESUMED,
-    ENTITY_CREATED,
-    ENTITY_DESTROYED
-};
-
-struct SceneEventData {
-    std::string sceneId;
-    ecs::EntityID entityId = 0;
-    std::string message;
-};
-```
-
-**Why Important:** Enhanced event system for scene management. **Useful for Task 7.**
-
-**Implementation Time:** 1-2 hours
-
----
-
-## 🎯 Success Criteria for Scene System
+## 🎯 Success Criteria
 
 ### **Minimum Viable Scene System:**
-- ✅ Scenes can create and manage entities through ECS
-- ✅ Scene transitions preserve important entities
-- ✅ Scene configuration system for different game states
-- ✅ Performance monitoring for 3-digit entity counts
-- ✅ Clean API integration with engine
-- ✅ Scene state persistence between transitions
+- ✅ Can create and manage scenes
+- ✅ Can handle scene transitions
+- ✅ Can integrate with EventManager
+- 📋 Can integrate with ECS (World/EntityFactory)
+- 📋 Can manage scene-specific entities
+- 📋 Can persist scene state between transitions
 
-### **Performance Targets:**
-- Scene transition time < 100ms
-- Scene update time < 16ms for 300 entities
-- Memory usage < 10MB per scene
-- Entity creation/destruction < 1ms per entity
-
-### **API Design Goals:**
-- Simple scene creation and management
-- Clear separation between scene and engine logic
-- Consistent naming conventions
-- Good error handling and debugging support
+### **Enhanced Scene System:**
+- 📋 Can configure scenes with different setups
+- 📋 Can monitor scene performance
+- 📋 Can optimize entity management with pooling
+- 📋 Can handle complex scene hierarchies
 
 ---
 
-## 📊 Implementation Timeline
+## 🚀 Implementation Priority
 
-### **Week 1: Core Integration (Tasks 1-2)**
-- **Days 1-2:** Scene-ECS Integration
-- **Days 3-4:** Scene Configuration & Setup
-- **Day 5:** Scene State Persistence
+### **Phase 1: ECS Integration (CRITICAL)**
+1. **Scene-ECS Integration** - Add World access to Scene class
+2. **Enhanced SceneManager** - Add ECS integration to SceneManager
+3. **Testing** - Validate ECS integration works correctly
 
-### **Week 2: Performance & API (Tasks 3-4)**
-- **Days 1-2:** Performance Monitoring & Entity Pooling
-- **Days 3-4:** Engine API Integration
-- **Day 5:** Scene Event System
+### **Phase 2: Configuration & Setup (HIGH)**
+1. **Scene Configuration System** - Standardized scene setup
+2. **Scene State Persistence** - Entity and data persistence
+3. **Integration Testing** - Test with different scene types
 
----
-
-## 🚨 Risk Mitigation
-
-### **If Behind Schedule:**
-1. **Skip Phase 3** - Performance optimizations can be added later
-2. **Simplify Phase 2** - Focus on basic scene configuration
-3. **Use existing patterns** - Leverage current scene system
-4. **Reduce scope** - Focus on core functionality over features
-
-### **If Performance Issues Arise:**
-1. **Profile first** - Don't optimize prematurely
-2. **Reduce entity count** - Start with 100 entities per scene
-3. **Simplify persistence** - Only persist essential entities
-4. **Optimize later** - Focus on functionality first
+### **Phase 3: Performance & Optimization (MEDIUM)**
+1. **Scene Performance Monitoring** - Add profiling capabilities
+2. **Scene Entity Pooling** - Optimize entity management
+3. **Performance Testing** - Validate optimizations
 
 ---
 
-## 💡 Development Tips
+## 📝 Notes
 
-### **Start Simple:**
-- Build ECS integration first - everything depends on it
-- Test scene transitions with simple entities
-- Validate performance with realistic entity counts
-
-### **Focus on Integration:**
-- Ensure scenes work seamlessly with ECS
-- Test scene persistence with actual game entities
-- Validate engine API integration early
-
-### **Test Early:**
-- Create test scenes immediately after ECS integration
-- Validate scene transitions work correctly
-- Test performance with target entity counts
-
----
-
-## 📋 Wait-List (Future Reference)
-
-### **Phase 5: Advanced Scene Features**
-- Scene transitions and effects (fade, slide, etc.)
-- Multi-scene rendering (overlays, HUD scenes)
-- Scene-specific resource management
-- Scene serialization and save/load
-
-### **Phase 6: Developer Tools**
-- Scene inspector and debugger
-- Visual scene editor
-- Scene performance profiling tools
-- Scene dependency analysis
-
-### **Phase 7: Advanced Integration**
-- Scene-specific scripting support
-- Network scene synchronization
-- Advanced scene event system
-- Scene-based audio management
-
----
-
-## 📚 Essential Resources
-
-- [Scene Management Patterns](https://gameprogrammingpatterns.com/game-loop.html) - For scene architecture
-- [ECS Best Practices](https://github.com/SanderMertens/ecs-faq) - For ECS integration
-- [SDL3 Documentation](https://wiki.libsdl.org/) - For rendering integration
-
----
-
-*This plan focuses on enhancing the scene system to support the Priority List requirements, particularly Tasks 1, 2, and 7. Focus on ECS integration and performance for 3-digit entity counts.* 
+- **Focus on ECS integration first** - This is blocking other Priority List tasks
+- **Keep it simple** - Avoid over-engineering for homework scope
+- **Test incrementally** - Validate each phase before moving to next
+- **Performance matters** - Need to support 3-digit entity counts efficiently
+- **Integration ready** - Design for seamless ECS and Event system integration 

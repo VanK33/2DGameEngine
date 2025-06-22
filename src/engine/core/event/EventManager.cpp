@@ -30,48 +30,7 @@ void EventManager::publish(std::shared_ptr<Event> event) {
 }
 
 void EventManager::update() {
-    std::queue<std::shared_ptr<Event>> queueCopy;
-    {
-        std::lock_guard<std::mutex> lock(queueMutex_);
-        std::swap(queueCopy, eventQueue_);
-    }
-    
-    // std::cout << "[EventManager] Processing " << queueCopy.size() << " events" << std::endl;
-    
-    while (!queueCopy.empty()) {
-        auto event = queueCopy.front();
-        queueCopy.pop();
-        
-        std::unordered_set<EventListener*> listenersCopy;
-        {
-            std::lock_guard<std::mutex> lock(listenersMutex_);
-            auto it = listeners_.find(event->getType());
-            if (it != listeners_.end()) {
-                listenersCopy = it->second;
-                std::cout << "[EventManager] Found " << listenersCopy.size() 
-                          << " listeners for event type " << (int)event->getType() << std::endl;
-            } else {
-                std::cout << "[EventManager] No listeners found for event type " 
-                          << (int)event->getType() << std::endl;
-            }
-        }
-        
-        // Dispatch to each listener safely
-        for (auto* listener : listenersCopy) {
-            if (!listener) {
-                std::cout << "[EventManager] Warning: null listener!" << std::endl;
-                continue;
-            }
-            try {
-                std::cout << "[EventManager] Dispatching to listener..." << std::endl;
-                listener->onEvent(event);
-            } catch (const std::exception& e) {
-                std::cerr << "[EventManager] Listener threw exception: " << e.what() << std::endl;
-            } catch (...) {
-                std::cerr << "[EventManager] Listener threw unknown exception." << std::endl;
-            }
-        }
-    }
+    processEventsByPriority();
 }
 
 void EventManager::clear() {
@@ -97,6 +56,81 @@ size_t EventManager::getListenerCount(EventType type) const {
 size_t EventManager::getQueueSize() const {
     std::lock_guard<std::mutex> lock(queueMutex_);
     return eventQueue_.size();
+}
+
+
+std::vector<std::shared_ptr<Event>> EventManager::getAndSortEvents() {
+    // Safe Queue duplication
+    std::queue<std::shared_ptr<Event>> queueCopy;
+    {
+        std::lock_guard<std::mutex> lock(queueMutex_);
+        std::swap(queueCopy, eventQueue_);
+    }
+
+    // Vectorize
+    std::vector<std::shared_ptr<Event>> events;
+    while (!queueCopy.empty()) {
+        events.push_back(queueCopy.front());
+        queueCopy.pop();
+    }
+
+    // Sort by Priority
+    std::sort(events.begin(), events.end(), 
+        [](const std::shared_ptr<Event>& a, const std::shared_ptr<Event>& b) {
+            return static_cast<int>(a->getPriority()) < static_cast<int>(b->getPriority());
+        });
+    
+    return events;
+}
+
+void EventManager::publishWithPriority(std::shared_ptr<Event> event, EventPriority priority) {
+    if (event) {
+        event->setPriority(priority);
+    }
+    publish(event);
+}
+
+void EventManager::processEventsByPriority() {
+    auto events = getAndSortEvents();
+    
+    
+    for (const auto& event : events) {
+        processEvent(event);
+    }
+}
+
+void EventManager::processEvent(const std::shared_ptr<Event>& event) {
+    // Safe listener copy
+    std::unordered_set<EventListener*> listenersCopy;
+    {
+        std::lock_guard<std::mutex> lock(listenersMutex_);
+        auto it = listeners_.find(event->getType());
+        if (it != listeners_.end()) {
+            listenersCopy = it->second;
+            std::cout << "[EventManager] Found " << listenersCopy.size() 
+                      << " listeners for event type " << (int)event->getType() 
+                      << " (priority: " << (int)event->getPriority() << ")" << std::endl;
+        } else {
+            std::cout << "[EventManager] No listeners found for event type " 
+                      << (int)event->getType() << std::endl;
+        }
+    }
+    
+    // Safe event dispatch
+    for (auto* listener : listenersCopy) {
+        if (!listener) {
+            std::cout << "[EventManager] Warning: null listener!" << std::endl;
+            continue;
+        }
+        try {
+            std::cout << "[EventManager] Dispatching to listener..." << std::endl;
+            listener->onEvent(event);
+        } catch (const std::exception& e) {
+            std::cerr << "[EventManager] Listener threw exception: " << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << "[EventManager] Listener threw unknown exception." << std::endl;
+        }
+    }
 }
 
 } // namespace engine::event
