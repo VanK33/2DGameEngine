@@ -6,39 +6,32 @@
 
 namespace engine::event {
 
-/**
- * Represents a generic event in the system.
- * Each event has a type, optional payload data, and a timestamp of creation.
- */
+
+enum class EventPriority {
+    CRITICAL = 0,   //  System level events
+    HIGH = 1,       //  Game logic events
+    MEDIUM = 2,     //  User input events, default priority
+    LOW = 3         //  Debug events, UI events
+};
+
+
 class Event {
 public:
-    /**
-     * Constructs a new event with optional payload.
-     * @param type The type of the event
-     * @param data Optional payload associated with the event
-     */
     Event(EventType type, std::shared_ptr<void> data = nullptr)
-        : type(type), data(std::move(data)), timestamp(currentTimeMillis()) {}
+        : type(type), data(std::move(data)), timestamp_(currentTimeMillis()) {}
 
-    /**
-     * Get the event type.
-     */
     EventType getType() const { return type; }
-
-    /**
-     * Get the associated payload data (may be null).
-     */
     std::shared_ptr<void> getData() const { return data; }
+    long getTimestamp() const { return timestamp_; }
 
-    /**
-     * Get the event creation timestamp in milliseconds since epoch.
-     */
-    long getTimestamp() const { return timestamp; }
+    EventPriority getPriority() const { return priority_; }
+    void setPriority(EventPriority priority) { priority_ = priority; }
 
 private:
     EventType type;
     std::shared_ptr<void> data;
-    long timestamp;
+    long timestamp_;
+    EventPriority priority_;
 
     static long currentTimeMillis() {
         using namespace std::chrono;

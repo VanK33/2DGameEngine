@@ -6,6 +6,7 @@
 #include <string>
 #include "engine/core/event/EventManager.hpp"
 #include "engine/input/InputManager.hpp"
+#include "engine/core/ecs/World.hpp"
 
 namespace engine::scene {
 
@@ -22,9 +23,19 @@ public:
     virtual void SetEventManager(engine::event::EventManager* manager) = 0;
     virtual void SetInputManager(input::InputManager* manager) = 0;
 
+    virtual void SetWorld(ECS::World* world) { world_ = world; }
+    ECS::World* GetWorld() const { return world_; }
+
+    virtual ECS::EntityID CreateSceneEntity (const std::string& name = "");
+    virtual void DestroySceneEntity(ECS::EntityID id);
+    virtual void ClearSceneEntities();
+
 
 protected:
     engine::event::EventManager* eventManager_ = nullptr; 
+
+    ECS::World* world_ = nullptr;
+    std::vector<ECS::EntityID> sceneEntities_;
 };
 
 
