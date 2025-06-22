@@ -10,6 +10,7 @@
 #include <SDL3/SDL.h>
 #include "engine/core/event/EventListener.hpp"
 #include "engine/input/InputManager.hpp"
+#include "engine/core/ecs/World.hpp"
 
 namespace engine::scene {
 
@@ -38,6 +39,9 @@ public:
 
     void SetEventManager(engine::event::EventManager* manager);
     void SetInputManager(input::InputManager* manager);
+    void SetWorld(ECS::World* world) { world_ = world; }
+
+    ECS::World* GetWorld() const { return world_; }
 
 private:
     std::unique_ptr<Scene> CreateScene(const std::string& sceneId);
@@ -47,9 +51,11 @@ private:
 
     engine::event::EventManager* eventManager_ = nullptr;
     input::InputManager* inputManager_ = nullptr;
+    ECS::World* world_ = nullptr; 
     
     std::string nextSceneId_;
     bool sceneChangeRequested_ = false;
+
 };
 
 } // namespace scene

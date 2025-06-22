@@ -12,6 +12,10 @@ SceneManager::~SceneManager() {
     UnloadScene();
 }
 
+void SceneManager::SetWorld(ECS::World* world) {
+    world_ = world;
+}
+
 void SceneManager::RegisterScene(const std::string& sceneId, SceneFactory factory) {
     sceneFactories_[sceneId] = factory;
     std::cout << "[SceneManager] Registered scene: " << sceneId << std::endl;
@@ -30,6 +34,14 @@ void SceneManager::SetScene(std::unique_ptr<Scene> newScene) {
     
     if (currentScene_) {
         std::cout << "[SceneManager] Loading scene: " << currentScene_->GetSceneId() << std::endl;
+
+        if (world_) {
+            std::cout << "[SceneManager] Setting World for scene..." << std::endl;
+            currentScene_->SetWorld(world_);
+            std::cout << "[SceneManager] World set successfully!" << std::endl;
+        } else {
+            std::cout << "[SceneManager] WARNING: world_ is null!" << std::endl;
+        }
 
         if (eventManager_) {
             std::cout << "[SceneManager] Setting EventManager for scene..." << std::endl;
