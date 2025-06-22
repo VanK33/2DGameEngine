@@ -1,8 +1,8 @@
-
-#pragma once
+// src/engine/core/event/EventManager.hpp
 
 #include "Event.hpp"
 #include "EventListener.hpp"
+#include "EventFilter.hpp"
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
@@ -30,6 +30,11 @@ public:
 
     void publishWithPriority(std::shared_ptr<Event> event, EventPriority priority);
 
+    void subscribeWithFilter(EventType type, EventListener* listener, std::unique_ptr<EventFilter> filter);
+    void subscribeToMultipleWithFilter(const std::vector<EventType>& types, EventListener* listener, std::unique_ptr<EventFilter> filter);
+
+    void subscribeToMultiple(const std::vector<EventType>& types, EventListener* listener);
+
 private:
     std::unordered_map<EventType, std::unordered_set<EventListener*>> listeners_;
     std::queue<std::shared_ptr<Event>> eventQueue_;
@@ -40,6 +45,9 @@ private:
     void processEventsByPriority();
     void processEvent(const std::shared_ptr<Event>& event); 
     std::vector<std::shared_ptr<Event>> getAndSortEvents();
+
+    std::unordered_map<EventListener*, std::unique_ptr<EventFilter>> filters_;
+    mutable std::mutex filtersMutex_;
     
 };
 } // namespace engine::event

@@ -45,6 +45,11 @@ void EventManager::clear() {
         std::lock_guard<std::mutex> lock2(listenersMutex_);
         listeners_.clear();
     }
+    
+    {
+        std::lock_guard<std::mutex> lock3(filtersMutex_);
+        filters_.clear();
+    }
 }
 
 size_t EventManager::getListenerCount(EventType type) const {
@@ -122,15 +127,75 @@ void EventManager::processEvent(const std::shared_ptr<Event>& event) {
             std::cout << "[EventManager] Warning: null listener!" << std::endl;
             continue;
         }
-        try {
-            std::cout << "[EventManager] Dispatching to listener..." << std::endl;
-            listener->onEvent(event);
-        } catch (const std::exception& e) {
-            std::cerr << "[EventManager] Listener threw exception: " << e.what() << std::endl;
-        } catch (...) {
-            std::cerr << "[EventManager] Listener threw unknown exception." << std::endl;
+
+        bool shouldProcess = true;
+        {
+            std::lock_guard<std::mutex> lock(filtersMutex_);
+            auto filterIt = filters_.find(listener);
+            if (filterIt != filters_.end() && filterIt->second) {
+                shouldProcess = filterIt->second->ShouldProcess(event);
+                if (!shouldProcess) {
+                    std::cout << "[EventManager] Event filtered out for listener" << std::endl;
+                }
+            }
+        }
+
+        if (shouldProcess) {
+            try {
+                std::cout << "[EventManager] Dispatching to listener..." << std::endl;
+                listener->onEvent(event);
+            } catch (const std::exception& e) {
+                std::cerr << "[EventManager] Listener threw exception: " << e.what() << std::endl;
+            } catch (...) {
+                std::cerr << "[EventManager] Listener threw unknown exception." << std::endl;
+            }
         }
     }
+}
+
+void EventManager::subscribeWithFilter(EventType type, EventListener* listener, 
+                                     std::unique_ptr<EventFilter> filter) {
+    if (!listener) {
+        std::cout << "[EventManager] Warning: Attempting to subscribe null listener!" << std::endl;
+        return;
+    }
+    
+    // 订阅事件
+    subscribe(type, listener);
+    
+    // 存储过滤器
+    if (filter) {
+        std::lock_guard<std::mutex> lock(filtersMutex_);
+        filters_[listener] = std::move(filter);
+        std::cout << "[EventManager] Added filter for listener" << std::endl;
+    }
+}
+
+void EventManager::subscribeToMultiple(const std::vector<EventType>& types, EventListener* listener) {
+    if (!listener) {
+        std::cout << "[EventManager] Warning: Attempting to subscribe null listener!" << std::endl;
+        return;
+    }
+
+    for (auto type : types) {
+        subscribe(type, listener);
+    }
+}
+
+void EventManager::subscribeToMultipleWithFilter(const std::vector<EventType>& types, EventListener* listener, std::unique_ptr<EventFilter> filter) {
+    if (!listener) {
+        std::cout << "[EventManager] Warning: Attempting to subscribe null listener!" << std::endl;
+        return;
+    }
+
+    subscribeToMultiple(types, listener);
+
+    if (filter) {
+        std::lock_guard<std::mutex> lock(filtersMutex_);
+        filters_[listener] = std::move(filter);
+        std::cout << "[EventManager] Added filter for multi-type listener" << std::endl;
+    }
+
 }
 
 } // namespace engine::event
