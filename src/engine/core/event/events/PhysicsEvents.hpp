@@ -1,6 +1,8 @@
+// src/engine/core/event/events/PhysicsEvents.hpp
+
 #pragma once
 
-#include "EventType.hpp"
+#include "engine/core/event/EventType.hpp"
 #include <SDL3/SDL.h>
 #include <string>
 
