@@ -3,6 +3,11 @@
 
 namespace engine::ECS {
 
+World::World() {
+    // Set World reference in SystemManager
+    systemManager_.SetWorld(this);
+}
+
 void World::Update(float deltaTime) {
     if (!IsPaused()) {
         systemManager_.Update(deltaTime);

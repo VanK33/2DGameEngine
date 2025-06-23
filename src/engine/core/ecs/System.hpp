@@ -1,9 +1,10 @@
-// src/ecs/System.hpp
+// src/engine/core/ecs/System.hpp
 
 #pragma once
 
 namespace engine::ECS {
 
+class World; // forward declaration    
 class System {
 public:
     virtual ~System() = default;
@@ -19,8 +20,12 @@ public:
 
     virtual const char* GetName() const { return "UnnamedSystem"; }
 
+    void SetWorld(World* world) { world_ = world; }
+    World* GetWorld() const { return world_; }
+
 protected:
     bool enabled_ = true;
+    World* world_ = nullptr;
 };
 
 } // namespace engine::ECS

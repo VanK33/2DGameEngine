@@ -1,3 +1,5 @@
+// src/engine/core/event/EventType.hpp
+
 #pragma once
 
 namespace engine::event {

@@ -12,6 +12,8 @@
 
 namespace engine::ECS {
 
+class World; // Forward declaration
+
 class SystemManager {
 public:
     SystemManager() = default;
@@ -30,6 +32,8 @@ public:
     void ResumeSystem(const std::string& name);
     void PauseAllSystems();
     void ResumeAllSystems();
+
+    void SetWorld(World* world) { world_ = world; }
 
 private:
     struct SystemEntry {
@@ -50,6 +54,7 @@ private:
     std::vector<SystemEntry> systems_;
     std::unordered_map<std::string, size_t> systemIndices_;
     bool needsSort_ = false;
+    World* world_ = nullptr;
 };
 
 } // namespace engine::ECS

@@ -17,6 +17,10 @@ void SystemManager::AddSystem(std::unique_ptr<System> system, int priority) {
         std::cerr << "[SystemManager] Warning: System '" << name << "' already exists" << std::endl;
         return;
     }
+
+    if (world_) {
+        system->SetWorld(world_);
+    }
     
     // Add system
     systems_.emplace_back(std::move(system), priority);
