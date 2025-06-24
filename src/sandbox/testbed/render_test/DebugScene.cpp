@@ -90,11 +90,24 @@ void DebugScene::HandleEvent(const SDL_Event& event) {
                 RunECSTests();
                 break;
             case SDLK_2:
-                ecsTestMode_ = false;
+                if (ecsTestMode_) {
+                    ecsTestMode_ = false;
+                    std::cout << "\n[DebugScene] ECS Test Mode EXITED\n";
+                    std::cout << "Press 1 to restart ECS tests, or use arrow keys to navigate textures.\n";
+                } else {
+                    std::cout << "\n[DebugScene] ECS Test Mode already OFF\n";
+                    std::cout << "Press 1 to start ECS tests.\n";
+                }
                 break;
             case SDLK_SPACE:
                 if (ecsTestMode_) {
                     currentTest_++;
+                    RunECSTests();
+                } else {
+                    // 重新开始ECS测试
+                    std::cout << "\n[DebugScene] Restarting ECS Tests...\n";
+                    ecsTestMode_ = true;
+                    currentTest_ = 0;
                     RunECSTests();
                 }
                 break;
@@ -227,7 +240,12 @@ void DebugScene::DisplayECSTestResults() {
     std::cout << "- Entity count: " << world_.GetEntityCount() << "\n";
     std::cout << "- Test entities: " << testEntities_.size() << "\n";
     std::cout << "- ECS mode: " << (ecsTestMode_ ? "ON" : "OFF") << "\n";
-    std::cout << "Press SPACE for next test, 2 to exit ECS mode\n";
+    
+    if (ecsTestMode_) {
+        std::cout << "Press SPACE for next test, 2 to exit ECS mode\n";
+    } else {
+        std::cout << "Press SPACE to restart ECS tests, 2 to confirm exit, 1 to restart\n";
+    }
 }
 
 }  // namespace scene

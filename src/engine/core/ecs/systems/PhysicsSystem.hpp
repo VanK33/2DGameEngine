@@ -7,15 +7,21 @@
 #include "engine/core/ecs/components/PhysicsMode.hpp"
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/event/Event.hpp"
+#include "engine/core/event/EventListener.hpp"
 #include <unordered_map>
 
 namespace engine::ECS {
 
-class PhysicsSystem : public System {
+using EntityID = uint32_t;
+
+class PhysicsSystem : public System, public engine::event::EventListener {
 public:
     void Init() override;
     void Update(float deltaTime) override;
     const char* GetName() const override { return "PhysicsSystem"; }
+    
+    // EventListener interface
+    void onEvent(const std::shared_ptr<engine::event::Event>& event) override;
 
 private:
     void ApplyGravity(Velocity2D* velocity, const PhysicsModeComponent* mode, float deltaTime);

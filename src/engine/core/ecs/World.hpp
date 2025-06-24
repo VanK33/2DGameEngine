@@ -15,7 +15,7 @@ namespace engine::ECS {
 
 class World {
 public:
-    World() = default;
+    World();
     ~World() = default;
 
     // ECS Integration

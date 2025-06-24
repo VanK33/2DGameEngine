@@ -16,12 +16,7 @@ void PhysicsSystem::Init() {
     // 监听碰撞事件
     if (auto* world = GetWorld()) {
         auto& eventManager = world->GetEventManager(); // 使用引用
-        eventManager.subscribe(
-            engine::event::EventType::COLLISION_STARTED,
-            [this](const engine::event::Event& event) {
-                HandleCollisionEvent(event);
-            }
-        );
+        eventManager.Subscribe(engine::event::EventType::COLLISION_STARTED, this);
     }
 }
 
@@ -146,8 +141,14 @@ void PhysicsSystem::HandleCollision(Transform2D* transform, Velocity2D* velocity
     velocity->vy = 0;
 }
 
+void PhysicsSystem::onEvent(const std::shared_ptr<engine::event::Event>& event) {
+    if (event->getType() == engine::event::EventType::COLLISION_STARTED) {
+        HandleCollisionEvent(*event);
+    }
+}
+
 void PhysicsSystem::HandleCollisionEvent(const engine::event::Event& event) {
-    auto collisionData = std::static_pointer_cast<engine::event::CollisionData>(event.data);
+    auto collisionData = std::static_pointer_cast<engine::event::CollisionData>(event.getData());
     HandleCollisionResponse(collisionData->entityA, collisionData->entityB);
 }
 
