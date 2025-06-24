@@ -29,3 +29,7 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 
+# Config Files
+.cursor
+.idea
+.vscode
