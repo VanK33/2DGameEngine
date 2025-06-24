@@ -5,16 +5,6 @@
 #include <string>
 
 namespace engine::event {
-
-// Extend EventType Enum
-enum class RenderEventType {
-    SPRITE_CREATED,
-    SPRITE_DESTROYED,
-    SPRITE_VISIBILITY_CHANGED,
-    CAMERA_MOVED,
-    TEXTURE_LOADED
-};
-
 // Event Data Structures
 struct SpriteCreatedData {
     uint32_t entityId;  // Corresponds to ECS EntityID
