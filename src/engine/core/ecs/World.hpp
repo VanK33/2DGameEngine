@@ -7,6 +7,7 @@
 #include "ComponentManager.hpp"
 #include "SystemManager.hpp"
 #include "WorldState.hpp"
+#include "engine/core/event/EventManager.hpp"
 #include <vector>
 #include <memory>
 
@@ -22,6 +23,9 @@ public:
     ComponentManager& GetComponentManager() { return componentManager_; }
     SystemManager& GetSystemManager() { return systemManager_; }
     
+    // EventSystem
+    engine::event::EventManager& GetEventManager() { return eventManager_; }
+    
     // Entity management
     void ClearAllEntities();
     size_t GetEntityCount() const;
@@ -32,7 +36,6 @@ public:
     void Resume() { worldState_.SetPaused(false); }
     bool IsPaused() const { return worldState_.IsPaused(); }
 
-    // Update (simplified)
     void Update(float deltaTime);
 
 private:
@@ -40,6 +43,7 @@ private:
     ComponentManager componentManager_;
     SystemManager systemManager_;
     WorldState worldState_;
+    engine::event::EventManager eventManager_;
 };
 
 } // namespace engine::ECS
