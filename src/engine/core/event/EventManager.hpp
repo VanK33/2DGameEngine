@@ -1,5 +1,7 @@
 // src/engine/core/event/EventManager.hpp
 
+#pragma once
+
 #include "Event.hpp"
 #include "EventListener.hpp"
 #include "EventFilter.hpp"
@@ -20,20 +22,20 @@ public:
     EventManager(const EventManager&) = delete;
     EventManager& operator=(const EventManager&) = delete;
 
-    void subscribe(EventType type, EventListener* listener);
-    void unsubscribe(EventType type, EventListener* listener);
-    void publish(std::shared_ptr<Event> event);
-    void update();
-    void clear();
-    size_t getListenerCount(EventType type) const;
-    size_t getQueueSize() const;
+    void Subscribe(EventType type, EventListener* listener);
+    void Unsubscribe(EventType type, EventListener* listener);
+    void Publish(std::shared_ptr<Event> event);
+    void Update();
+    void Clear();
+    size_t GetListenerCount(EventType type) const;
+    size_t GetQueueSize() const;
 
-    void publishWithPriority(std::shared_ptr<Event> event, EventPriority priority);
+    void PublishWithPriority(std::shared_ptr<Event> event, EventPriority priority);
 
-    void subscribeWithFilter(EventType type, EventListener* listener, std::unique_ptr<EventFilter> filter);
-    void subscribeToMultipleWithFilter(const std::vector<EventType>& types, EventListener* listener, std::unique_ptr<EventFilter> filter);
+    void SubscribeWithFilter(EventType type, EventListener* listener, std::unique_ptr<EventFilter> filter);
+    void SubscribeToMultipleWithFilter(const std::vector<EventType>& types, EventListener* listener, std::unique_ptr<EventFilter> filter);
 
-    void subscribeToMultiple(const std::vector<EventType>& types, EventListener* listener);
+    void SubscribeToMultiple(const std::vector<EventType>& types, EventListener* listener);
 
 private:
     std::unordered_map<EventType, std::unordered_set<EventListener*>> listeners_;
@@ -42,9 +44,9 @@ private:
     mutable std::mutex listenersMutex_;
     mutable std::mutex queueMutex_;
     
-    void processEventsByPriority();
-    void processEvent(const std::shared_ptr<Event>& event); 
-    std::vector<std::shared_ptr<Event>> getAndSortEvents();
+    void ProcessEventsByPriority();
+    void ProcessEvent(const std::shared_ptr<Event>& event); 
+    std::vector<std::shared_ptr<Event>> GetAndSortEvents();
 
     std::unordered_map<EventListener*, std::unique_ptr<EventFilter>> filters_;
     mutable std::mutex filtersMutex_;

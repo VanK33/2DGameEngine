@@ -43,7 +43,7 @@ void SandboxApp::Run() {
         lastTime = currentTime;
 
         inputManager_.Update();
-        eventManager_.update();
+        eventManager_.Update();
         sceneManager_.Update(deltaTime);
 
         renderer_.BeginFrame();

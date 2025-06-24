@@ -163,7 +163,7 @@ void CollisionSystem::PublishCollisionEvent(EntityID entityA, EntityID entityB,
     );
     
     // Publish the event
-    eventManager_->publish(event);
+    eventManager_->Publish(event);
 }
 
 bool CollisionSystem::canLayersCollide(const std::string& layerA, const std::string& layerB) const {

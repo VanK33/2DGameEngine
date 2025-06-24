@@ -4,14 +4,14 @@
 
 namespace engine::event {
 
-void EventManager::subscribe(EventType type, EventListener* listener) {
+void EventManager::Subscribe(EventType type, EventListener* listener) {
     std::lock_guard<std::mutex> lock(listenersMutex_);
     listeners_[type].insert(listener);
     std::cout << "[EventManager] Subscribed listener for type " << (int)type 
               << ", total listeners: " << listeners_[type].size() << std::endl;
 }
 
-void EventManager::unsubscribe(EventType type, EventListener* listener) {
+void EventManager::Unsubscribe(EventType type, EventListener* listener) {
     std::lock_guard<std::mutex> lock(listenersMutex_);
     auto it = listeners_.find(type);
     if (it != listeners_.end()) {
@@ -22,18 +22,18 @@ void EventManager::unsubscribe(EventType type, EventListener* listener) {
     }
 }
 
-void EventManager::publish(std::shared_ptr<Event> event) {
+void EventManager::Publish(std::shared_ptr<Event> event) {
     std::lock_guard<std::mutex> lock(queueMutex_);
     eventQueue_.push(event);
     std::cout << "[EventManager] Published event type " << (int)event->getType() 
               << ", queue size: " << eventQueue_.size() << std::endl;
 }
 
-void EventManager::update() {
-    processEventsByPriority();
+void EventManager::Update() {
+    ProcessEventsByPriority();
 }
 
-void EventManager::clear() {
+void EventManager::Clear() {
     {
         std::lock_guard<std::mutex> lock1(queueMutex_);
         while (!eventQueue_.empty()) {
@@ -52,19 +52,19 @@ void EventManager::clear() {
     }
 }
 
-size_t EventManager::getListenerCount(EventType type) const {
+size_t EventManager::GetListenerCount(EventType type) const {
     std::lock_guard<std::mutex> lock(listenersMutex_);
     auto it = listeners_.find(type);
     return (it != listeners_.end()) ? it->second.size() : 0;
 }
 
-size_t EventManager::getQueueSize() const {
+size_t EventManager::GetQueueSize() const {
     std::lock_guard<std::mutex> lock(queueMutex_);
     return eventQueue_.size();
 }
 
 
-std::vector<std::shared_ptr<Event>> EventManager::getAndSortEvents() {
+std::vector<std::shared_ptr<Event>> EventManager::GetAndSortEvents() {
     // Safe Queue duplication
     std::queue<std::shared_ptr<Event>> queueCopy;
     {
@@ -88,23 +88,23 @@ std::vector<std::shared_ptr<Event>> EventManager::getAndSortEvents() {
     return events;
 }
 
-void EventManager::publishWithPriority(std::shared_ptr<Event> event, EventPriority priority) {
+void EventManager::PublishWithPriority(std::shared_ptr<Event> event, EventPriority priority) {
     if (event) {
         event->setPriority(priority);
     }
-    publish(event);
+    Publish(event);
 }
 
-void EventManager::processEventsByPriority() {
-    auto events = getAndSortEvents();
+void EventManager::ProcessEventsByPriority() {
+    auto events = GetAndSortEvents();
     
     
     for (const auto& event : events) {
-        processEvent(event);
+        ProcessEvent(event);
     }
 }
 
-void EventManager::processEvent(const std::shared_ptr<Event>& event) {
+void EventManager::ProcessEvent(const std::shared_ptr<Event>& event) {
     // Safe listener copy
     std::unordered_set<EventListener*> listenersCopy;
     {
@@ -153,7 +153,7 @@ void EventManager::processEvent(const std::shared_ptr<Event>& event) {
     }
 }
 
-void EventManager::subscribeWithFilter(EventType type, EventListener* listener, 
+void EventManager::SubscribeWithFilter(EventType type, EventListener* listener, 
                                      std::unique_ptr<EventFilter> filter) {
     if (!listener) {
         std::cout << "[EventManager] Warning: Attempting to subscribe null listener!" << std::endl;
@@ -161,7 +161,7 @@ void EventManager::subscribeWithFilter(EventType type, EventListener* listener,
     }
     
     // 订阅事件
-    subscribe(type, listener);
+    Subscribe(type, listener);
     
     // 存储过滤器
     if (filter) {
@@ -171,24 +171,24 @@ void EventManager::subscribeWithFilter(EventType type, EventListener* listener,
     }
 }
 
-void EventManager::subscribeToMultiple(const std::vector<EventType>& types, EventListener* listener) {
+void EventManager::SubscribeToMultiple(const std::vector<EventType>& types, EventListener* listener) {
     if (!listener) {
         std::cout << "[EventManager] Warning: Attempting to subscribe null listener!" << std::endl;
         return;
     }
 
     for (auto type : types) {
-        subscribe(type, listener);
+        Subscribe(type, listener);
     }
 }
 
-void EventManager::subscribeToMultipleWithFilter(const std::vector<EventType>& types, EventListener* listener, std::unique_ptr<EventFilter> filter) {
+void EventManager::SubscribeToMultipleWithFilter(const std::vector<EventType>& types, EventListener* listener, std::unique_ptr<EventFilter> filter) {
     if (!listener) {
         std::cout << "[EventManager] Warning: Attempting to subscribe null listener!" << std::endl;
         return;
     }
 
-    subscribeToMultiple(types, listener);
+    SubscribeToMultiple(types, listener);
 
     if (filter) {
         std::lock_guard<std::mutex> lock(filtersMutex_);

@@ -22,7 +22,7 @@ public:
 
     EventType getType() const { return type; }
     std::shared_ptr<void> getData() const { return data; }
-    long getTimestamp() const { return timestamp_; }
+    uint64_t getTimestamp() const { return timestamp_; }
 
     EventPriority getPriority() const { return priority_; }
     void setPriority(EventPriority priority) { priority_ = priority; }
@@ -30,10 +30,10 @@ public:
 private:
     EventType type;
     std::shared_ptr<void> data;
-    long timestamp_;
+    uint64_t timestamp_;
     EventPriority priority_;
 
-    static long currentTimeMillis() {
+    static uint64_t currentTimeMillis() {
         using namespace std::chrono;
         return duration_cast<milliseconds>(
             system_clock::now().time_since_epoch()

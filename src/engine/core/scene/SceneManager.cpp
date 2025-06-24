@@ -12,10 +12,6 @@ SceneManager::~SceneManager() {
     UnloadScene();
 }
 
-void SceneManager::SetWorld(ECS::World* world) {
-    world_ = world;
-}
-
 void SceneManager::RegisterScene(const std::string& sceneId, SceneFactory factory) {
     sceneFactories_[sceneId] = factory;
     std::cout << "[SceneManager] Registered scene: " << sceneId << std::endl;
@@ -121,7 +117,7 @@ void SceneManager::onEvent(const std::shared_ptr<engine::event::Event>& event) {
 void SceneManager::SetEventManager(engine::event::EventManager* manager) {
     eventManager_ = manager;
     if (eventManager_) {
-        eventManager_->subscribe(engine::event::EventType::SCENE_CHANGE, this);
+        eventManager_->Subscribe(engine::event::EventType::SCENE_CHANGE, this);
     }
 }
 

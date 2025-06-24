@@ -8,15 +8,6 @@
 
 namespace engine::event {
 
-enum class PhysicsEventType {
-    COLLISION_STARTED,
-    COLLISION_ENDED,
-    TRIGGER_ENTERED,
-    TRIGGER_EXITED,
-    ENTITY_MOVED,
-    ENTITY_STOPPED
-};
-
 struct CollisionData {
     uint32_t entityA, entityB;
     SDL_FRect overlap;
