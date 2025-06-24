@@ -3,6 +3,7 @@
 #include "InputManager.hpp"
 #include <chrono>
 #include <iostream>
+#include <cstdlib>  // for abs
 
 namespace engine::input {
 
@@ -14,39 +15,54 @@ void InputManager::SetEventManager(engine::event::EventManager* eventManager) {
 void InputManager::HandleEvent(const SDL_Event& event) {
     switch (event.type) {
         case SDL_EVENT_KEY_DOWN:
-            if (!event.key.repeat) {
-                keyDown_[event.key.key] = true;
-                keyHeld_[event.key.key] = true;
-                PublishKeyEvent(engine::event::EventType::KEY_DOWN, event);
-            }
+            keyDown_[event.key.key] = true;
+            keyHeld_[event.key.key] = true;
+            PublishKeyEvent(engine::event::EventType::KEY_DOWN, event);
             break;
-
         case SDL_EVENT_KEY_UP:
             keyHeld_[event.key.key] = false;
             keyUp_[event.key.key] = true;
             PublishKeyEvent(engine::event::EventType::KEY_UP, event);
             break;
-
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             mouseButtonDown_[event.button.button] = true;
             PublishMouseButtonEvent(engine::event::EventType::MOUSE_CLICK, event);
             break;
-
         case SDL_EVENT_MOUSE_BUTTON_UP:
             mouseButtonUp_[event.button.button] = true;
-            // 可以发布 MOUSE_BUTTON_UP 事件（如果EventType中有的话）
             break;
-
         case SDL_EVENT_MOUSE_MOTION:
             mouseX_ = event.motion.x;
             mouseY_ = event.motion.y;
             PublishMouseMotionEvent(event);
             break;
-
+        case SDL_EVENT_FINGER_DOWN:
+            std::cout << "[InputManager] Finger down event detected" << std::endl;
+            {
+                SDL_Event mouseEvent = {};
+                mouseEvent.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+                mouseEvent.button.x = static_cast<int>(event.tfinger.x * 800);
+                mouseEvent.button.y = static_cast<int>(event.tfinger.y * 600);
+                mouseEvent.button.button = SDL_BUTTON_LEFT;
+                PublishMouseButtonEvent(engine::event::EventType::MOUSE_CLICK, mouseEvent);
+            }
+            break;
+        case SDL_EVENT_FINGER_MOTION:
+            std::cout << "[InputManager] Finger motion event detected" << std::endl;
+            {
+                SDL_Event mouseEvent = {};
+                mouseEvent.type = SDL_EVENT_MOUSE_MOTION;
+                mouseEvent.motion.x = static_cast<int>(event.tfinger.x * 800);
+                mouseEvent.motion.y = static_cast<int>(event.tfinger.y * 600);
+                mouseEvent.motion.xrel = static_cast<int>(event.tfinger.dx * 800);
+                mouseEvent.motion.yrel = static_cast<int>(event.tfinger.dy * 600);
+                PublishMouseMotionEvent(mouseEvent);
+            }
+            break;
         case SDL_EVENT_MOUSE_WHEEL:
             PublishMouseWheelEvent(event);
+            std::cout << "[InputManager] Publishing MOUSE_WHEEL event" << std::endl;
             break;
-
         default:
             break;
     }
@@ -59,7 +75,6 @@ void InputManager::Update() {
     mouseButtonUp_.clear();
 }
 
-// 保持向后兼容的查询接口
 bool InputManager::IsKeyDown(SDL_Keycode key) const {
     auto it = keyDown_.find(key);
     return it != keyDown_.end() && it->second;
@@ -75,7 +90,6 @@ bool InputManager::IsKeyUp(SDL_Keycode key) const {
     return it != keyUp_.end() && it->second;
 }
 
-// 新增鼠标查询接口
 bool InputManager::IsMouseButtonDown(Uint8 button) const {
     auto it = mouseButtonDown_.find(button);
     return it != mouseButtonDown_.end() && it->second;
@@ -91,7 +105,6 @@ void InputManager::GetMousePosition(int& x, int& y) const {
     y = mouseY_;
 }
 
-// 事件发布辅助方法
 void InputManager::PublishKeyEvent(engine::event::EventType type, const SDL_Event& event) {
     if (!eventManager_) return;
 

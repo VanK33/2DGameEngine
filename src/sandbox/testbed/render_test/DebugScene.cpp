@@ -50,7 +50,7 @@ void DebugScene::Unload() {
     resourceManager_.PrintCacheStatus(); // debugger
 }
 
-void DebugScene::Update(float /*deltaTime*/) {
+void DebugScene::Update(float deltaTime) {
     if (!textures_.empty() && inputManager_) {
         if (inputManager_->IsKeyDown(SDLK_RIGHT)) {
             currentTextureIndex_ = (currentTextureIndex_ + 1) % textures_.size();
@@ -60,6 +60,50 @@ void DebugScene::Update(float /*deltaTime*/) {
         if (inputManager_->IsKeyDown(SDLK_LEFT)) {
             currentTextureIndex_ = (currentTextureIndex_ - 1 + textures_.size()) % textures_.size();
             SDL_Log("[DebugScene] Switched to texture index: %d", currentTextureIndex_);
+        }
+    }
+
+    if (inputTestState_.isTestingKeyboard) {
+        inputTestState_.keyboardTestTimer += deltaTime;
+        if (inputTestState_.keyboardTestTimer >= 5.0f) {
+            inputTestState_.isTestingKeyboard = false;
+            if (eventManager_) {
+                eventManager_->Unsubscribe(engine::event::EventType::KEY_DOWN, keyboardListener_.get());
+            }
+            
+            inputTestState_.keyboardEventCount = keyboardListener_ ? keyboardListener_->eventCount : 0;
+            bool passed = inputTestState_.keyboardEventCount > 0;
+            inputTestState_.keyboardTestPassed = passed;
+            
+            inputTestState_.testLog.push_back(
+                "Keyboard Test: " + std::string(passed ? "PASSED" : "FAILED") + 
+                " (Events: " + std::to_string(inputTestState_.keyboardEventCount) + ")"
+            );
+            
+            StartMouseTest();
+        }
+    }
+    
+    if (inputTestState_.isTestingMouse) {
+        inputTestState_.mouseTestTimer += deltaTime;
+        if (inputTestState_.mouseTestTimer >= 5.0f) {
+            inputTestState_.isTestingMouse = false;
+            if (eventManager_) {
+                eventManager_->Unsubscribe(engine::event::EventType::MOUSE_MOVE, mouseListener_.get());
+                eventManager_->Unsubscribe(engine::event::EventType::MOUSE_CLICK, mouseListener_.get());
+            }
+            
+            inputTestState_.mouseEventCount = mouseListener_ ? mouseListener_->eventCount : 0;
+            bool passed = inputTestState_.mouseEventCount > 0;
+            inputTestState_.mouseTestPassed = passed;
+            
+            inputTestState_.testLog.push_back(
+                "Mouse Test: " + std::string(passed ? "PASSED" : "FAILED") + 
+                " (Events: " + std::to_string(inputTestState_.mouseEventCount) + ")"
+            );
+            
+            TestEventIntegration();
+            DisplayInputTestResults();
         }
     }
 }
@@ -99,15 +143,33 @@ void DebugScene::HandleEvent(const SDL_Event& event) {
                     std::cout << "Press 1 to start ECS tests.\n";
                 }
                 break;
-            case SDLK_SPACE:
-                if (ecsTestMode_) {
-                    currentTest_++;
-                    RunECSTests();
+            case SDLK_3:
+                if (!inputTestMode_) {
+                    inputTestMode_ = true;
+                    std::cout << "\n[DebugScene] Input Test Mode STARTED\n";
+                    std::cout << "Press SPACE to run tests, 3 to exit test mode\n";
+                    inputTestState_ = InputTestState();
                 } else {
-                    // 重新开始ECS测试
-                    std::cout << "\n[DebugScene] Restarting ECS Tests...\n";
-                    ecsTestMode_ = true;
-                    currentTest_ = 0;
+                    inputTestMode_ = false;
+                    inputTestState_.isTestingKeyboard = false;
+                    inputTestState_.isTestingMouse = false;
+                    if (eventManager_) {
+                        if (keyboardListener_) {
+                            eventManager_->Unsubscribe(engine::event::EventType::KEY_DOWN, keyboardListener_.get());
+                        }
+                        if (mouseListener_) {
+                            eventManager_->Unsubscribe(engine::event::EventType::MOUSE_MOVE, mouseListener_.get());
+                            eventManager_->Unsubscribe(engine::event::EventType::MOUSE_CLICK, mouseListener_.get());
+                        }
+                    }
+                    std::cout << "\n[DebugScene] Input Test Mode EXITED\n";
+                }
+                break;
+            case SDLK_SPACE:
+                if (inputTestMode_ && !inputTestState_.isTestingKeyboard && !inputTestState_.isTestingMouse) {
+                    RunInputTests();
+                } else if (ecsTestMode_) {
+                    currentTest_++;
                     RunECSTests();
                 }
                 break;
@@ -246,6 +308,80 @@ void DebugScene::DisplayECSTestResults() {
     } else {
         std::cout << "Press SPACE to restart ECS tests, 2 to confirm exit, 1 to restart\n";
     }
+}
+
+// ************** Input Tests **************
+
+void DebugScene::RunInputTests() {
+    if (!inputManager_) {
+        std::cout << "Error: InputManager not set!\n";
+        return;
+    }
+    
+    // 清除之前的测试结果
+    inputTestState_.testLog.clear();
+    
+    // 开始键盘测试
+    StartKeyboardTest();
+}
+
+void DebugScene::StartKeyboardTest() {
+    std::cout << "\n=== Testing Keyboard Input ===\n";
+    std::cout << "Press any key (5 seconds)...\n";
+    
+    if (!keyboardListener_) {
+        keyboardListener_ = std::make_shared<KeyboardTestListener>();
+    }
+    keyboardListener_->eventCount = 0;
+    
+    if (eventManager_) {
+        eventManager_->Subscribe(engine::event::EventType::KEY_DOWN, keyboardListener_.get());
+    }
+    
+    // 重置并启动测试计时器
+    inputTestState_.keyboardTestTimer = 0.0f;
+    inputTestState_.isTestingKeyboard = true;
+}
+
+void DebugScene::StartMouseTest() {
+    std::cout << "\n=== Testing Mouse Input ===\n";
+    std::cout << "Move mouse and click (5 seconds)...\n";
+    
+    if (!mouseListener_) {
+        mouseListener_ = std::make_shared<MouseTestListener>();
+    }
+    mouseListener_->eventCount = 0;
+    
+    if (eventManager_) {
+        eventManager_->Subscribe(engine::event::EventType::MOUSE_MOVE, mouseListener_.get());
+        eventManager_->Subscribe(engine::event::EventType::MOUSE_CLICK, mouseListener_.get());
+    }
+    
+    // 重置并启动测试计时器
+    inputTestState_.mouseTestTimer = 0.0f;
+    inputTestState_.isTestingMouse = true;
+}
+
+void DebugScene::TestEventIntegration() {
+    std::cout << "\n=== Testing Event Integration ===\n";
+    
+    bool isConnected = inputManager_ && eventManager_;
+    inputTestState_.eventIntegrationPassed = isConnected;
+    inputTestState_.testLog.push_back(
+        "Event Integration: " + std::string(isConnected ? "PASSED" : "FAILED")
+    );
+}
+
+void DebugScene::DisplayInputTestResults() {
+    std::cout << "\n=== Input Test Results ===\n";
+    for (const auto& log : inputTestState_.testLog) {
+        std::cout << log << "\n";
+    }
+    std::cout << "\nOverall Status: " 
+              << (inputTestState_.keyboardTestPassed && 
+                  inputTestState_.mouseTestPassed && 
+                  inputTestState_.eventIntegrationPassed ? "PASSED" : "FAILED")
+              << "\n";
 }
 
 }  // namespace scene

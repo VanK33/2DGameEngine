@@ -24,9 +24,9 @@ void EventManager::Unsubscribe(EventType type, EventListener* listener) {
 
 void EventManager::Publish(std::shared_ptr<Event> event) {
     std::lock_guard<std::mutex> lock(queueMutex_);
-    eventQueue_.push(event);
-    std::cout << "[EventManager] Published event type " << (int)event->getType() 
-              << ", queue size: " << eventQueue_.size() << std::endl;
+    if (event) {
+        eventQueue_.push(event);
+    }
 }
 
 void EventManager::Update() {
@@ -98,7 +98,6 @@ void EventManager::PublishWithPriority(std::shared_ptr<Event> event, EventPriori
 void EventManager::ProcessEventsByPriority() {
     auto events = GetAndSortEvents();
     
-    
     for (const auto& event : events) {
         ProcessEvent(event);
     }
@@ -112,19 +111,12 @@ void EventManager::ProcessEvent(const std::shared_ptr<Event>& event) {
         auto it = listeners_.find(event->getType());
         if (it != listeners_.end()) {
             listenersCopy = it->second;
-            std::cout << "[EventManager] Found " << listenersCopy.size() 
-                      << " listeners for event type " << (int)event->getType() 
-                      << " (priority: " << (int)event->getPriority() << ")" << std::endl;
-        } else {
-            std::cout << "[EventManager] No listeners found for event type " 
-                      << (int)event->getType() << std::endl;
         }
     }
     
     // Safe event dispatch
     for (auto* listener : listenersCopy) {
         if (!listener) {
-            std::cout << "[EventManager] Warning: null listener!" << std::endl;
             continue;
         }
 
@@ -134,15 +126,11 @@ void EventManager::ProcessEvent(const std::shared_ptr<Event>& event) {
             auto filterIt = filters_.find(listener);
             if (filterIt != filters_.end() && filterIt->second) {
                 shouldProcess = filterIt->second->ShouldProcess(event);
-                if (!shouldProcess) {
-                    std::cout << "[EventManager] Event filtered out for listener" << std::endl;
-                }
             }
         }
 
         if (shouldProcess) {
             try {
-                std::cout << "[EventManager] Dispatching to listener..." << std::endl;
                 listener->onEvent(event);
             } catch (const std::exception& e) {
                 std::cerr << "[EventManager] Listener threw exception: " << e.what() << std::endl;

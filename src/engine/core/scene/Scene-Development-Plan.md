@@ -149,6 +149,38 @@ public:
 
 **Status:** 📋 **PLANNED** - After configuration system
 
+### 2.3 Input System Configuration - **LOW** (New Addition)
+**Files to Create/Modify:**
+- Extend `InputManager.hpp`
+- Add to `Scene.hpp`
+
+**Features (Future Implementation):**
+```cpp
+class InputManager {
+public:
+    enum class KeyBehavior {
+        SINGLE_PRESS,    // 单次按下触发（如跳跃）
+        CONTINUOUS,      // 持续触发（如移动）
+        TOGGLE          // 切换状态（如切换武器）
+    };
+
+    // 将在未来实现的接口
+    void SetKeyBehavior(SDL_Keycode key, KeyBehavior behavior);
+    void ConfigureKeyBehaviors(const std::unordered_map<SDL_Keycode, KeyBehavior>& behaviors);
+};
+
+class Scene {
+public:
+    // 将在未来实现的虚函数
+    virtual void ConfigureInput(InputManager& inputManager) {
+        // 默认实现：使用基础按键行为
+    }
+};
+```
+
+**Why Important:** Support different input requirements for various game types (top-down vs platformer).
+**Status:** 📋 **PLANNED** - Low priority, implement after core scene features.
+
 ---
 
 ## ⚡ Phase 3: Performance & Optimization (MEDIUM)
@@ -246,6 +278,7 @@ private:
 1. **Scene Configuration System** - Standardized scene setup
 2. **Scene State Persistence** - Entity and data persistence
 3. **Integration Testing** - Test with different scene types
+4. **Input System Configuration** - Game-specific input behavior (LOW priority)
 
 ### **Phase 3: Performance & Optimization (MEDIUM)**
 1. **Scene Performance Monitoring** - Add profiling capabilities
@@ -276,6 +309,7 @@ private:
 ### ** Next Steps:**
 - **Scene Configuration**: Standardized scene setup for different game states
 - **Scene State Persistence**: Preserve important entities between scene transitions
+- **Scene Input Configuration**: Support different input configurations
 - **Performance Monitoring**: Add profiling capabilities for optimization
 
 ---
