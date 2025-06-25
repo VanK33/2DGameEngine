@@ -63,6 +63,70 @@ private:
     void TestWorldIntegration();
     void TestSystemManager();
     void DisplayECSTestResults();
+
+    // Input tests
+    bool inputTestMode_ = false;
+
+    // 输入测试状态
+    struct InputTestState {
+        bool isTestingKeyboard = false;
+        bool isTestingMouse = false;
+        bool keyboardTestPassed = false;
+        bool mouseTestPassed = false;
+        bool eventIntegrationPassed = false;
+        float keyboardTestTimer = 0.0f;
+        float mouseTestTimer = 0.0f;
+        int keyboardEventCount = 0;
+        int mouseEventCount = 0;
+        std::vector<std::string> testLog;
+        bool combinedKeyTestPassed = false;
+        bool mouseHeldTestPassed = false;
+        bool mouseDeltaTestPassed = false;
+        glm::vec2 lastMousePos{0.0f};
+        float totalMouseMovement = 0.0f;
+    };
+
+    // 输入测试监听器类定义
+    class KeyboardTestListener : public engine::event::EventListener {
+    public:
+        DebugScene* parentScene = nullptr;
+        int eventCount = 0;
+        void onEvent(const std::shared_ptr<engine::event::Event>& event) override {
+            if (event->getType() == engine::event::EventType::KEY_DOWN) {
+                eventCount++;
+            }
+        }
+    };
+
+    class MouseTestListener : public engine::event::EventListener {
+    public:
+        DebugScene* parentScene = nullptr;
+        int eventCount = 0;
+        void onEvent(const std::shared_ptr<engine::event::Event>& event) override {
+            if (event->getType() == engine::event::EventType::MOUSE_MOVE || 
+                event->getType() == engine::event::EventType::MOUSE_CLICK) {
+                eventCount++;
+            }
+        }
+    };
+
+    // 监听器成员
+    std::shared_ptr<KeyboardTestListener> keyboardListener_;
+    std::shared_ptr<MouseTestListener> mouseListener_;
+
+    // 输入测试状态实例
+    InputTestState inputTestState_;
+
+    // 测试辅助方法
+    void StartKeyboardTest();
+    void StartMouseTest();
+    void RunInputTests();
+    void TestKeyboardInput();
+    void TestMouseInput();
+    void TestEventIntegration();
+    void DisplayInputTestResults();
+
+    void TestMouseDelta();
 };
 
 }  // namespace scene
