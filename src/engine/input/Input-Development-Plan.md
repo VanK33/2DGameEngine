@@ -6,7 +6,7 @@ This document outlines the **essential features** needed for the Input Managemen
 
 **Focus: Create a flexible, event-driven input system that supports various game types while maintaining clean integration with the engine's event system.**
 
-**Status: Phase 1 COMPLETED ✅, Phase 2 PLANNED**
+**Status: Phase 1 COMPLETED ✅, Phase 1.5 COMPLETED ✅, Phase 2 PLANNED**
 
 ---
 
@@ -19,6 +19,10 @@ This document outlines the **essential features** needed for the Input Managemen
 - Mouse position and button tracking
 - Event publishing for basic input events
 - Thread-safe event queuing
+- Mouse button held state tracking
+- Mouse delta movement tracking
+- Combined key query support
+- Convenient mouse position interfaces
 
 ### ❌ **Critical Gaps (Remaining Work)**
 - No input mapping/rebinding system - **PLANNED**
@@ -79,6 +83,55 @@ private:
 };
 ```
 
+## 🌟 Phase 1.5: Enhanced Input Capabilities - COMPLETED ✅
+
+### ✅ **1.5.1 Extended Mouse Support**
+**Features Implemented:**
+```cpp
+// Convenient data structures
+struct MousePosition { 
+    int x, y; 
+    operator glm::vec2() const;
+};
+
+struct MouseDelta { 
+    int dx, dy; 
+    operator glm::vec2() const;
+};
+
+class InputManager {
+public:
+    // Enhanced mouse interfaces
+    bool IsMouseButtonHeld(Uint8 button) const;
+    MousePosition GetMousePosition() const;
+    MouseDelta GetMouseDelta() const;
+    void GetMouseDelta(int& dx, int& dy) const;
+
+private:
+    std::unordered_map<Uint8, bool> mouseButtonHeld_;
+    int mouseDeltaX_ = 0, mouseDeltaY_ = 0;
+};
+```
+
+### ✅ **1.5.2 Combined Input Queries**
+**Features Implemented:**
+```cpp
+class InputManager {
+public:
+    // Key combinations
+    bool IsAnyKeyDown(std::span<const SDL_Keycode> keys) const;
+    bool IsAnyKeyHeld(std::span<const SDL_Keycode> keys) const;
+    bool IsAnyKeyUp(std::span<const SDL_Keycode> keys) const;
+    bool IsAllKeysDown(std::span<const SDL_Keycode> keys) const;
+    bool IsAllKeysHeld(std::span<const SDL_Keycode> keys) const;
+
+    // Mouse button combinations
+    bool IsAnyMouseButtonDown(std::span<const Uint8> buttons) const;
+    bool IsAnyMouseButtonHeld(std::span<const Uint8> buttons) const;
+    bool IsAnyMouseButtonUp(std::span<const Uint8> buttons) const;
+};
+```
+
 ---
 
 ## 🎨 Phase 2: Input Configuration & Mapping (HIGH)
@@ -113,7 +166,7 @@ public:
 };
 ```
 
-### 2.2 Input Device Abstraction - **MUST HAVE** (New)
+### 2.2 Input Device Abstraction - **MUST HAVE**
 **Files to Create:**
 - `InputDevice.hpp`
 - `KeyboardDevice.hpp`
@@ -121,47 +174,28 @@ public:
 
 **Features (Minimal):**
 ```cpp
-// 输入设备抽象基类
 class InputDevice {
 public:
     virtual ~InputDevice() = default;
-    
-    // 基础接口
     virtual void Update() = 0;
     virtual void HandleEvent(const SDL_Event& event) = 0;
     virtual bool IsActive() const = 0;
-    
-    // 设备类型识别
     virtual InputDeviceType GetType() const = 0;
-    
-    // 扩展接口
     virtual void Configure(const InputDeviceConfig& config) = 0;
 };
 
-// 键盘设备实现
 class KeyboardDevice : public InputDevice {
 public:
     bool IsButtonPressed(SDL_Keycode key) const;
     bool IsButtonHeld(SDL_Keycode key) const;
     bool IsButtonReleased(SDL_Keycode key) const;
-    
-    // 实现基类接口
-    void Update() override;
-    void HandleEvent(const SDL_Event& event) override;
-    InputDeviceType GetType() const override { return InputDeviceType::Keyboard; }
 };
 
-// 鼠标设备实现
 class MouseDevice : public InputDevice {
 public:
     bool IsButtonPressed(uint8_t button) const;
     void GetPosition(int& x, int& y) const;
     void GetMotion(int& dx, int& dy) const;
-    
-    // 实现基类接口
-    void Update() override;
-    void HandleEvent(const SDL_Event& event) override;
-    InputDeviceType GetType() const override { return InputDeviceType::Mouse; }
 };
 ```
 
@@ -192,20 +226,13 @@ public:
 
 **Features (Minimal):**
 ```cpp
-// Gamepad 设备实现
 class GamepadDevice : public InputDevice {
 public:
     bool Initialize(int deviceIndex);
     bool IsButtonPressed(GamepadButton button) const;
     float GetAxisValue(GamepadAxis axis) const;
-    
-    // 实现基类接口
-    void Update() override;
-    void HandleEvent(const SDL_Event& event) override;
-    InputDeviceType GetType() const override { return InputDeviceType::Gamepad; }
 };
 
-// 输入设备工厂
 class InputDeviceFactory {
 public:
     static std::unique_ptr<InputDevice> CreateDevice(InputDeviceType type);
@@ -233,3 +260,50 @@ public:
 ### 3.3 Input Debug Tools - **LOW**
 **Files to Create:**
 - `InputDebugger.hpp`
+
+---
+
+## 🧪 Testing Strategy
+
+### Unit Tests
+1. **Basic Input States**
+   - Key states (down, held, up)
+   - Mouse button states
+   - Mouse position tracking
+
+2. **Enhanced Features**
+   - Mouse held state transitions
+   - Mouse delta calculations
+   - Combined key queries (Any/All)
+   - Input device state management
+
+3. **Event Integration**
+   - Event publishing
+   - Event subscription
+   - Multi-frame state consistency
+
+### Integration Tests
+- Debug scene test suite
+- Cross-component interaction tests
+- Performance benchmarks
+
+---
+
+## 📊 Design Principles
+
+### Engine Responsibilities
+- Provide basic input query mechanisms
+- Maintain input state management
+- Publish standardized input events
+- Support combined input queries
+
+### Game Responsibilities
+- Define action meanings
+- Configure key bindings
+- Implement game-specific input logic
+- Handle input responses
+
+### Engine Limitations
+- No game-specific action names
+- No action mapping system
+- No preset game-type configurations

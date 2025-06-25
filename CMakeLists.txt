@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(2DEngine LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
@@ -26,14 +27,23 @@ set(SDL3IMAGE_SDL3_REQUIRED ON)
 set(SDL3IMAGE_INSTALL OFF)
 FetchContent_MakeAvailable(SDL3_image)
 
+# GLM
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.1
+)
+FetchContent_MakeAvailable(glm)
+
 # Collect sources
 file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-add_executable(2DEngine ${ENGINE_SOURCES})
+add_executable(${PROJECT_NAME} ${ENGINE_SOURCES})
 
-target_include_directories(2DEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-target_link_libraries(2DEngine PRIVATE SDL3::SDL3 SDL3_image::SDL3_image)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    SDL3::SDL3 
+    SDL3_image::SDL3_image
+    glm
+)

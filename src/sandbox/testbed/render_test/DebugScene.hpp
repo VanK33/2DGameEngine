@@ -79,6 +79,11 @@ private:
         int keyboardEventCount = 0;
         int mouseEventCount = 0;
         std::vector<std::string> testLog;
+        bool combinedKeyTestPassed = false;
+        bool mouseHeldTestPassed = false;
+        bool mouseDeltaTestPassed = false;
+        glm::vec2 lastMousePos{0.0f};
+        float totalMouseMovement = 0.0f;
     };
 
     // 输入测试监听器类定义
@@ -120,6 +125,8 @@ private:
     void TestMouseInput();
     void TestEventIntegration();
     void DisplayInputTestResults();
+
+    void TestMouseDelta();
 };
 
 }  // namespace scene

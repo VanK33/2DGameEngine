@@ -63,47 +63,38 @@ void DebugScene::Update(float deltaTime) {
         }
     }
 
-    if (inputTestState_.isTestingKeyboard) {
-        inputTestState_.keyboardTestTimer += deltaTime;
-        if (inputTestState_.keyboardTestTimer >= 5.0f) {
-            inputTestState_.isTestingKeyboard = false;
-            if (eventManager_) {
-                eventManager_->Unsubscribe(engine::event::EventType::KEY_DOWN, keyboardListener_.get());
+    if (inputTestMode_) {
+        static bool keyboardTestStarted = false;
+        static bool mouseTestStarted = false;
+
+        if (inputTestState_.isTestingKeyboard) {
+            if (!keyboardTestStarted) {
+                std::cout << "\n=== Testing Keyboard Input ===\n";
+                std::cout << "Press any keys (WASD/Arrows recommended) for 5 seconds...\n";
+                keyboardTestStarted = true;
             }
-            
-            inputTestState_.keyboardEventCount = keyboardListener_ ? keyboardListener_->eventCount : 0;
-            bool passed = inputTestState_.keyboardEventCount > 0;
-            inputTestState_.keyboardTestPassed = passed;
-            
-            inputTestState_.testLog.push_back(
-                "Keyboard Test: " + std::string(passed ? "PASSED" : "FAILED") + 
-                " (Events: " + std::to_string(inputTestState_.keyboardEventCount) + ")"
-            );
-            
-            StartMouseTest();
+            TestKeyboardInput();
+            inputTestState_.keyboardTestTimer += deltaTime;
+            if (inputTestState_.keyboardTestTimer >= 5.0f) {
+                inputTestState_.isTestingKeyboard = false;
+                keyboardTestStarted = false;
+                StartMouseTest();
+            }
         }
-    }
-    
-    if (inputTestState_.isTestingMouse) {
-        inputTestState_.mouseTestTimer += deltaTime;
-        if (inputTestState_.mouseTestTimer >= 5.0f) {
-            inputTestState_.isTestingMouse = false;
-            if (eventManager_) {
-                eventManager_->Unsubscribe(engine::event::EventType::MOUSE_MOVE, mouseListener_.get());
-                eventManager_->Unsubscribe(engine::event::EventType::MOUSE_CLICK, mouseListener_.get());
+        else if (inputTestState_.isTestingMouse) {
+            if (!mouseTestStarted) {
+                std::cout << "\n=== Testing Mouse Input ===\n";
+                std::cout << "Move mouse and click buttons for 5 seconds...\n";
+                mouseTestStarted = true;
             }
-            
-            inputTestState_.mouseEventCount = mouseListener_ ? mouseListener_->eventCount : 0;
-            bool passed = inputTestState_.mouseEventCount > 0;
-            inputTestState_.mouseTestPassed = passed;
-            
-            inputTestState_.testLog.push_back(
-                "Mouse Test: " + std::string(passed ? "PASSED" : "FAILED") + 
-                " (Events: " + std::to_string(inputTestState_.mouseEventCount) + ")"
-            );
-            
-            TestEventIntegration();
-            DisplayInputTestResults();
+            TestMouseInput();
+            TestMouseDelta();
+            inputTestState_.mouseTestTimer += deltaTime;
+            if (inputTestState_.mouseTestTimer >= 5.0f) {
+                inputTestState_.isTestingMouse = false;
+                mouseTestStarted = false;
+                DisplayInputTestResults();
+            }
         }
     }
 }
@@ -313,53 +304,121 @@ void DebugScene::DisplayECSTestResults() {
 // ************** Input Tests **************
 
 void DebugScene::RunInputTests() {
-    if (!inputManager_) {
-        std::cout << "Error: InputManager not set!\n";
-        return;
-    }
+    std::cout << "\n[DebugScene] Starting Input Tests...\n";
     
-    // 清除之前的测试结果
-    inputTestState_.testLog.clear();
+    // 重置测试状态
+    inputTestState_ = InputTestState();
     
     // 开始键盘测试
     StartKeyboardTest();
 }
 
-void DebugScene::StartKeyboardTest() {
-    std::cout << "\n=== Testing Keyboard Input ===\n";
-    std::cout << "Press any key (5 seconds)...\n";
-    
-    if (!keyboardListener_) {
-        keyboardListener_ = std::make_shared<KeyboardTestListener>();
+void DebugScene::TestKeyboardInput() {
+    if (!inputManager_) return;
+
+    // 测试基本按键状态
+    bool anyKeyPressed = false;
+    for (const auto& key : {SDLK_W, SDLK_A, SDLK_S, SDLK_D, 
+                           SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT}) {
+        if (inputManager_->IsKeyDown(key) || inputManager_->IsKeyHeld(key)) {
+            anyKeyPressed = true;
+            break;
+        }
     }
-    keyboardListener_->eventCount = 0;
-    
-    if (eventManager_) {
-        eventManager_->Subscribe(engine::event::EventType::KEY_DOWN, keyboardListener_.get());
+
+    // 测试组合键
+    bool leftMove = inputManager_->IsAnyKeyHeld(engine::input::KeyCombos::LEFT_KEYS);
+    bool rightMove = inputManager_->IsAnyKeyHeld(engine::input::KeyCombos::RIGHT_KEYS);
+    bool upMove = inputManager_->IsAnyKeyHeld(engine::input::KeyCombos::UP_KEYS);
+    bool downMove = inputManager_->IsAnyKeyHeld(engine::input::KeyCombos::DOWN_KEYS);
+
+    if (anyKeyPressed || leftMove || rightMove || upMove || downMove) {
+        inputTestState_.keyboardTestPassed = true;
+        if (keyboardListener_) {
+            keyboardListener_->eventCount++;
+        }
     }
-    
-    // 重置并启动测试计时器
-    inputTestState_.keyboardTestTimer = 0.0f;
-    inputTestState_.isTestingKeyboard = true;
+
+#ifdef DEBUG
+    inputManager_->DebugPrintActiveInputs();
+#endif
 }
 
-void DebugScene::StartMouseTest() {
-    std::cout << "\n=== Testing Mouse Input ===\n";
-    std::cout << "Move mouse and click (5 seconds)...\n";
-    
-    if (!mouseListener_) {
-        mouseListener_ = std::make_shared<MouseTestListener>();
+void DebugScene::TestMouseInput() {
+    if (!inputManager_) return;
+
+    // 测试鼠标按键状态
+    bool anyButtonPressed = false;
+    bool anyButtonHeld = false;
+    for (Uint8 button : {SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE}) {
+        if (inputManager_->IsMouseButtonDown(button) || 
+            inputManager_->IsMouseButtonHeld(button)) {
+            anyButtonPressed = true;
+        }
+        if (inputManager_->IsMouseButtonHeld(button)) {
+            anyButtonHeld = true;
+        }
     }
-    mouseListener_->eventCount = 0;
-    
-    if (eventManager_) {
-        eventManager_->Subscribe(engine::event::EventType::MOUSE_MOVE, mouseListener_.get());
-        eventManager_->Subscribe(engine::event::EventType::MOUSE_CLICK, mouseListener_.get());
+
+    // 测试组合鼠标按键
+    const std::array<Uint8, 3> allButtons = {SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE};
+    bool anyButtonCombinedDown = inputManager_->IsAnyMouseButtonDown(allButtons);
+    bool anyButtonCombinedHeld = inputManager_->IsAnyMouseButtonHeld(allButtons);
+    bool anyButtonCombinedUp = inputManager_->IsAnyMouseButtonUp(allButtons);
+
+    // 测试鼠标位置和按键状态
+    auto mousePos = inputManager_->GetMousePosition();
+    if ((mousePos.x != inputTestState_.lastMousePos.x || 
+         mousePos.y != inputTestState_.lastMousePos.y) ||
+        anyButtonHeld || anyButtonCombinedHeld) {
+        inputTestState_.mouseTestPassed = true;
+        if (mouseListener_) {
+            mouseListener_->eventCount++;
+        }
     }
+    inputTestState_.lastMousePos = glm::vec2(mousePos.x, mousePos.y);
+
+#ifdef DEBUG
+    inputManager_->DebugPrintActiveInputs();
+#endif
+}
+
+void DebugScene::TestMouseDelta() {
+    if (!inputManager_) return;
+
+    static float totalMovement = 0.0f;
+    static glm::vec2 lastPos(0.0f);
+    static bool firstFrame = true;
+    static bool hasAnnounced = false;
     
-    // 重置并启动测试计时器
-    inputTestState_.mouseTestTimer = 0.0f;
-    inputTestState_.isTestingMouse = true;
+    // Get current mouse position
+    auto currentPos = inputManager_->GetMousePosition();
+    
+    // Skip first frame to establish initial position
+    if (firstFrame) {
+        lastPos = currentPos;
+        firstFrame = false;
+        return;
+    }
+
+    // Calculate delta
+    glm::vec2 delta = glm::vec2(currentPos) - lastPos;
+    float deltaMagnitude = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+    
+    // Update total movement
+    if (deltaMagnitude > 0.1f) {  // Small threshold to filter out noise
+        totalMovement += deltaMagnitude;
+    }
+
+    // Update last position
+    lastPos = currentPos;
+
+    // Test passes if we've accumulated enough movement
+    if (totalMovement > 20.0f && !hasAnnounced) {
+        inputTestState_.mouseDeltaTestPassed = true;
+        std::cout << "\nMouse Delta Test PASSED!\n";
+        hasAnnounced = true;
+    }
 }
 
 void DebugScene::TestEventIntegration() {
@@ -373,15 +432,58 @@ void DebugScene::TestEventIntegration() {
 }
 
 void DebugScene::DisplayInputTestResults() {
+    // 先进行事件集成测试
+    TestEventIntegration();
+
     std::cout << "\n=== Input Test Results ===\n";
-    for (const auto& log : inputTestState_.testLog) {
-        std::cout << log << "\n";
+    std::cout << "Keyboard Test: " << (inputTestState_.keyboardTestPassed ? "PASSED" : "FAILED") << "\n";
+    std::cout << "Mouse Movement Test: " << (inputTestState_.mouseTestPassed ? "PASSED" : "FAILED") << "\n";
+    std::cout << "Mouse Delta Test: " << (inputTestState_.mouseDeltaTestPassed ? "PASSED" : "FAILED") << "\n";
+    std::cout << "Event Integration: " << (inputTestState_.eventIntegrationPassed ? "PASSED" : "FAILED") << "\n";
+    std::cout << "========================\n";
+
+    // 重置测试模式
+    inputTestMode_ = false;
+    if (eventManager_) {
+        if (keyboardListener_) {
+            eventManager_->Unsubscribe(engine::event::EventType::KEY_DOWN, keyboardListener_.get());
+        }
+        if (mouseListener_) {
+            eventManager_->Unsubscribe(engine::event::EventType::MOUSE_MOVE, mouseListener_.get());
+            eventManager_->Unsubscribe(engine::event::EventType::MOUSE_CLICK, mouseListener_.get());
+        }
     }
-    std::cout << "\nOverall Status: " 
-              << (inputTestState_.keyboardTestPassed && 
-                  inputTestState_.mouseTestPassed && 
-                  inputTestState_.eventIntegrationPassed ? "PASSED" : "FAILED")
-              << "\n";
+}
+
+void DebugScene::StartKeyboardTest() {
+    std::cout << "\nPhase 1: Keyboard Test (5 seconds)\n";
+    std::cout << "Press WASD or Arrow keys to test...\n";
+
+    inputTestState_.isTestingKeyboard = true;
+    inputTestState_.keyboardTestTimer = 0.0f;
+    
+    if (eventManager_) {
+        keyboardListener_ = std::make_shared<KeyboardTestListener>();
+        keyboardListener_->parentScene = this;
+        eventManager_->Subscribe(engine::event::EventType::KEY_DOWN, keyboardListener_.get());
+    }
+}
+
+void DebugScene::StartMouseTest() {
+    std::cout << "\nPhase 2: Mouse Test (5 seconds)\n";
+    std::cout << "Move mouse and click buttons to test...\n";
+
+    inputTestState_.isTestingMouse = true;
+    inputTestState_.mouseTestTimer = 0.0f;
+    inputTestState_.totalMouseMovement = 0.0f;
+    inputTestState_.lastMousePos = glm::vec2(0.0f);
+
+    if (eventManager_) {
+        mouseListener_ = std::make_shared<MouseTestListener>();
+        mouseListener_->parentScene = this;
+        eventManager_->Subscribe(engine::event::EventType::MOUSE_MOVE, mouseListener_.get());
+        eventManager_->Subscribe(engine::event::EventType::MOUSE_CLICK, mouseListener_.get());
+    }
 }
 
 }  // namespace scene

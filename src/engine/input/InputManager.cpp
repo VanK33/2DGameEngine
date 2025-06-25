@@ -4,6 +4,8 @@
 #include <chrono>
 #include <iostream>
 #include <cstdlib>  // for abs
+#include <algorithm> // for std::all_of, std::any_of
+#include <cmath>
 
 namespace engine::input {
 
@@ -26,12 +28,16 @@ void InputManager::HandleEvent(const SDL_Event& event) {
             break;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             mouseButtonDown_[event.button.button] = true;
+            mouseButtonHeld_[event.button.button] = true;
             PublishMouseButtonEvent(engine::event::EventType::MOUSE_CLICK, event);
             break;
         case SDL_EVENT_MOUSE_BUTTON_UP:
+            mouseButtonHeld_[event.button.button] = false;
             mouseButtonUp_[event.button.button] = true;
             break;
         case SDL_EVENT_MOUSE_MOTION:
+            mouseDeltaX_ = event.motion.xrel;
+            mouseDeltaY_ = event.motion.yrel;
             mouseX_ = event.motion.x;
             mouseY_ = event.motion.y;
             PublishMouseMotionEvent(event);
@@ -73,6 +79,9 @@ void InputManager::Update() {
     keyUp_.clear();
     mouseButtonDown_.clear();
     mouseButtonUp_.clear();
+    // Reset mouse delta at the end of Update
+    mouseDeltaX_ = 0;
+    mouseDeltaY_ = 0;
 }
 
 bool InputManager::IsKeyDown(SDL_Keycode key) const {
@@ -104,6 +113,103 @@ void InputManager::GetMousePosition(int& x, int& y) const {
     x = mouseX_;
     y = mouseY_;
 }
+
+bool InputManager::IsAnyKeyDown(std::span<const SDL_Keycode> keys) const {
+    #ifdef DEBUG
+        assert(!keys.empty() && "Warning: Checking empty key combination");
+    #endif
+    if (keys.empty()) return false;
+    return std::any_of(keys.begin(), keys.end(), 
+        [this](SDL_Keycode key) { return IsKeyDown(key); });
+}
+
+bool InputManager::IsAnyKeyHeld(std::span<const SDL_Keycode> keys) const {
+    if (keys.empty()) return false;
+    return std::any_of(keys.begin(), keys.end(), 
+        [this](SDL_Keycode key) { return IsKeyHeld(key); });
+}
+
+bool InputManager::IsAnyKeyUp(std::span<const SDL_Keycode> keys) const {
+    if (keys.empty()) return false;
+    return std::any_of(keys.begin(), keys.end(), 
+        [this](SDL_Keycode key) { return IsKeyUp(key); });
+}
+
+bool InputManager::IsAllKeysDown(std::span<const SDL_Keycode> keys) const {
+    if (keys.empty()) return true;
+    return std::all_of(keys.begin(), keys.end(), 
+        [this](SDL_Keycode key) { return IsKeyDown(key); });
+}
+
+bool InputManager::IsAllKeysHeld(std::span<const SDL_Keycode> keys) const {
+    if (keys.empty()) return true;
+    return std::all_of(keys.begin(), keys.end(), 
+        [this](SDL_Keycode key) { return IsKeyHeld(key); });
+}
+
+bool InputManager::IsMouseButtonHeld(Uint8 button) const {
+    auto it = mouseButtonHeld_.find(button);
+    return it != mouseButtonHeld_.end() && it->second;
+}
+
+bool InputManager::IsAnyMouseButtonDown(std::span<const Uint8> buttons) const {
+    if (buttons.empty()) return false;
+    return std::any_of(buttons.begin(), buttons.end(),
+        [this](Uint8 button) { return IsMouseButtonDown(button); });
+}
+
+bool InputManager::IsAnyMouseButtonHeld(std::span<const Uint8> buttons) const {
+    if (buttons.empty()) return false;
+    return std::any_of(buttons.begin(), buttons.end(),
+        [this](Uint8 button) { return IsMouseButtonHeld(button); });
+}
+
+bool InputManager::IsAnyMouseButtonUp(std::span<const Uint8> buttons) const {
+    if (buttons.empty()) return false;
+    return std::any_of(buttons.begin(), buttons.end(),
+        [this](Uint8 button) { return IsMouseButtonUp(button); });
+}
+
+MousePosition InputManager::GetMousePosition() const {
+    return MousePosition{mouseX_, mouseY_};
+}
+
+MouseDelta InputManager::GetMouseDelta() const {
+    return MouseDelta{mouseDeltaX_, mouseDeltaY_};
+}
+
+void InputManager::GetMouseDelta(int& dx, int& dy) const {
+    dx = mouseDeltaX_;
+    dy = mouseDeltaY_;
+}
+
+glm::vec2 InputManager::GetNormalizedMouseDelta() const {
+    float length = std::sqrt(mouseDeltaX_ * mouseDeltaX_ + mouseDeltaY_ * mouseDeltaY_);
+    if (length < 0.0001f) return glm::vec2(0.0f);
+    return glm::vec2(mouseDeltaX_ / length, mouseDeltaY_ / length);
+}
+
+#ifdef DEBUG
+void InputManager::DebugPrintActiveInputs() const {
+    std::cout << "=== Active Inputs ===" << std::endl;
+    
+    std::cout << "Held Keys: ";
+    for (const auto& [key, held] : keyHeld_) {
+        if (held) std::cout << SDL_GetKeyName(key) << " ";
+    }
+    std::cout << std::endl;
+    
+    std::cout << "Held Mouse Buttons: ";
+    for (const auto& [button, held] : mouseButtonHeld_) {
+        if (held) std::cout << static_cast<int>(button) << " ";
+    }
+    std::cout << std::endl;
+    
+    std::cout << "Mouse Position: (" << mouseX_ << ", " << mouseY_ << ")" << std::endl;
+    std::cout << "Mouse Delta: (" << mouseDeltaX_ << ", " << mouseDeltaY_ << ")" << std::endl;
+    std::cout << "===================" << std::endl;
+}
+#endif
 
 void InputManager::PublishKeyEvent(engine::event::EventType type, const SDL_Event& event) {
     if (!eventManager_) return;
