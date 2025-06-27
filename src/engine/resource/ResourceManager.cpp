@@ -105,7 +105,7 @@ SDL_Texture* ResourceManager::GetTexture(const std::string& filePath) const {
 }
 
 std::string ResourceManager::NormalizePath(const std::string& path) const {
-    // 暂时直接返回原路径，避免 std::filesystem 的问题
+    // Temporarily return original path directly to avoid std::filesystem issues
     return path;
 }
 

@@ -8,7 +8,7 @@
 
 namespace scene {
 
-DebugScene::DebugScene(const std::string& id, SDL_Renderer* renderer, graphics::SpriteRenderer* spriteRenderer) : sceneId_(id), resourceManager_(renderer), spriteRenderer_(spriteRenderer) {}
+DebugScene::DebugScene(const std::string& id, SDL_Renderer* renderer, engine::graphics::SpriteRenderer* spriteRenderer) : sceneId_(id), resourceManager_(renderer), spriteRenderer_(spriteRenderer) {}
 
 void DebugScene::Load() {
     std::cout << "[DebugScene] Loaded: " << sceneId_ << "\n";
@@ -306,17 +306,17 @@ void DebugScene::DisplayECSTestResults() {
 void DebugScene::RunInputTests() {
     std::cout << "\n[DebugScene] Starting Input Tests...\n";
     
-    // 重置测试状态
+    // Reset test state
     inputTestState_ = InputTestState();
     
-    // 开始键盘测试
+    // Start keyboard test
     StartKeyboardTest();
 }
 
 void DebugScene::TestKeyboardInput() {
     if (!inputManager_) return;
 
-    // 测试基本按键状态
+    // Test basic key states
     bool anyKeyPressed = false;
     for (const auto& key : {SDLK_W, SDLK_A, SDLK_S, SDLK_D, 
                            SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT}) {
@@ -326,7 +326,7 @@ void DebugScene::TestKeyboardInput() {
         }
     }
 
-    // 测试组合键
+    // Test key combinations
     bool leftMove = inputManager_->IsAnyKeyHeld(engine::input::KeyCombos::LEFT_KEYS);
     bool rightMove = inputManager_->IsAnyKeyHeld(engine::input::KeyCombos::RIGHT_KEYS);
     bool upMove = inputManager_->IsAnyKeyHeld(engine::input::KeyCombos::UP_KEYS);
@@ -347,7 +347,7 @@ void DebugScene::TestKeyboardInput() {
 void DebugScene::TestMouseInput() {
     if (!inputManager_) return;
 
-    // 测试鼠标按键状态
+    // Test mouse button states
     bool anyButtonPressed = false;
     bool anyButtonHeld = false;
     for (Uint8 button : {SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE}) {
@@ -360,13 +360,13 @@ void DebugScene::TestMouseInput() {
         }
     }
 
-    // 测试组合鼠标按键
+    // Test combined mouse buttons
     const std::array<Uint8, 3> allButtons = {SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE};
     bool anyButtonCombinedDown = inputManager_->IsAnyMouseButtonDown(allButtons);
     bool anyButtonCombinedHeld = inputManager_->IsAnyMouseButtonHeld(allButtons);
     bool anyButtonCombinedUp = inputManager_->IsAnyMouseButtonUp(allButtons);
 
-    // 测试鼠标位置和按键状态
+    // Test mouse position and button states
     auto mousePos = inputManager_->GetMousePosition();
     if ((mousePos.x != inputTestState_.lastMousePos.x || 
          mousePos.y != inputTestState_.lastMousePos.y) ||
@@ -432,7 +432,7 @@ void DebugScene::TestEventIntegration() {
 }
 
 void DebugScene::DisplayInputTestResults() {
-    // 先进行事件集成测试
+    // First perform event integration test
     TestEventIntegration();
 
     std::cout << "\n=== Input Test Results ===\n";
@@ -442,7 +442,7 @@ void DebugScene::DisplayInputTestResults() {
     std::cout << "Event Integration: " << (inputTestState_.eventIntegrationPassed ? "PASSED" : "FAILED") << "\n";
     std::cout << "========================\n";
 
-    // 重置测试模式
+    // Reset test mode
     inputTestMode_ = false;
     if (eventManager_) {
         if (keyboardListener_) {

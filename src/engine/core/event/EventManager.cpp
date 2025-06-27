@@ -82,7 +82,7 @@ std::vector<std::shared_ptr<Event>> EventManager::GetAndSortEvents() {
     // Sort by Priority
     std::sort(events.begin(), events.end(), 
         [](const std::shared_ptr<Event>& a, const std::shared_ptr<Event>& b) {
-            return static_cast<int>(a->getPriority()) < static_cast<int>(b->getPriority());
+            return static_cast<int>(a->GetPriority()) < static_cast<int>(b->GetPriority());
         });
     
     return events;
@@ -90,7 +90,7 @@ std::vector<std::shared_ptr<Event>> EventManager::GetAndSortEvents() {
 
 void EventManager::PublishWithPriority(std::shared_ptr<Event> event, EventPriority priority) {
     if (event) {
-        event->setPriority(priority);
+        event->SetPriority(priority);
     }
     Publish(event);
 }
@@ -108,7 +108,7 @@ void EventManager::ProcessEvent(const std::shared_ptr<Event>& event) {
     std::unordered_set<EventListener*> listenersCopy;
     {
         std::lock_guard<std::mutex> lock(listenersMutex_);
-        auto it = listeners_.find(event->getType());
+        auto it = listeners_.find(event->GetType());
         if (it != listeners_.end()) {
             listenersCopy = it->second;
         }
@@ -148,10 +148,10 @@ void EventManager::SubscribeWithFilter(EventType type, EventListener* listener,
         return;
     }
     
-    // 订阅事件
+    // Subscribe to event
     Subscribe(type, listener);
     
-    // 存储过滤器
+    // Store filter
     if (filter) {
         std::lock_guard<std::mutex> lock(filtersMutex_);
         filters_[listener] = std::move(filter);

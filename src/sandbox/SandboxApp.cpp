@@ -13,7 +13,7 @@ bool SandboxApp::Init() {
         return false;
     }
 
-    spriteRenderer_ = std::make_unique<graphics::SpriteRenderer>(renderer_.GetSDLRenderer());
+    spriteRenderer_ = std::make_unique<engine::graphics::SpriteRenderer>(renderer_.GetSDLRenderer());
 
     inputManager_.SetEventManager(&eventManager_);
     sceneManager_.SetEventManager(&eventManager_);

@@ -3,10 +3,10 @@
 namespace engine::ECS {
 
 enum class PhysicsMode {
-    TOP_DOWN,      // 无重力，2D平面移动
-    SIDE_VIEW,     // 有重力，Y轴重力
-    ISOMETRIC,     // 等距视角
-    CUSTOM         // 自定义重力方向
+    TOP_DOWN,      // No gravity, 2D plane movement
+    SIDE_VIEW,     // Has gravity, Y-axis gravity
+    ISOMETRIC,     // Isometric view
+    CUSTOM         // Custom gravity direction
 };
 
 struct PhysicsModeComponent {

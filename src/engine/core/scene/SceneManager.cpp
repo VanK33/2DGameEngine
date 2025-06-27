@@ -105,8 +105,8 @@ std::string SceneManager::GetCurrentSceneId() const {
 }
 
 void SceneManager::onEvent(const std::shared_ptr<engine::event::Event>& event) {
-    if (event->getType() == engine::event::EventType::SCENE_CHANGE) {
-        auto data = std::static_pointer_cast<engine::event::SceneChangeData>(event->getData());
+    if (event->GetType() == engine::event::EventType::SCENE_CHANGE) {
+            auto data = std::static_pointer_cast<engine::event::SceneChangeData>(event->GetData());
         if (data) {
             RequestSceneChange(data->targetSceneId);
         }
@@ -124,7 +124,7 @@ void SceneManager::SetEventManager(engine::event::EventManager* manager) {
 std::unique_ptr<Scene> SceneManager::CreateScene(const std::string& sceneId) {
     auto it = sceneFactories_.find(sceneId);
     if (it != sceneFactories_.end()) {
-        return it->second();  // 调用工厂函数
+        return it->second();  // Call factory function
     }
     return nullptr;
 }

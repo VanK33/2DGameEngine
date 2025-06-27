@@ -9,13 +9,22 @@
 #include "engine/core/event/Event.hpp"
 #include "engine/core/event/EventListener.hpp"
 #include <unordered_map>
+#include <functional>
 
 namespace engine::ECS {
 
 using EntityID = uint32_t;
 
+struct CollisionInfo {
+    EntityID entityA;
+    EntityID entityB;
+};
+
 class PhysicsSystem : public System, public engine::event::EventListener {
 public:
+
+    using CollisionResponseCallBack = std::function<void(const CollisionInfo&)>;
+
     void Init() override;
     void Update(float deltaTime) override;
     const char* GetName() const override { return "PhysicsSystem"; }
@@ -23,18 +32,22 @@ public:
     // EventListener interface
     void onEvent(const std::shared_ptr<engine::event::Event>& event) override;
 
+    void RegisterCollisionCallback(const std::string& collisionGroup, CollisionResponseCallBack callback);
+
+    void SetCollisionGroup(EntityID entity, const std::string& group);
+
+    ~PhysicsSystem() override;
+
 private:
     void ApplyGravity(Velocity2D* velocity, const PhysicsModeComponent* mode, float deltaTime);
     void LimitVelocity(Velocity2D* velocity);
-    void ApplyFriction(Velocity2D* velocity, float frictionFactor);
+    void ApplyFriction(Velocity2D* velocity, const PhysicsModeComponent* mode, float deltaTime);
     void CheckBoundaries(Transform2D* transform, Velocity2D* velocity);
-    bool HasCollision(Transform2D* transform);
-    void HandleCollision(Transform2D* transform, Velocity2D* velocity, float oldX, float oldY);
     
     void HandleCollisionEvent(const engine::event::Event& event);
-    void HandleCollisionResponse(EntityID entityA, EntityID entityB);
     
-    std::unordered_map<EntityID, std::pair<float, float>> lastPositions_;
+    std::unordered_map<std::string, CollisionResponseCallBack> collisionCallbacks_;
+    std::unordered_map<EntityID, std::string> entityCollisionGroups_;
 };
 
 } // namespace engine::ECS

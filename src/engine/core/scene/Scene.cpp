@@ -3,8 +3,8 @@
 #include <string>
 #include "Scene.hpp"
 #include <algorithm>
-// 这里我们需要等你实现事件系统后再完善
-// 暂时先留空或者直接调用全局的SceneManager
+// Here we need to wait for you to implement the event system before improving
+// For now, leave it empty or call the global SceneManager directly
 
 namespace engine::scene {
 
