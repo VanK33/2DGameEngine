@@ -9,7 +9,7 @@ namespace engine::event {
 TypeFilter::TypeFilter(const std::vector<EventType>& allowedTypes) : allowedTypes_(allowedTypes) {}
 
 bool TypeFilter::ShouldProcess(const std::shared_ptr<Event>& event) const {
-    return std::find(allowedTypes_.begin(), allowedTypes_.end(), event->getType()) != allowedTypes_.end();
+    return std::find(allowedTypes_.begin(), allowedTypes_.end(), event->GetType()) != allowedTypes_.end();
 }
 
 void TypeFilter::AddAllowedType(EventType type) {
@@ -35,7 +35,7 @@ PriorityFilter::PriorityFilter(EventPriority minPriority)
     : minPriority_(minPriority) {}
 
 bool PriorityFilter::ShouldProcess(const std::shared_ptr<Event>& event) const {
-    return static_cast<int>(event->getPriority()) <= static_cast<int>(minPriority_);
+    return static_cast<int>(event->GetPriority()) <= static_cast<int>(minPriority_);
 }
 
 void PriorityFilter::SetMinPriority(EventPriority priority) {

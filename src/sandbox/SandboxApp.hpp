@@ -24,7 +24,7 @@ private:
     bool isRunning_ = false;
 
     engine::graphics::Renderer renderer_;
-    std::unique_ptr<graphics::SpriteRenderer> spriteRenderer_;
+    std::unique_ptr<engine::graphics::SpriteRenderer> spriteRenderer_;
     engine::scene::SceneManager sceneManager_;
     engine::input::InputManager inputManager_;
     engine::event::EventManager eventManager_;

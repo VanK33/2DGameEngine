@@ -20,12 +20,12 @@ public:
     Event(EventType type, std::shared_ptr<void> data = nullptr)
         : type(type), data(std::move(data)), timestamp_(currentTimeMillis()) {}
 
-    EventType getType() const { return type; }
-    std::shared_ptr<void> getData() const { return data; }
-    uint64_t getTimestamp() const { return timestamp_; }
+    EventType GetType() const { return type; }
+    std::shared_ptr<void> GetData() const { return data; }
+    uint64_t GetTimestamp() const { return timestamp_; }
 
-    EventPriority getPriority() const { return priority_; }
-    void setPriority(EventPriority priority) { priority_ = priority; }
+    EventPriority GetPriority() const { return priority_; }
+    void SetPriority(EventPriority priority) { priority_ = priority; }
 
 private:
     EventType type;

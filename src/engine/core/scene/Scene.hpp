@@ -18,7 +18,7 @@ public:
     virtual void Update(float deltaTime) = 0;
     virtual void Render(SDL_Renderer* renderer) = 0;
     virtual void HandleEvent(const SDL_Event& event) = 0;
-    virtual std::string GetSceneId() const = 0;  // 场景标识符
+    virtual std::string GetSceneId() const = 0;  // Scene identifier
     // Abstract base class for all scenes. Requires derived classes to override all virtual methods.
     virtual void SetEventManager(engine::event::EventManager* manager) = 0;
     virtual void SetInputManager(input::InputManager* manager) = 0;

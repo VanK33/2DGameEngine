@@ -24,7 +24,7 @@ namespace scene {
 
 class DebugScene : public engine::scene::Scene {
 public:
-    DebugScene(const std::string& id, SDL_Renderer* renderer, graphics::SpriteRenderer* spriteRenderer);
+    DebugScene(const std::string& id, SDL_Renderer* renderer, engine::graphics::SpriteRenderer* spriteRenderer);
     void Load() override;
     void Unload() override;
     void Update(float deltaTime) override;
@@ -40,7 +40,7 @@ private:
     std::string sceneId_;
     engine::event::EventManager* eventManager_ = nullptr;
     engine::resources::ResourceManager resourceManager_;
-    graphics::SpriteRenderer* spriteRenderer_ = nullptr;
+    engine::graphics::SpriteRenderer* spriteRenderer_ = nullptr;
 
     SDL_Texture* texture_ = nullptr;
     SDL_FRect dstRect_;
@@ -67,7 +67,7 @@ private:
     // Input tests
     bool inputTestMode_ = false;
 
-    // 输入测试状态
+    // Input test state
     struct InputTestState {
         bool isTestingKeyboard = false;
         bool isTestingMouse = false;
@@ -86,13 +86,13 @@ private:
         float totalMouseMovement = 0.0f;
     };
 
-    // 输入测试监听器类定义
+    // Input test listener class definitions
     class KeyboardTestListener : public engine::event::EventListener {
     public:
         DebugScene* parentScene = nullptr;
         int eventCount = 0;
         void onEvent(const std::shared_ptr<engine::event::Event>& event) override {
-            if (event->getType() == engine::event::EventType::KEY_DOWN) {
+            if (event->GetType() == engine::event::EventType::KEY_DOWN) {
                 eventCount++;
             }
         }
@@ -103,21 +103,21 @@ private:
         DebugScene* parentScene = nullptr;
         int eventCount = 0;
         void onEvent(const std::shared_ptr<engine::event::Event>& event) override {
-            if (event->getType() == engine::event::EventType::MOUSE_MOVE || 
-                event->getType() == engine::event::EventType::MOUSE_CLICK) {
+            if (event->GetType() == engine::event::EventType::MOUSE_MOVE ||
+                event->GetType() == engine::event::EventType::MOUSE_CLICK) {
                 eventCount++;
             }
         }
     };
 
-    // 监听器成员
+    // Listener members
     std::shared_ptr<KeyboardTestListener> keyboardListener_;
     std::shared_ptr<MouseTestListener> mouseListener_;
 
-    // 输入测试状态实例
+    // Input test state instance
     InputTestState inputTestState_;
 
-    // 测试辅助方法
+    // Test helper methods
     void StartKeyboardTest();
     void StartMouseTest();
     void RunInputTests();

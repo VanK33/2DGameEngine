@@ -4,7 +4,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_render.h>
 
-namespace graphics {
+namespace engine::graphics {
 
 SpriteRenderer::SpriteRenderer(SDL_Renderer* renderer)
     : renderer_(renderer) {}
@@ -23,4 +23,4 @@ void SpriteRenderer::Draw(SDL_Texture* texture,
                              rotation, &center, flip);
 }
 
-} // namespace graphics
+} // namespace engine::graphics

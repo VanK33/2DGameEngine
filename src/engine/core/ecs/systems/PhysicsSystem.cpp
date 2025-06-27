@@ -13,9 +13,8 @@
 namespace engine::ECS {
 
 void PhysicsSystem::Init() {
-    // 监听碰撞事件
     if (auto* world = GetWorld()) {
-        auto& eventManager = world->GetEventManager(); // 使用引用
+        auto& eventManager = world->GetEventManager(); // Here we get event manager, maybe InputManager can use this pattern too to avoid direct assignment in world?
         eventManager.Subscribe(engine::event::EventType::COLLISION_STARTED, this);
     }
 }
@@ -27,39 +26,27 @@ void PhysicsSystem::Update(float deltaTime) {
     auto& componentManager = world->GetComponentManager();
     auto entities = componentManager.GetEntitiesWithComponents<Transform2D, Velocity2D>();
     
-    for (EntityID entityId : entities) {
+    // Use references to avoid unnecessary copying
+    for (const EntityID& entityId : entities) {
         auto* transform = componentManager.GetComponent<Transform2D>(entityId);
         auto* velocity = componentManager.GetComponent<Velocity2D>(entityId);
         auto* physicsMode = componentManager.GetComponent<PhysicsModeComponent>(entityId);
         
-        if (transform && velocity) {
-            // 保存当前位置
-            lastPositions_[entityId] = {transform->x, transform->y};
-            
-            float oldX = transform->x;
-            float oldY = transform->y;
-            
-            if (physicsMode && physicsMode->enableGravity) {
-                ApplyGravity(velocity, physicsMode, deltaTime);
-            }
-            
-            transform->x += velocity->vx * deltaTime;
-            transform->y += velocity->vy * deltaTime;
-            
-            CheckBoundaries(transform, velocity);
-            
-            // TODO: 与CollisionSystem集成
-            // 暂时注释掉碰撞检测
-            // if (HasCollision(transform)) {
-            //     HandleCollision(transform, velocity, oldX, oldY);
-            // }
-            
-            LimitVelocity(velocity);
-            
-            if (!physicsMode || physicsMode->enableFriction) {
-                ApplyFriction(velocity, physicsMode ? physicsMode->frictionFactor : 0.98f);
-            }
+        if (!transform || !velocity || !physicsMode) continue;
+
+        // Apply physics updates
+        if (physicsMode->enableGravity) {
+            ApplyGravity(velocity, physicsMode, deltaTime);
         }
+
+        if (physicsMode->enableFriction) {
+            ApplyFriction(velocity, physicsMode, deltaTime);
+        }
+
+        LimitVelocity(velocity);
+
+        transform->x += velocity->vx * deltaTime;
+        transform->y += velocity->vy * deltaTime;
     }
 }
 
@@ -95,66 +82,56 @@ void PhysicsSystem::LimitVelocity(Velocity2D* velocity) {
     }
 }
 
-void PhysicsSystem::ApplyFriction(Velocity2D* velocity, float frictionFactor) {
-    velocity->vx *= frictionFactor;
-    velocity->vy *= frictionFactor;
+void PhysicsSystem::ApplyFriction(Velocity2D* velocity, const PhysicsModeComponent* mode, float deltaTime) {
+    if (!mode || !mode->enableFriction) return;
     
-    // 性能优化：如果速度太小，直接设为0
+    velocity->vx *= std::pow(mode->frictionFactor, deltaTime);
+    velocity->vy *= std::pow(mode->frictionFactor, deltaTime);
+    
     const float minSpeed = 0.1f;
     if (std::abs(velocity->vx) < minSpeed) velocity->vx = 0;
     if (std::abs(velocity->vy) < minSpeed) velocity->vy = 0;
 }
 
-void PhysicsSystem::CheckBoundaries(Transform2D* transform, Velocity2D* velocity) {
-    // 简单的屏幕边界检测
-    const float screenWidth = 800.0f;   // 应该从配置获取
-    const float screenHeight = 600.0f;
-    
-    if (transform->x < 0) {
-        transform->x = 0;
-        velocity->vx = 0;  // 停止移动
-    } else if (transform->x > screenWidth) {
-        transform->x = screenWidth;
-        velocity->vx = 0;
-    }
-    
-    if (transform->y < 0) {
-        transform->y = 0;
-        velocity->vy = 0;
-    } else if (transform->y > screenHeight) {
-        transform->y = screenHeight;
-        velocity->vy = 0;
-    }
-}
-
-bool PhysicsSystem::HasCollision(Transform2D* transform) {
-    // 这里应该与碰撞系统集成
-    // 暂时返回false，等碰撞系统实现后再完善
-    return false;
-}
-
-void PhysicsSystem::HandleCollision(Transform2D* transform, Velocity2D* velocity, float oldX, float oldY) {
-    transform->x = oldX;
-    transform->y = oldY;
-    
-    velocity->vx = 0;
-    velocity->vy = 0;
-}
-
 void PhysicsSystem::onEvent(const std::shared_ptr<engine::event::Event>& event) {
-    if (event->getType() == engine::event::EventType::COLLISION_STARTED) {
+    if (event->GetType() == engine::event::EventType::COLLISION_STARTED) {
         HandleCollisionEvent(*event);
     }
 }
 
 void PhysicsSystem::HandleCollisionEvent(const engine::event::Event& event) {
-    auto collisionData = std::static_pointer_cast<engine::event::CollisionData>(event.getData());
-    HandleCollisionResponse(collisionData->entityA, collisionData->entityB);
+    auto collisionEvent = static_cast<const engine::event::CollisionEvent&>(event);
+
+    EntityID entityA = collisionEvent.GetEntityA();
+    EntityID entityB = collisionEvent.GetEntityB();
+
+    auto groupA = entityCollisionGroups_.find(entityA);
+    auto groupB = entityCollisionGroups_.find(entityB);
+
+    if (groupA != entityCollisionGroups_.end() && groupB != entityCollisionGroups_.end()) {
+        std::string collisionGroup = groupA->second + "_" + groupB->second;
+        
+        auto callback = collisionCallbacks_.find(collisionGroup);
+        if (callback != collisionCallbacks_.end()) {
+            CollisionInfo info{entityA, entityB};
+            callback->second(info);
+        }
+    }
 }
 
-void PhysicsSystem::HandleCollisionResponse(EntityID entityA, EntityID entityB) {
-    // TODO: 实现碰撞响应逻辑
-    // 比如：回退位置、停止移动等
+void PhysicsSystem::RegisterCollisionCallback(const std::string& collisionGroup, CollisionResponseCallBack callback) {
+    collisionCallbacks_[collisionGroup] = std::move(callback);
+}
+
+void PhysicsSystem::SetCollisionGroup(EntityID entity, const std::string& group) {
+    entityCollisionGroups_[entity] = group;
+}
+
+PhysicsSystem::~PhysicsSystem() {
+    if (auto* world = GetWorld()) {
+        auto& eventManager = world->GetEventManager();
+        eventManager.Unsubscribe(engine::event::EventType::COLLISION_STARTED, this);
+    }
 }
 
 } // namespace engine::ECS

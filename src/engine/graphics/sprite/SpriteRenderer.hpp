@@ -4,7 +4,7 @@
 
 #include <SDL3/SDL.h>
 
-namespace graphics {
+namespace engine::graphics {
 
 class SpriteRenderer {
 public:
@@ -16,5 +16,5 @@ private:
     SDL_Renderer* renderer_;
 };
 
-} // namespace graphics
+} // namespace engine::graphics
 

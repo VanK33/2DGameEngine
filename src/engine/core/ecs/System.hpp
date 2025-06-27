@@ -22,6 +22,7 @@ public:
 
     void SetWorld(World* world) { world_ = world; }
     World* GetWorld() const { return world_; }
+    World* GetWorld() { return world_; }
 
 protected:
     bool enabled_ = true;
