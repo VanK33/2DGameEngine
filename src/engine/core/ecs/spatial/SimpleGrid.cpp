@@ -7,7 +7,7 @@
 
 namespace engine::ECS {
 
-SimpleGrid::SimpleGrid(flaot cellSize, const SDL_FRect& worldBounds)
+SimpleGrid::SimpleGrid(float cellSize, const SDL_FRect& worldBounds)
     : cellSize_(cellSize), worldBounds_(worldBounds) {
     
     if(cellSize <= 0.0f) {

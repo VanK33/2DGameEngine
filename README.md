@@ -12,9 +12,10 @@ A modular, reusable 2D game engine in modern C++ (using SDL3).
 ```text
 src/
 ├── engine/                    # Engine Core (Reusable SDK)
+│   ├── Engine.hpp/cpp        # Unified Engine API (COMPLETED ✅)
 │   ├── core/
 │   │   ├── ecs/              # ECS Architecture (COMPLETED ✅)
-│   │   │   ├── components/   # Core 2D Components (Transform2D, Sprite2D, etc.)
+│   │   │   ├── components/   # Core 2D Components (Transform2D, Sprite2D, etc.) + AI Component
 │   │   │   ├── systems/      # Core Systems (Physics, Collision, Lifetime)
 │   │   │   ├── EntityFactory.hpp/cpp    # Entity lifecycle management
 │   │   │   ├── ComponentManager.hpp     # Type-safe component storage
@@ -32,6 +33,7 @@ src/
 │   └── utils/                # PathUtils and other utilities
 │
 ├── sandbox/                  # Feature Demos and Integration Tests
+│   ├── main.cpp              # Engine API Test Program
 │   └── testbed/              # Various Test Scenes
 │       ├── render_test/      # Rendering tests (with ECS integration)
 │       ├── ecs_test/         # ECS-specific tests
@@ -50,12 +52,19 @@ src/
 
 ## 🧱 Core Modules Status
 
+### ✅ **Unified Engine API** - **COMPLETED**
+- **Engine Class**: Complete unified engine interface with simple 3-5 line initialization
+- **EngineConfig**: Flexible engine configuration structure
+- **System Integration**: All core systems fully integrated and tested
+- **Lifecycle Management**: Complete initialization/run/shutdown flow
+- **API Validation**: All API tests pass, production-ready
+
 ### ✅ **ECS (Entity-Component-System)** - **COMPLETED**
 - **EntityFactory**: Thread-safe entity creation/destruction with ID recycling
 - **ComponentManager**: Type-safe component storage with template-based queries
 - **SystemManager**: Priority-based system execution with pause/resume
 - **World**: Unified interface for all ECS functionality
-- **Core Components**: Transform2D, Sprite2D, Collider2D, Velocity2D, Lifetime, Tag
+- **Core Components**: Transform2D, Sprite2D, Collider2D, Velocity2D, Lifetime, Tag, AIComponent
 - **Core Systems**: CollisionSystem, PhysicsSystem, LifetimeSystem
 - **Performance**: Supports 300+ entities with O(1) component access
 
@@ -100,12 +109,24 @@ src/
 - **Texture Management**: SDL3 texture loading and lifetime management
 - **Path Utilities**: Cross-platform path handling
 
+### 🔄 **AI Framework** - **IN PREPARATION**
+- **AIComponent**: Complete AI component structure implemented
+- **Behavior Types**: IDLE, WANDER, FOLLOW, PATROL, FLEE, SEEK
+- **AI States**: ACTIVE, INACTIVE, STUNNED
+- **Pending**: AISystem to process AI behavior logic
+
 ---
 
 ## 🚀 Recent Achievements
 
-### **Complete ECS Implementation**
-- ✅ **Full Entity Lifecycle**: Create, destroy, query entities efficiently
+### **Complete Engine API Implementation**
+- ✅ **Unified Interface**: Engine class provides unified access to all systems
+- ✅ **Simple Initialization**: 3-5 lines of code to start the engine
+- ✅ **System Integration**: All core systems fully integrated
+- ✅ **API Validation**: Passes complete API test suite
+
+### **Full ECS Implementation**
+- ✅ **Complete Entity Lifecycle**: Efficient entity creation, destruction, querying
 - ✅ **Advanced Component Queries**: Multi-component entity retrieval
 - ✅ **System Integration**: All systems work seamlessly with ECS
 - ✅ **Performance Optimized**: Supports hundreds of entities at 60 FPS
@@ -132,12 +153,12 @@ src/
 ## 🎯 Current Development Focus
 
 ### 🔄 **In Progress**
-- **Core Engine API**: Creating unified Engine class for external use
-- **AI Framework**: Basic AI components and behavior system
-- **Enhanced Physics**: Advanced collision response and constraints
+- **AI System Implementation**: Creating AISystem for the existing AIComponent
+- **Game Examples**: Building complete 2D top-down shooter demonstration
+- **Performance Optimization**: Further optimizing collision detection and rendering
 
 ### 📋 **Planned Next**
-- **Audio System**: Sound effects and background music
+- **Audio System**: Sound effects and background music support
 - **UI Framework**: Basic UI components and text rendering
 - **Game State Management**: Save/load and state transitions
 
@@ -162,9 +183,40 @@ make
 ./run.sh  # Build and run in one command
 ```
 
+### **Engine API Usage Example**
+```cpp
+#include "engine/Engine.hpp"
+
+int main() {
+    // 1. Create engine
+    engine::Engine gameEngine;
+    
+    // 2. Configure engine
+    engine::EngineConfig config;
+    config.windowTitle = "My Game";
+    config.windowWidth = 800;
+    config.windowHeight = 600;
+    
+    // 3. Initialize engine
+    if (!gameEngine.Initialize(config)) {
+        return -1;
+    }
+    
+    // 4. Register scenes
+    gameEngine.RegisterScene<MyGameScene>("MainGame");
+    gameEngine.ChangeScene("MainGame");
+    
+    // 5. Run game
+    gameEngine.Run();
+    gameEngine.Shutdown();
+    
+    return 0;
+}
+```
+
 ### **Testing**
-- Press `1` in DebugScene to enter ECS testing mode
-- Press `SPACE` to run step-by-step ECS tests
+- Run `./bin/2DEngine` to see complete Engine API tests
+- All core system functionality is verified
 - Console output shows detailed system status
 
 ---
@@ -213,6 +265,25 @@ The engine provides generic systems while games implement specific components li
 
 ---
 
+## 🎯 Next Important Tasks
+
+### **1. AI System Implementation** (Highest Priority)
+- Create AISystem for the existing AIComponent
+- Implement basic AI behaviors (follow, wander, patrol)
+- Integrate into engine core systems
+
+### **2. Complete Game Example**
+- Build 2D top-down zombie shooter demonstration
+- Validate all engine systems in real usage
+- Provide complete game development reference
+
+### **3. Audio System**
+- Sound effect playback and background music support
+- Integration with event system
+- 3D audio positioning support
+
+---
+
 ## 🤝 Contributing
 
 - PRs and suggestions welcome!
@@ -222,7 +293,7 @@ The engine provides generic systems while games implement specific components li
 
 ---
 
-*This engine represents a complete, production-ready foundation for 2D games with a focus on performance, modularity, and clean architecture. All core systems are implemented and tested.*
+*This engine represents a complete, production-ready foundation for 2D games with a focus on performance, modularity, and clean architecture. All core systems are implemented and tested, with the Engine API completed and validated.*
 
 
 
