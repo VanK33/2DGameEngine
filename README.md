@@ -16,7 +16,7 @@ src/
 │   ├── core/
 │   │   ├── ecs/              # ECS Architecture (COMPLETED ✅)
 │   │   │   ├── components/   # Core 2D Components (Transform2D, Sprite2D, etc.) + AI Component
-│   │   │   ├── systems/      # Core Systems (Physics, Collision, Lifetime)
+│   │   │   ├── systems/      # Core Systems (Physics, Collision, Lifetime, AI)
 │   │   │   ├── EntityFactory.hpp/cpp    # Entity lifecycle management
 │   │   │   ├── ComponentManager.hpp     # Type-safe component storage
 │   │   │   ├── SystemManager.hpp/cpp    # System orchestration
@@ -65,7 +65,7 @@ src/
 - **SystemManager**: Priority-based system execution with pause/resume
 - **World**: Unified interface for all ECS functionality
 - **Core Components**: Transform2D, Sprite2D, Collider2D, Velocity2D, Lifetime, Tag, AIComponent
-- **Core Systems**: CollisionSystem, PhysicsSystem, LifetimeSystem
+- **Core Systems**: CollisionSystem, PhysicsSystem, LifetimeSystem, AISystem
 - **Performance**: Supports 300+ entities with O(1) component access
 
 ### ✅ **Event System** - **COMPLETED**
@@ -109,11 +109,13 @@ src/
 - **Texture Management**: SDL3 texture loading and lifetime management
 - **Path Utilities**: Cross-platform path handling
 
-### 🔄 **AI Framework** - **IN PREPARATION**
-- **AIComponent**: Complete AI component structure implemented
-- **Behavior Types**: IDLE, WANDER, FOLLOW, PATROL, FLEE, SEEK
-- **AI States**: ACTIVE, INACTIVE, STUNNED
-- **Pending**: AISystem to process AI behavior logic
+### ✅ **AI Framework** - **COMPLETED**
+- **AIComponent**: Minimal AI component with state management (ACTIVE, INACTIVE, DISABLED)
+- **AISystem**: Abstract base class providing essential AI services
+- **Basic Services**: Entity positioning, movement control, distance calculation
+- **Inheritance-Based Design**: Games extend AISystem to implement specific AI behaviors
+- **Performance Optimized**: Configurable update intervals to reduce CPU overhead
+- **State Management**: Built-in state transitions with notification hooks
 
 ---
 
@@ -148,16 +150,19 @@ src/
 - ✅ **Scene Lifecycle**: Proper load/unload/update/render cycles
 - ✅ **ECS-Scene Integration**: Scenes can manage entities directly
 
+### **Minimal AI Framework**
+- ✅ **Inheritance-Based Design**: Minimal engine core with game-layer extension
+- ✅ **Essential Services**: Position queries, movement control, state management
+- ✅ **Performance Optimized**: Configurable update intervals
+- ✅ **Clean Architecture**: Pure virtual ProcessAI forces game-specific implementation
+
 ---
 
 ## 🎯 Current Development Focus
 
-### 🔄 **In Progress**
-- **AI System Implementation**: Creating AISystem for the existing AIComponent
+### 📋 **Planned Next**
 - **Game Examples**: Building complete 2D top-down shooter demonstration
 - **Performance Optimization**: Further optimizing collision detection and rendering
-
-### 📋 **Planned Next**
 - **Audio System**: Sound effects and background music support
 - **UI Framework**: Basic UI components and text rendering
 - **Game State Management**: Save/load and state transitions
@@ -171,12 +176,12 @@ src/
 - C++20 compatible compiler
 
 ### **Build Instructions**
-```sh
-mkdir build && cd build
-cmake ..
-make
-./bin/2DEngine
-```
+  ```sh
+  mkdir build && cd build
+  cmake ..
+  make
+  ./bin/2DEngine
+  ```
 
 ### **Quick Run**
 ```sh
@@ -214,6 +219,31 @@ int main() {
 }
 ```
 
+### **AI System Usage Example**
+```cpp
+// Game-specific AI implementation
+class GameAISystem : public engine::ECS::AISystem {
+protected:
+    void ProcessAI(EntityID entity, AIComponent& ai, float deltaTime) override {
+        // Implement specific AI behavior
+        if (ai.targetEntity != 0) {
+            float distance = GetDistance(entity, ai.targetEntity);
+            if (distance <= ai.detectionRadius) {
+                Vector2 targetPos = GetEntityPosition(ai.targetEntity);
+                MoveTowards(entity, targetPos, ai.speed);
+            }
+        }
+    }
+    
+    void OnStateChanged(EntityID entity, AIState oldState, AIState newState) override {
+        // Handle state transitions
+        if (newState == AIState::DISABLED) {
+            StopMovement(entity);
+        }
+    }
+};
+```
+
 ### **Testing**
 - Run `./bin/2DEngine` to see complete Engine API tests
 - All core system functionality is verified
@@ -227,6 +257,7 @@ int main() {
 - **ECS-First Architecture**: All game objects managed through Entity-Component-System
 - **Event-Driven Communication**: Systems communicate via events, not direct coupling
 - **Modular Design**: Each subsystem is independent and testable
+- **Minimal Engine Core**: Engine provides essential services, games implement specific logic
 - **Performance Focus**: Optimized for hundreds of entities at 60 FPS
 
 ---
@@ -238,6 +269,7 @@ int main() {
 - **Input Response**: < 16ms latency
 - **Memory Usage**: < 100MB for typical 2D games
 - **Frame Rate**: Consistent 60 FPS with complex scenes
+- **AI Processing**: Configurable update rates for optimal performance
 
 ---
 
@@ -267,20 +299,20 @@ The engine provides generic systems while games implement specific components li
 
 ## 🎯 Next Important Tasks
 
-### **1. AI System Implementation** (Highest Priority)
-- Create AISystem for the existing AIComponent
-- Implement basic AI behaviors (follow, wander, patrol)
-- Integrate into engine core systems
-
-### **2. Complete Game Example**
+### **1. Complete Game Example** (Highest Priority)
 - Build 2D top-down zombie shooter demonstration
 - Validate all engine systems in real usage
 - Provide complete game development reference
 
-### **3. Audio System**
+### **2. Audio System**
 - Sound effect playback and background music support
 - Integration with event system
 - 3D audio positioning support
+
+### **3. UI Framework**
+- Basic UI components and text rendering
+- Integration with input and event systems
+- Layout management
 
 ---
 
@@ -292,8 +324,6 @@ The engine provides generic systems while games implement specific components li
 - Follow existing code style and architecture patterns
 
 ---
-
-*This engine represents a complete, production-ready foundation for 2D games with a focus on performance, modularity, and clean architecture. All core systems are implemented and tested, with the Engine API completed and validated.*
 
 
 

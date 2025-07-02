@@ -1,61 +1,27 @@
+// src/engine/core/ecs/components/AIComponent.hpp
 #pragma once
 
-#include <vector>
-#include <string>
+#include "engine/core/Types.hpp"
 
 namespace engine::ECS {
 
-using EntityID = uint32_t;
-
-enum class AIBehaviorType {
-    IDLE,
-    WANDER, 
-    FOLLOW,
-    PATROL,
-    FLEE,
-    SEEK
-};
-
+// 基础 AI 状态
 enum class AIState {
-    ACTIVE,
     INACTIVE,
-    STUNNED
-};
-
-struct Vector2 {
-    float x = 0.0f, y = 0.0f;
+    ACTIVE,
+    DISABLED
 };
 
 struct AIComponent {
-    // Core AI state
-    AIBehaviorType currentBehavior = AIBehaviorType::IDLE;
     AIState state = AIState::ACTIVE;
-    
-    // Target system
     EntityID targetEntity = 0;
-    float detectionRange = 100.0f;
-    float actionRange = 50.0f;
+    Vector2 targetPosition{0, 0};
     
-    // Movement
-    float moveSpeed = 50.0f;
-    float maxSpeed = 100.0f;
+    float speed = 100.0f;
+    float detectionRadius = 200.0f;
     
-    // Patrol system
-    std::vector<Vector2> patrolPoints;
-    size_t currentPatrolIndex = 0;
-    float patrolWaitTime = 2.0f;
-    
-    // Timing
-    float stateTimer = 0.0f;
-    float behaviorTimer = 0.0f;
-    
-    // Behavior parameters
-    float wanderRadius = 200.0f;
-    float fleeDistance = 150.0f;
-    
-    // Debug/identification
-    std::string aiTag = "default";
-    bool debugMode = false;
+    float updateTimer = 0.0f;
+    float updateInterval = 0.1f;
 };
 
 } // namespace engine::ECS
