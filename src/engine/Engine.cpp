@@ -4,6 +4,7 @@
 #include "core/ecs/systems/CollisionSystem.hpp"
 #include "core/ecs/systems/PhysicsSystem.hpp"
 #include "core/ecs/systems/LifetimeSystem.hpp"
+#include "core/ecs/systems/RenderSystem.hpp"
 
 namespace engine {
 
@@ -106,7 +107,11 @@ void Engine::InitializeSystems() {
     auto lifetimeSystem = std::make_unique<ECS::LifetimeSystem>();
     systemManager.AddSystem(std::move(lifetimeSystem), 30);
     
-    std::cout << "[Engine] Core ECS systems initialized" << std::endl;
+    // 4. Add render system (lowest priority - render after all logic updates)
+    auto renderSystem = std::make_unique<ECS::RenderSystem>(spriteRenderer_.get(), resourceManager_.get());
+    systemManager.AddSystem(std::move(renderSystem), 50);
+    
+    std::cout << "[Engine] Core ECS systems initialized (including RenderSystem)" << std::endl;
 }
 
 void Engine::UpdateSystems() {
