@@ -38,6 +38,12 @@ void SystemManager::RemoveSystem(const std::string& name) {
     }
     
     size_t index = it->second;
+    
+    if (systems_[index].system) {
+        std::cout << "[SystemManager] Shutting down: " << name << std::endl;
+        systems_[index].system->Shutdown();
+    }
+    
     systems_.erase(systems_.begin() + index);
     
     // Update indices
@@ -135,4 +141,19 @@ void SystemManager::ResumeAllSystems() {
     std::cout << "[SystemManager] Resumed all systems" << std::endl;
 }
 
+void SystemManager::ClearAllSystems() {
+    std::sort(systems_.begin(), systems_.end(),
+        [](const SystemEntry& a, const SystemEntry& b) {
+            return a.priority > b.priority;
+        });
+    
+    for (auto& entry : systems_) {
+        if (entry.system) {
+            entry.system->Shutdown();
+        }
+    }
+    
+    systems_.clear();
+    systemIndices_.clear();
+}
 } // namespace engine::ECS

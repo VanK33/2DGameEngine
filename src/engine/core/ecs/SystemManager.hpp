@@ -33,6 +33,8 @@ public:
     void PauseAllSystems();
     void ResumeAllSystems();
 
+    void ClearAllSystems();
+
     void SetWorld(World* world) { world_ = world; }
 
 private:

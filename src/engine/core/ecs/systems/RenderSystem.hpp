@@ -5,9 +5,12 @@
 #include "engine/core/ecs/components/Sprite2D.hpp"
 #include "engine/graphics/sprite/SpriteRenderer.hpp"
 #include "engine/resource/ResourceManager.hpp"
+#include "engine/core/Types.hpp"
 #include <vector>
 
 namespace engine::ECS {
+
+using engine::EntityID;
 
 class RenderSystem : public System {
 public:

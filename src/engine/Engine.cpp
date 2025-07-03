@@ -5,6 +5,7 @@
 #include "core/ecs/systems/PhysicsSystem.hpp"
 #include "core/ecs/systems/LifetimeSystem.hpp"
 #include "core/ecs/systems/RenderSystem.hpp"
+#include "core/ecs/systems/DebugRenderSystem.hpp"
 
 namespace engine {
 
@@ -75,6 +76,10 @@ void Engine::Shutdown() {
     std::cout << "[Engine] Shutting down..." << std::endl;
     
     isRunning_ = false;
+    
+    world_.GetSystemManager().ClearAllSystems();
+    world_.ClearAllEntities();
+    
     spriteRenderer_.reset();
     resourceManager_.reset();
     renderer_.Shutdown();
@@ -110,8 +115,12 @@ void Engine::InitializeSystems() {
     // 4. Add render system (lowest priority - render after all logic updates)
     auto renderSystem = std::make_unique<ECS::RenderSystem>(spriteRenderer_.get(), resourceManager_.get());
     systemManager.AddSystem(std::move(renderSystem), 50);
+
+    // 5. Add debug render system (lowest priority - render debug info on top)
+    auto debugRenderSystem = std::make_unique<ECS::DebugRenderSystem>(renderer_.GetSDLRenderer(), &inputManager_);
+    systemManager.AddSystem(std::move(debugRenderSystem), 100);
     
-    std::cout << "[Engine] Core ECS systems initialized (including RenderSystem)" << std::endl;
+    std::cout << "[Engine] Core ECS systems initialized (including RenderSystem and DebugRenderSystem)" << std::endl;
 }
 
 void Engine::UpdateSystems() {

@@ -113,6 +113,4 @@ AIComponent* AISystem::GetAIComponent(EntityID entity) {
     return world_->GetComponentManager().GetComponent<AIComponent>(entity);
 }
 
-void AISystem::OnStateChanged(EntityID entity, AIState oldState, AIState newState) {}
-
-} // namespace engine::ECS
+} // namespace engine::ECSXW

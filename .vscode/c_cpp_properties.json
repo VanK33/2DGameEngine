@@ -9,7 +9,8 @@
                 "${workspaceFolder}/src/scenes",
                 "${workspaceFolder}/src/resources",
                 "${workspaceFolder}/src/graphics",
-                "/opt/homebrew/include"
+                "/opt/homebrew/include",
+                "${workspaceFolder}/build/_deps/glm-src"
             ],
             "defines": [],
             "macFrameworkPath": [
