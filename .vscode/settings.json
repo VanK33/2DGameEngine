@@ -58,6 +58,12 @@
         "set": "cpp",
         "charconv": "cpp",
         "unordered_set": "cpp",
-        "memory_resource": "cpp"
+        "memory_resource": "cpp",
+        "span": "cpp",
+        "typeindex": "cpp",
+        "csignal": "cpp",
+        "fstream": "cpp",
+        "source_location": "cpp",
+        "stack": "cpp"
     }
 }
