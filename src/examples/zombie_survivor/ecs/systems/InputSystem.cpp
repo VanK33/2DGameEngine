@@ -9,6 +9,10 @@ namespace ZombieSurvivor::System {
 InputSystem::InputSystem(engine::input::InputManager& inputManager)
     : inputManager_(inputManager) {}
 
+void InputSystem::Init() {
+
+}
+
 void InputSystem::Update(float deltaTime) {
     auto* world = GetWorld();
     if (!world) return;
