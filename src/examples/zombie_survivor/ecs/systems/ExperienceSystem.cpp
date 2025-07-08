@@ -11,9 +11,15 @@
 namespace ZombieSurvivor::System {
 
 void ExperienceSystem::Init() {
+    std::cout << "[DEBUG] ExperienceSystem::Init() called" << std::endl;
     if (auto* world = GetWorld()) {
+        std::cout << "[DEBUG] World found: " << world << std::endl;
         auto& eventManager = world->GetEventManager();
+        std::cout << "[DEBUG] EventManager: " << &eventManager << std::endl;
         eventManager.Subscribe(engine::event::EventType::CUSTOM, this);
+        std::cout << "[DEBUG] ExperienceSystem subscribed to CUSTOM events" << std::endl;
+    } else {
+        std::cout << "[DEBUG] ERROR: No world found in ExperienceSystem::Init()" << std::endl;
     }
 }
 
@@ -33,34 +39,53 @@ void ExperienceSystem::Update(float deltaTime) {
 }
 
 void ExperienceSystem::onEvent(const std::shared_ptr<engine::event::Event>& event) {
+    std::cout << "  [DEBUG] ExperienceSystem received event, type: " << static_cast<int>(event->GetType()) << std::endl;
+    std::cout << "  [DEBUG] Expected CUSTOM type: " << static_cast<int>(engine::event::EventType::CUSTOM) << std::endl;
+    
     if (event->GetType() == engine::event::EventType::CUSTOM) {
+        std::cout << "  [DEBUG] Processing CUSTOM event" << std::endl;
         HandleGameEvent(event);
+    } else {
+        std::cout << "  [DEBUG] Event type mismatch!" << std::endl;
     }
 }
 
+
 void ExperienceSystem::HandleGameEvent(const std::shared_ptr<engine::event::Event>& event) {
     auto gameEvent = std::dynamic_pointer_cast<Events::GameEvent>(event);
-    if (!gameEvent) return;
+    if (!gameEvent) {
+        std::cout << "  [DEBUG] Failed to cast to GameEvent" << std::endl;
+        return;
+    }
 
     auto eventType = gameEvent->GetGameEventType();
+    std::cout << "  [DEBUG] GameEvent type: " << static_cast<int>(eventType) << std::endl;
 
     switch (eventType) {
         case Events::GameEventType::ENEMY_KILLED:
+            std::cout << "  [DEBUG] Handling ENEMY_KILLED event" << std::endl;
             HandleEnemyKilled(gameEvent->GetData());
             break;
         case Events::GameEventType::EXPERIENCE_GAINED:
+            std::cout << "  [DEBUG] Handling EXPERIENCE_GAINED event" << std::endl;
             HandleExperienceGained(gameEvent->GetData());
             break;
         default:
+            std::cout << "  [DEBUG] Unhandled event type: " << static_cast<int>(eventType) << std::endl;
             break;
     }
 }
 
 void ExperienceSystem::HandleEnemyKilled(const std::shared_ptr<void>& eventData) {
     if (auto data = std::static_pointer_cast<Events::EnemyKilledData>(eventData)) {
+        std::cout << "  [DEBUG] Enemy killed - Player: " << data->playerId 
+                  << ", ExpReward: " << data->expReward << std::endl;
         AddExperience(data->playerId, data->expReward);
+    } else {
+        std::cout << "  [DEBUG] Failed to cast EnemyKilledData" << std::endl;
     }
 }
+
 
 void ExperienceSystem::HandleExperienceGained(const std::shared_ptr<void>& eventData) {
     if (auto data = std::static_pointer_cast<Events::ExperienceGainedData>(eventData)) {
@@ -69,19 +94,33 @@ void ExperienceSystem::HandleExperienceGained(const std::shared_ptr<void>& event
 }
 
 void ExperienceSystem::AddExperience(uint32_t entityId, int experience) {
+    std::cout << "  [DEBUG] Adding " << experience << " experience to entity " << entityId << std::endl;
+    
     auto* world = GetWorld();
-    if (!world) return;
+    if (!world) {
+        std::cout << "  [DEBUG] No world available" << std::endl;
+        return;
+    }
 
     auto& componentManager = world->GetComponentManager();
     auto* exp = componentManager.GetComponent<ZombieSurvivor::Component::ExperienceComponent>(entityId);
 
-    if (!exp) return;
+    if (!exp) {
+        std::cout << "  [DEBUG] No ExperienceComponent found for entity " << entityId << std::endl;
+        return;
+    }
+
+    std::cout << "  [DEBUG] Before: Level=" << exp->level 
+              << ", Exp=" << exp->experience 
+              << ", ToNext=" << exp->experienceToNext << std::endl;
 
     exp->experience += experience;
 
-    while (exp->experience >= exp->experienceToNext) {
+    std::cout << "  [DEBUG] After: Exp=" << exp->experience << std::endl;
+
+    if (exp->experience >= exp->experienceToNext) {
         exp->canLevelUp = true;
-        break;
+        std::cout << "  [DEBUG] Can level up!" << std::endl;
     }
 }
 
@@ -90,9 +129,10 @@ void ExperienceSystem::ProcessLevelUp(uint32_t entityId, ZombieSurvivor::Compone
 
     int oldLevel = exp->level;
 
-    exp->experience -= exp->experienceToNext;
+    int overflowExp = exp->experience - exp->experienceToNext;
     exp->level++;
     exp->experienceToNext = CalculateExperienceForNextLevel(exp->level);
+    exp->experience = overflowExp;
     exp->canLevelUp = false;
 
     PublishLevelUpEvent(entityId, oldLevel, exp->level);

@@ -27,7 +27,12 @@ public:
             std::static_pointer_cast<void>(data)
         );
         gameEvent->SetPriority(engine::event::EventPriority::HIGH);
+        std::cout << "  [DEBUG] Created GameEvent with type: " << static_cast<int>(gameEvent->GetType()) << std::endl;
+        std::cout << "  [DEBUG] Expected CUSTOM type: " << static_cast<int>(engine::event::EventType::CUSTOM) << std::endl;
+        std::cout << "  [DEBUG] GameEventType: " << static_cast<int>(gameEvent->GetGameEventType()) << std::endl;
+        
         eventManager.Publish(gameEvent);
+        std::cout << "  [DEBUG] Event published to EventManager" << std::endl;
     }
     
     static void PublishPlayerLevelUp(engine::event::EventManager& eventManager,

@@ -6,9 +6,9 @@ namespace ZombieSurvivor::Component {
 struct ExperienceComponent {
     int level = 1;
     int experience = 0;
-    int experienceToNext = 10;
+    int experienceToNext = 100;
     int skillPoints = 0;
-    bool canLevelUp = true;
+    bool canLevelUp = false;
 };
 
 }
