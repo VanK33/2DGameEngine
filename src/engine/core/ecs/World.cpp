@@ -3,7 +3,8 @@
 
 namespace engine::ECS {
 
-World::World() {
+World::World(engine::event::EventManager* eventManager)
+    : eventManager_(eventManager) {
     // Set World reference in SystemManager
     systemManager_.SetWorld(this);
 }

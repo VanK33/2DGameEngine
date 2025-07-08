@@ -19,6 +19,8 @@ class Event {
 public:
     Event(EventType type, std::shared_ptr<void> data = nullptr)
         : type(type), data(std::move(data)), timestamp_(currentTimeMillis()) {}
+    
+    virtual ~Event() = default;
 
     EventType GetType() const { return type; }
     std::shared_ptr<void> GetData() const { return data; }

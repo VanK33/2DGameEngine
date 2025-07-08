@@ -63,7 +63,7 @@ public:
     void Shutdown();
     
     // System access
-    ECS::World& GetWorld() { return world_; }
+    ECS::World& GetWorld() { return *world_; }
     event::EventManager& GetEventManager() { return eventManager_; }
     input::InputManager& GetInputManager() { return inputManager_; }
     scene::SceneManager& GetSceneManager() { return sceneManager_; }
@@ -91,13 +91,13 @@ public:
 
 private:
     // Core systems
-    ECS::World world_;
     event::EventManager eventManager_;
     input::InputManager inputManager_;
     scene::SceneManager sceneManager_;
     graphics::Renderer renderer_;
     std::unique_ptr<engine::graphics::SpriteRenderer> spriteRenderer_;
     std::unique_ptr<resources::ResourceManager> resourceManager_;
+    std::unique_ptr<engine::ECS::World> world_;
     
     // Engine state
     bool isRunning_ = false;

@@ -77,8 +77,8 @@ void Engine::Shutdown() {
     
     isRunning_ = false;
     
-    world_.GetSystemManager().ClearAllSystems();
-    world_.ClearAllEntities();
+    world_->GetSystemManager().ClearAllSystems();
+    world_->ClearAllEntities();
     
     spriteRenderer_.reset();
     resourceManager_.reset();
@@ -93,11 +93,12 @@ void Engine::InitializeSystems() {
     inputManager_.SetEventManager(&eventManager_);
     sceneManager_.SetEventManager(&eventManager_);
     sceneManager_.SetInputManager(&inputManager_);
-    sceneManager_.SetWorld(&world_);
+    world_ = std::make_unique<engine::ECS::World>(&eventManager_);
+    sceneManager_.SetWorld(world_.get());
     
     // **Add core ECS systems**
-    auto& systemManager = world_.GetSystemManager();
-    auto& eventManager = world_.GetEventManager();
+    auto& systemManager = world_->GetSystemManager();
+    auto& eventManager = world_->GetEventManager();
     
     // 1. Add collision system (high priority - detect collisions first)
     auto collisionSystem = std::make_unique<ECS::CollisionSystem>();
@@ -126,7 +127,7 @@ void Engine::InitializeSystems() {
 void Engine::UpdateSystems() {
     inputManager_.Update();
     eventManager_.Update();
-    world_.Update(deltaTime_);
+    world_->Update(deltaTime_);
     sceneManager_.Update(deltaTime_);
 }
 

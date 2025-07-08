@@ -15,7 +15,7 @@ namespace engine::ECS {
 
 class World {
 public:
-    World();
+    World(engine::event::EventManager* eventManager = nullptr);
     ~World() = default;
 
     // ECS Integration
@@ -24,7 +24,9 @@ public:
     SystemManager& GetSystemManager() { return systemManager_; }
     
     // EventSystem
-    engine::event::EventManager& GetEventManager() { return eventManager_; }
+    engine::event::EventManager& GetEventManager() {
+        return eventManager_ ? *eventManager_ : internalEventManager_;
+    }
     
     // Entity management
     void ClearAllEntities();
@@ -43,7 +45,8 @@ private:
     ComponentManager componentManager_;
     SystemManager systemManager_;
     WorldState worldState_;
-    engine::event::EventManager eventManager_;
+    engine::event::EventManager* eventManager_;
+    engine::event::EventManager internalEventManager_;  //backup internal eventManager
 };
 
 } // namespace engine::ECS
