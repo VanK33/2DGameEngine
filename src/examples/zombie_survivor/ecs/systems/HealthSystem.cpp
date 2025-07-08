@@ -7,11 +7,48 @@
 #include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
+#include <iostream>
 
 namespace ZombieSurvivor::System {
 
+void HealthSystem::Init() {
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& eventManager = world->GetEventManager();
+    
+    // 订阅伤害事件
+    eventManager.Subscribe(engine::event::EventType::CUSTOM, this);
+    
+    std::cout << "[HealthSystem] Initialized and subscribed to damage events" << std::endl;
+}
+
 void HealthSystem::Update(float deltaTime) {
     ProcessDeathChecks();
+}
+
+void HealthSystem::Shutdown() {
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& eventManager = world->GetEventManager();
+    
+    // 取消订阅事件
+    eventManager.Unsubscribe(engine::event::EventType::CUSTOM, this);
+    
+    std::cout << "[HealthSystem] Shutdown and unsubscribed from events" << std::endl;
+}
+
+void HealthSystem::onEvent(const std::shared_ptr<engine::event::Event>& event) {
+    if (!event) return;
+    
+    switch (event->GetType()) {
+        case engine::event::EventType::CUSTOM:
+            HandleGameEvent(event);
+            break;
+        default:
+            break;
+    }
 }
 
 void HealthSystem::ModifyHealth(uint32_t entityId, float amount) {
@@ -157,6 +194,10 @@ bool HealthSystem::IsEntityAlive(uint32_t entityId) const {
 float HealthSystem::GetCurrentHealth(uint32_t entityId) const {
     auto* world = GetWorld();
     if (!world) return 0.0f;
+    
+    auto& componentManager = world->GetComponentManager();
+    auto* health = componentManager.GetComponent<ZombieSurvivor::Component::HealthComponent>(entityId);
+    return health ? health->health : 0.0f;
 }
 
 float HealthSystem::GetMaxHealth(uint32_t entityId) const {
@@ -181,5 +222,30 @@ float HealthSystem::GetHealthPercentage(uint32_t entityId) const {
 }
 
 
+
+void HealthSystem::HandleGameEvent(const std::shared_ptr<engine::event::Event>& event) {
+    auto gameEvent = std::dynamic_pointer_cast<Events::GameEvent>(event);
+    if (!gameEvent) return;
+    
+    auto eventType = gameEvent->GetGameEventType();
+    
+    switch (eventType) {
+        case Events::GameEventType::DAMAGE_TAKEN:
+            HandleDamageEvent(gameEvent->GetData());
+            break;
+        default:
+            break;
+    }
+}
+
+void HealthSystem::HandleDamageEvent(const std::shared_ptr<void>& eventData) {
+    auto damageData = std::static_pointer_cast<Events::DamageData>(eventData);
+    if (!damageData) return;
+    
+    ModifyHealth(damageData->targetEntityId, -static_cast<float>(damageData->damageAmount));
+    
+    std::cout << "[HealthSystem] Applied " << damageData->damageAmount 
+              << " damage to entity " << damageData->targetEntityId << std::endl;
+}
 
 } // namespace ZombieSurvivor::System
