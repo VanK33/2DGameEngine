@@ -42,4 +42,20 @@ struct WeaponSwitchedData {
     int ammoCount;
 };
 
+struct HealthChangedData {
+    uint32_t entityId;
+    float oldHealth;
+    float newHealth;
+    float healthPercentage;
+};
+
+struct EntityDiedData {
+    uint32_t entityId;
+    std::string deathCause;
+    float positionX;
+    float positionY;
+    float survivalTime;
+    uint32_t killerEntityId;
+};
+
 } // namespace ZombieSurvivor::Events

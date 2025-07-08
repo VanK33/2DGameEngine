@@ -16,7 +16,9 @@ enum class GameEventType {
     DAMAGE_DEALT,
     DAMAGE_TAKEN,
     POWER_UP_COLLECTED,
-    WAVE_COMPLETED
+    WAVE_COMPLETED,
+    HEALTH_CHANGED,
+    ENTITY_DIED
 };
 
 class GameEvent : public engine::event::Event {
