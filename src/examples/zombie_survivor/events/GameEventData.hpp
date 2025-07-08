@@ -1,0 +1,45 @@
+// src/examples/zombie_survivor/events/GameEventData.hpp
+
+#pragma once
+
+#include <string>
+#include <cstdint>
+
+namespace ZombieSurvivor::Events {
+
+struct EnemyKilledData {
+    uint32_t playerId;
+    uint32_t enemyId;
+    int expReward;
+    std::string enemyType;
+    float positionX, positionY;
+};
+
+struct PlayerLevelUpData {
+    uint32_t playerId;
+    int oldLevel;
+    int newLevel;
+    int totalExperience;
+};
+
+struct ExperienceGainedData {
+    uint32_t playerId;
+    int experienceAmount;
+    std::string source; // "enemy_kill", "quest", "bonus"
+};
+
+struct DamageData {
+    uint32_t sourceEntityId;
+    uint32_t targetEntityId;
+    int damageAmount;
+    std::string damageType; // "physical", "fire", "poison"
+};
+
+struct WeaponSwitchedData {
+    uint32_t playerId;
+    std::string oldWeapon;
+    std::string newWeapon;
+    int ammoCount;
+};
+
+} // namespace ZombieSurvivor::Events
