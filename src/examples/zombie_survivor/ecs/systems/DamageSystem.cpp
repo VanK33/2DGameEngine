@@ -17,11 +17,8 @@ void DamageSystem::Init() {
     
     auto& eventManager = world->GetEventManager();
     
-    // 订阅碰撞事件
     eventManager.Subscribe(engine::event::EventType::ENTITY_COLLISION, this);
     eventManager.Subscribe(engine::event::EventType::COLLISION_STARTED, this);
-    
-    // 订阅游戏自定义事件
     eventManager.Subscribe(engine::event::EventType::CUSTOM, this);
     
     std::cout << "[DamageSystem] Initialized and subscribed to collision events" << std::endl;
@@ -39,7 +36,6 @@ void DamageSystem::Shutdown() {
     
     auto& eventManager = world->GetEventManager();
     
-    // 取消订阅事件
     eventManager.Unsubscribe(engine::event::EventType::ENTITY_COLLISION, this);
     eventManager.Unsubscribe(engine::event::EventType::COLLISION_STARTED, this);
     eventManager.Unsubscribe(engine::event::EventType::CUSTOM, this);
@@ -84,15 +80,12 @@ void DamageSystem::HandleCollisionEvent(const std::shared_ptr<engine::event::Eve
     uint32_t entityA = collisionData->entityA;
     uint32_t entityB = collisionData->entityB;
     
-    // 检查哪个实体有武器组件（攻击者）
     auto* weaponA = componentManager.GetComponent<Component::WeaponComponent>(entityA);
     auto* weaponB = componentManager.GetComponent<Component::WeaponComponent>(entityB);
-    
-    // 检查哪个实体有生命值组件（可以受伤的目标）
+
     auto* healthA = componentManager.GetComponent<Component::HealthComponent>(entityA);
     auto* healthB = componentManager.GetComponent<Component::HealthComponent>(entityB);
     
-    // 处理伤害：有武器的攻击有生命值的
     if (weaponA && healthB && healthB->isAlive) {
         int damage = CalculateDamage(entityA, entityB, static_cast<int>(weaponA->damage));
         DealDamage(entityB, entityA, damage, "weapon");
@@ -111,13 +104,11 @@ void DamageSystem::DealDamage(uint32_t targetEntityId, uint32_t sourceEntityId,
     
     auto& componentManager = world->GetComponentManager();
     
-    // 验证目标实体是否有生命值组件
     auto* health = componentManager.GetComponent<Component::HealthComponent>(targetEntityId);
     if (!health || !health->isAlive) {
-        return;  // 目标没有生命值或已死亡
+        return;
     }
     
-    // 确保伤害值为正
     if (damage <= 0) {
         return;
     }
