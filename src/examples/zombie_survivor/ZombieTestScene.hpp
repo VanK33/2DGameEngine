@@ -12,12 +12,15 @@
 #include "ecs/systems/UpgradeSystem.hpp"
 #include "ecs/systems/InputSystem.hpp"
 #include "ecs/systems/MovementSystem.hpp"
+#include "ecs/systems/WeaponSystem.hpp"
+#include "ecs/systems/AmmoSystem.hpp"
 
 // 组件包含
 #include "ecs/components/HealthComponent.hpp"
 #include "ecs/components/ExperienceComponent.hpp"
 #include "ecs/components/UpgradeComponent.hpp"
 #include "ecs/components/WeaponComponent.hpp"
+#include "ecs/components/AmmoComponent.hpp"
 #include "ecs/components/MovementComponent.hpp"
 #include "ecs/components/InputComponent.hpp"
 #include "ecs/components/CombatStatsComponent.hpp"
@@ -62,6 +65,8 @@ private:
     std::unique_ptr<System::UpgradeSystem> upgradeSystem_;
     std::unique_ptr<System::InputSystem> inputSystem_;
     std::unique_ptr<System::MovementSystem> movementSystem_;
+    std::unique_ptr<System::WeaponSystem> weaponSystem_;
+    std::unique_ptr<System::AmmoSystem> ammoSystem_;
     
     // 测试实体
     uint32_t playerId_;

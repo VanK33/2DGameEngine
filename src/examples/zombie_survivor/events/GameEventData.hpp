@@ -42,6 +42,32 @@ struct WeaponSwitchedData {
     int ammoCount;
 };
 
+struct WeaponFireRequestData {
+    uint32_t entityId;
+    bool inputPressed;
+};
+
+struct WeaponFiredData {
+    uint32_t entityId;
+    float damage;
+    int currentAmmo;
+    int totalAmmo;
+};
+
+struct ReloadData {
+    uint32_t entityId;
+    float reloadTime;
+    int magazineCapacity;
+    int totalAmmo;
+};
+
+struct AmmoConsumedData {
+    uint32_t entityId;
+    int amountConsumed;
+    int currentAmmo;
+    int totalAmmo;
+};
+
 struct HealthChangedData {
     uint32_t entityId;
     float oldHealth;
@@ -56,6 +82,29 @@ struct EntityDiedData {
     float positionY;
     float survivalTime;
     uint32_t killerEntityId;
+};
+
+struct ReloadExecuteData {
+    uint32_t entityId;
+    int reloadAmount;
+    int magazineCapacity;
+};
+
+struct WeaponInitData {
+    uint32_t entityId;
+    int magazineCapacity;
+    int defaultTotalAmmo;
+    int maxTotalAmmo;
+    float fireRate;
+    float damage;
+    float reloadTime;
+};
+
+struct ReloadExecutedData {
+    uint32_t entityId;
+    int actualReloadAmount;
+    int newCurrentAmmo;
+    int newTotalAmmo;
 };
 
 } // namespace ZombieSurvivor::Events

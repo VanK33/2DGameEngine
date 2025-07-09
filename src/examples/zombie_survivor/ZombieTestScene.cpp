@@ -39,6 +39,12 @@ void ZombieTestScene::Load() {
     auto movementSystem = std::make_unique<System::MovementSystem>();
     systemManager.AddSystem(std::move(movementSystem), 15);
     
+    auto weaponSystem = std::make_unique<System::WeaponSystem>();
+    systemManager.AddSystem(std::move(weaponSystem), 10);
+    
+    auto ammoSystem = std::make_unique<System::AmmoSystem>();
+    systemManager.AddSystem(std::move(ammoSystem), 5);
+    
     // 初始化系统
     InitializeSystems();
     
@@ -55,6 +61,8 @@ void ZombieTestScene::Unload() {
         if (damageSystem_) damageSystem_->Shutdown();
         if (experienceSystem_) experienceSystem_->Shutdown();
         if (upgradeSystem_) upgradeSystem_->Shutdown();
+        if (weaponSystem_) weaponSystem_->Shutdown();
+        if (ammoSystem_) ammoSystem_->Shutdown();
         
         world_ = nullptr;
     }
@@ -69,6 +77,8 @@ void ZombieTestScene::Update(float deltaTime) {
     // 更新所有系统
     if (inputSystem_) inputSystem_->Update(deltaTime);
     if (movementSystem_) movementSystem_->Update(deltaTime);
+    if (weaponSystem_) weaponSystem_->Update(deltaTime);
+    if (ammoSystem_) ammoSystem_->Update(deltaTime);
     if (healthSystem_) healthSystem_->Update(deltaTime);
     if (damageSystem_) damageSystem_->Update(deltaTime);
     if (experienceSystem_) {
@@ -126,6 +136,8 @@ void ZombieTestScene::InitializeSystems() {
     upgradeSystem_ = std::make_unique<System::UpgradeSystem>();
     inputSystem_ = std::make_unique<System::InputSystem>(*inputManager_);
     movementSystem_ = std::make_unique<System::MovementSystem>();
+    weaponSystem_ = std::make_unique<System::WeaponSystem>();
+    ammoSystem_ = std::make_unique<System::AmmoSystem>();
     
     std::cout << "[DEBUG] Created ExperienceSystem: " << experienceSystem_.get() << std::endl;
     
@@ -136,6 +148,8 @@ void ZombieTestScene::InitializeSystems() {
     upgradeSystem_->SetWorld(world_);
     inputSystem_->SetWorld(world_);
     movementSystem_->SetWorld(world_);
+    weaponSystem_->SetWorld(world_);
+    ammoSystem_->SetWorld(world_);
     
     std::cout << "[DEBUG] Set world to ExperienceSystem" << std::endl;
     
@@ -148,6 +162,8 @@ void ZombieTestScene::InitializeSystems() {
     upgradeSystem_->Init();
     inputSystem_->Init();
     movementSystem_->Init();
+    weaponSystem_->Init();
+    ammoSystem_->Init();
     
     std::cout << "🔧 All systems initialized" << std::endl;
 }
@@ -164,11 +180,32 @@ void ZombieTestScene::CreateTestEntities() {
     componentManager.AddComponent<Component::ExperienceComponent>(playerId_, Component::ExperienceComponent{});
     componentManager.AddComponent<Component::UpgradeComponent>(playerId_, Component::UpgradeComponent{});
     componentManager.AddComponent<Component::WeaponComponent>(playerId_, Component::WeaponComponent{});
+    componentManager.AddComponent<Component::AmmoComponent>(playerId_, Component::AmmoComponent{});
     componentManager.AddComponent<Component::MovementComponent>(playerId_, Component::MovementComponent{});
     componentManager.AddComponent<Component::InputComponent>(playerId_, Component::InputComponent{});
     componentManager.AddComponent<Component::CombatStatsComponent>(playerId_, Component::CombatStatsComponent{});
     componentManager.AddComponent<engine::ECS::Transform2D>(playerId_, engine::ECS::Transform2D{});
     componentManager.AddComponent<engine::ECS::Velocity2D>(playerId_, engine::ECS::Velocity2D{});
+    
+    // 初始化弹药从武器配置
+    if (ammoSystem_) {
+        ammoSystem_->InitializeAmmoFromWeapon(playerId_);
+    }
+    
+    // 测试新的射击流程
+    std::cout << "🔫 Testing new weapon-ammo collaboration..." << std::endl;
+    if (ammoSystem_) {
+        std::cout << "   初始弹药状态: " << (ammoSystem_->HasAmmo(playerId_) ? "有弹药" : "无弹药") << std::endl;
+    }
+    if (weaponSystem_) {
+        std::cout << "   武器是否就绪: " << (weaponSystem_->IsWeaponReady(playerId_) ? "就绪" : "未就绪") << std::endl;
+        
+        // 模拟射击请求
+        weaponSystem_->TryShoot(playerId_);
+    }
+    if (ammoSystem_) {
+        std::cout << "   射击后弹药状态: " << (ammoSystem_->HasAmmo(playerId_) ? "有弹药" : "无弹药") << std::endl;
+    }
     
     // 创建敌人实体
     enemyId_ = entityFactory.CreateEntity("TestEnemy");

@@ -34,8 +34,8 @@ The following systems need to be implemented:
 6. HealthSystem (handle health changes and damage) [✓]
 7. DamageSystem (handle damage calculation and distribution) [✓]
 8. ExperienceSystem (handle experience gaining and leveling) [✓]
-9. UpgradeSystem (handle skill upgrades and player progression)
-10. PlayerStatsSystem (handle player statistics tracking and management)
+9. UpgradeSystem (handle skill upgrades and player progression) [✓]
+10. PlayerStatsSystem (handle player statistics tracking and management) [✓]
 
 ## Engine Systems (Reused)
 
