@@ -9,7 +9,9 @@ namespace ZombieSurvivor::Component {
 struct AimingComponent {
     engine::Vector2 aimDirection{1.0f, 0.0f};
     engine::Vector2 mouseWorldPos{0.0f, 0.0f};
-    bool isAiming = false;
+
+    bool showAimLine = true;
+    float maxAimRange = 250.0f;
 };
 
 } // namespace ZombieSurvivor::Component
