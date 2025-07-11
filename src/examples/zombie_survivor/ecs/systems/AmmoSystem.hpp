@@ -37,6 +37,7 @@ public:
 
 private:
     void HandleGameEvent(const std::shared_ptr<engine::event::Event>& event);
+    void HandleAmmoConsumeRequest(const std::shared_ptr<void>& eventData);
     void HandleAmmoConsumed(const std::shared_ptr<void>& eventData);
     void HandleReloadCompleted(const std::shared_ptr<void>& eventData);
     void HandleWeaponFireRequested(const std::shared_ptr<void>& eventData);
@@ -51,6 +52,7 @@ private:
     
     void PublishAmmoDepletedEvent(uint32_t entityId);
     void PublishAmmoChangedEvent(uint32_t entityId, int oldCurrent, int oldTotal, int newCurrent, int newTotal);
+    void PublishWeaponFiredEvent(uint32_t entityId);
 
     void PublishReloadExecutedEvent(uint32_t entityId, int actualReload, int newCurrent, int newTotal);
 };

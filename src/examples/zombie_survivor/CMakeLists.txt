@@ -50,6 +50,11 @@ set(ZOMBIE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/UpgradeSystem.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/WeaponSystem.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/AmmoSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/AimingSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/RotationSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/WeaponFireSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/WeaponInputSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/PlayerStatsSystem.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${ENGINE_CORE_SOURCES} ${ZOMBIE_SOURCES})

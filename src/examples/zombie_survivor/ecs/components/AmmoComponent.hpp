@@ -5,6 +5,13 @@
 
 namespace ZombieSurvivor::Component { 
 
+enum class AmmoType {
+        NONE = 0,
+        PISTOL,    // 9mm
+        RIFLE,     // 5.56mm  
+        SMG,       // .45 ACP
+};
+
 struct AmmoComponent {
     int currentAmmo = 12;
     int totalAmmo = 120;

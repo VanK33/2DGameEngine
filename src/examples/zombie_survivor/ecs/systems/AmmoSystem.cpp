@@ -176,6 +176,9 @@ void AmmoSystem::HandleGameEvent(const std::shared_ptr<engine::event::Event>& ev
         case Events::GameEventType::WEAPON_FIRE_REQUESTED:
             HandleWeaponFireRequested(gameEvent->GetData());
             break;
+        case Events::GameEventType::AMMO_CONSUME_REQUEST:
+            HandleAmmoConsumeRequest(gameEvent->GetData());
+            break;
         case Events::GameEventType::AMMO_CONSUMED:
             HandleAmmoConsumed(gameEvent->GetData());
             break;
@@ -193,12 +196,31 @@ void AmmoSystem::HandleGameEvent(const std::shared_ptr<engine::event::Event>& ev
     }
 }
 
+void AmmoSystem::HandleAmmoConsumeRequest(const std::shared_ptr<void>& eventData) {
+    auto data = std::static_pointer_cast<Events::AmmoConsumeRequestData>(eventData);
+    if (!data) return;
+    
+    if (!CanConsume(data->playerId, data->amount)) {
+        std::cout << "[AmmoSystem] Player " << data->playerId << " cannot consume " 
+                  << data->amount << " ammo - insufficient ammo" << std::endl;
+        return;
+    }
+    
+    ConsumeAmmo(data->playerId, data->amount);
+    
+    // Publish WEAPON_FIRED event to notify WeaponSystem to apply cooldown
+    PublishWeaponFiredEvent(data->playerId);
+    
+    std::cout << "[AmmoSystem] Player " << data->playerId << " ammo consume request approved, " 
+              << data->amount << " ammo consumed" << std::endl;
+}
+
 void AmmoSystem::HandleAmmoConsumed(const std::shared_ptr<void>& eventData) {
     auto data = std::static_pointer_cast<Events::AmmoConsumedData>(eventData);
     if (!data) return;
     
-    // 这里可以处理弹药消耗的统计或其他逻辑
-    // 弹药数量的实际变化已经在WeaponSystem中处理了
+    // Handle ammo consumption statistics or other logic
+    // Actual ammo quantity change has been handled in WeaponSystem
     
     std::cout << "[AmmoSystem] Handled ammo consumed event for entity " << data->entityId << std::endl;
 }
@@ -299,6 +321,28 @@ void AmmoSystem::PublishAmmoChangedEvent(uint32_t entityId, int oldCurrent, int 
         std::static_pointer_cast<void>(changedData)
     );
     eventManager.Publish(changedEvent);
+}
+
+void AmmoSystem::PublishWeaponFiredEvent(uint32_t entityId) {
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& eventManager = world->GetEventManager();
+    
+    auto* ammo = GetAmmoComponent(entityId);
+    if (!ammo) return;
+    
+    auto firedData = std::make_shared<Events::WeaponFiredData>();
+    firedData->entityId = entityId;
+    firedData->damage = 0.0f;  // Damage will be handled by weapon system
+    firedData->currentAmmo = ammo->currentAmmo;
+    firedData->totalAmmo = ammo->totalAmmo;
+    
+    auto firedEvent = std::make_shared<Events::GameEvent>(
+        Events::GameEventType::WEAPON_FIRED,
+        std::static_pointer_cast<void>(firedData)
+    );
+    eventManager.Publish(firedEvent);
 }
 
 void AmmoSystem::ExecuteReload(uint32_t entityId, int reloadAmount, int magazineCapacity) {

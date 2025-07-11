@@ -6,7 +6,10 @@
 namespace ZombieSurvivor::Component {
 
 enum class WeaponType {
-    PISTOL
+    NONE = 0,
+    PISTOL,
+    RIFLE,
+    SMG,
 };
 
 struct WeaponComponent {

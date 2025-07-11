@@ -9,5 +9,6 @@ struct InputComponent {
     engine::Vector2 mousePosition{0.0f, 0.0f};
     bool shootButtonPressed = false;
     bool reloadButtonPressed = false;
+    int weaponSwitchPressed = -1;
 };
 } //namespace ZombieSurvivor::Component

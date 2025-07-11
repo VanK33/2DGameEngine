@@ -28,6 +28,14 @@ enum class GameEventType {
     WEAPON_INITIALIZED, 
     RELOAD_EXECUTED,
     RELOAD_EXECUTE,
+    FIRE_INPUT,
+    RELOAD_INPUT,
+    WEAPON_SWITCH_INPUT,
+    WEAPON_PICKED_UP,
+    WEAPON_DROPPED,
+    WEAPON_DESTORYED,
+    AMMO_CONSUME_REQUEST,
+    AMMO_REFRESH
 };
 
 class GameEvent : public engine::event::Event {

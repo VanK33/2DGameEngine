@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "examples/zombie_survivor/ecs/components/AmmoComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
 #include <string>
 #include <cstdint>
 
@@ -37,9 +39,10 @@ struct DamageData {
 
 struct WeaponSwitchedData {
     uint32_t playerId;
-    std::string oldWeapon;
-    std::string newWeapon;
-    int ammoCount;
+    Component::WeaponType oldWeaponType;
+    Component::WeaponType newWeaponType;
+    float fireRate;
+    float reloadTime; 
 };
 
 struct WeaponFireRequestData {
@@ -105,6 +108,43 @@ struct ReloadExecutedData {
     int actualReloadAmount;
     int newCurrentAmmo;
     int newTotalAmmo;
+};
+
+struct FireInputData {
+    uint32_t playerId;
+    bool pressed;
+};
+
+struct ReloadInputData {
+    uint32_t playerId;
+};
+
+struct WeaponSwitchInputData {
+    uint32_t playerId;
+    int weaponSlot; // 0 - 2 for weapon slot
+};
+
+struct AmmoConsumeRequestData {
+    uint32_t playerId;
+    Component::AmmoType ammoType;
+    int amount;
+};
+
+struct AmmoRefreshData {
+    uint32_t playerId;
+    Component::AmmoType ammoType;
+    int ammoToAdd;
+};
+
+struct AmmoDepletedData {
+    uint32_t playerId;
+    Component::AmmoType ammoType;
+};
+
+struct WeaponPickupData {
+    uint32_t playerId;
+    Component::WeaponType weaponType;
+    int carriedAmmo;
 };
 
 } // namespace ZombieSurvivor::Events

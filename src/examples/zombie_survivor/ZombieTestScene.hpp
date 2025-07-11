@@ -5,7 +5,7 @@
 #include "engine/core/event/EventManager.hpp"
 #include "engine/input/InputManager.hpp"
 
-// 系统包含
+// System includes
 #include "ecs/systems/HealthSystem.hpp"
 #include "ecs/systems/DamageSystem.hpp"
 #include "ecs/systems/ExperienceSystem.hpp"
@@ -14,8 +14,13 @@
 #include "ecs/systems/MovementSystem.hpp"
 #include "ecs/systems/WeaponSystem.hpp"
 #include "ecs/systems/AmmoSystem.hpp"
+#include "ecs/systems/AimingSystem.hpp"
+#include "ecs/systems/RotationSystem.hpp"
+#include "ecs/systems/WeaponFireSystem.hpp"
+#include "ecs/systems/WeaponInputSystem.hpp"
+#include "ecs/systems/PlayerStatsSystem.hpp"
 
-// 组件包含
+// Component includes
 #include "ecs/components/HealthComponent.hpp"
 #include "ecs/components/ExperienceComponent.hpp"
 #include "ecs/components/UpgradeComponent.hpp"
@@ -24,8 +29,10 @@
 #include "ecs/components/MovementComponent.hpp"
 #include "ecs/components/InputComponent.hpp"
 #include "ecs/components/CombatStatsComponent.hpp"
+#include "ecs/components/AimingComponent.hpp"
+#include "ecs/components/PlayerStatsComponent.hpp"
 
-// 事件包含
+// Event includes
 #include "events/GameEventUtils.hpp"
 
 #include <memory>
@@ -46,7 +53,7 @@ public:
     void HandleEvent(const SDL_Event& event) override;
     std::string GetSceneId() const override;
     
-    // Scene 纯虚方法实现
+    // Scene pure virtual method implementations
     void SetEventManager(engine::event::EventManager* manager) override;
     void SetInputManager(engine::input::InputManager* manager) override;
 
@@ -58,7 +65,7 @@ private:
     // ECS World
     engine::ECS::World* world_; 
     
-    // 系统
+    // Systems
     std::unique_ptr<System::HealthSystem> healthSystem_;
     std::unique_ptr<System::DamageSystem> damageSystem_;
     std::unique_ptr<System::ExperienceSystem> experienceSystem_;
@@ -68,11 +75,11 @@ private:
     std::unique_ptr<System::WeaponSystem> weaponSystem_;
     std::unique_ptr<System::AmmoSystem> ammoSystem_;
     
-    // 测试实体
+    // Test entities
     uint32_t playerId_;
     uint32_t enemyId_;
     
-    // 测试状态
+    // Test state
     float testTimer_;
     int testPhase_;
     bool testCompleted_;
@@ -86,6 +93,19 @@ private:
     void PrintTestResults();
 
     bool experienceTestPending_ = false;
+
+    // New systems
+    std::unique_ptr<System::AimingSystem> aimingSystem_;
+    std::unique_ptr<System::RotationSystem> rotationSystem_;
+    std::unique_ptr<System::WeaponFireSystem> weaponFireSystem_;
+    std::unique_ptr<System::WeaponInputSystem> weaponInputSystem_;
+    std::unique_ptr<System::PlayerStatsSystem> playerStatsSystem_;
+
+    // New test methods
+    void TestAimingAndRotation();
+    void TestWeaponFireSystem();
+    void TestReloadSystem();
+    void TestPlayerStatsSystem();
 };
 
 } // namespace ZombieSurvivor

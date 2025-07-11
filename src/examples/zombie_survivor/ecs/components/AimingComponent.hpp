@@ -1,7 +1,7 @@
 // src/examples/zombie_survivor/ecs/compoents/AimingComponent.hpp
 #pragma once
 
-#include "engine/core/Types.hpp";
+#include "engine/core/Types.hpp"
 
 namespace ZombieSurvivor::Component {
 
