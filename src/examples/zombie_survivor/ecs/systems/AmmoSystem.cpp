@@ -4,8 +4,10 @@
 #include "engine/core/ecs/World.hpp"
 #include "engine/core/event/EventManager.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
+#include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
 #include <iostream>
 #include <algorithm>
+#include <unordered_map>
 
 namespace ZombieSurvivor::System {
 
@@ -22,6 +24,7 @@ void AmmoSystem::Init() {
 void AmmoSystem::Update(float deltaTime) {
     // AmmoSystem主要是事件驱动的，Update中可以处理弹药统计或其他定期检查
     // 目前保持空实现
+    UpdateReloadProgress(deltaTime);
 }
 
 void AmmoSystem::Shutdown() {
@@ -188,6 +191,9 @@ void AmmoSystem::HandleGameEvent(const std::shared_ptr<engine::event::Event>& ev
         case Events::GameEventType::RELOAD_EXECUTE:
             HandleReloadExecute(gameEvent->GetData());
             break;
+        case Events::GameEventType::RELOAD_STARTED:
+            HandleReloadStarted(gameEvent->GetData());
+            break;
         case Events::GameEventType::WEAPON_INITIALIZED:
             HandleWeaponInitialized(gameEvent->GetData());
             break;
@@ -229,10 +235,32 @@ void AmmoSystem::HandleReloadCompleted(const std::shared_ptr<void>& eventData) {
     auto data = std::static_pointer_cast<Events::ReloadData>(eventData);
     if (!data) return;
     
-    // 这里可以处理装弹完成后的统计或其他逻辑
-    // 弹药数量的实际变化已经在WeaponSystem中处理了
+    // 🔧 修复：实际执行弹药补充！
+    auto* world = GetWorld();
+    if (world) {
+        auto& componentManager = world->GetComponentManager();
+        auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(data->entityId);
+        
+        if (weapon) {
+            // 使用武器的弹匣容量执行换弹
+            ExecuteReload(data->entityId, weapon->magazineCapacity, weapon->magazineCapacity);
+        }
+    }
     
-    std::cout << "[AmmoSystem] Handled reload completed event for entity " << data->entityId << std::endl;
+    auto* ammo = GetAmmoComponent(data->entityId);
+    if (ammo) {
+        // 清理换弹状态
+        ammo->isReloading = false;
+        ammo->reloadProgress = 0.0f;
+    }
+    
+    // 清理换弹状态跟踪
+    auto it = reloadStates_.find(data->entityId);
+    if (it != reloadStates_.end()) {
+        it->second.isActive = false;
+    }
+    
+    std::cout << "[AmmoSystem] Reload completed for entity " << data->entityId << ", ammo replenished and state cleared" << std::endl;
 }
 
 void AmmoSystem::HandleWeaponFireRequested(const std::shared_ptr<void>& eventData) {
@@ -393,6 +421,27 @@ void AmmoSystem::HandleWeaponInitialized(const std::shared_ptr<void>& eventData)
               << " (max: " << data->maxTotalAmmo << ")" << std::endl;
 }
 
+void AmmoSystem::HandleReloadStarted(const std::shared_ptr<void>& eventData) {
+    auto data = std::static_pointer_cast<Events::ReloadData>(eventData);
+    if (!data) return;
+    
+    auto* ammo = GetAmmoComponent(data->entityId);
+    if (!ammo) return;
+    
+    // 设置AmmoComponent状态
+    ammo->isReloading = true;
+    ammo->reloadProgress = 0.0f;
+    
+    // 初始化换弹状态跟踪
+    ReloadState& reloadState = reloadStates_[data->entityId];
+    reloadState.reloadTime = data->reloadTime;
+    reloadState.elapsedTime = 0.0f;
+    reloadState.isActive = true;
+    
+    std::cout << "[AmmoSystem] Entity " << data->entityId << " started reloading (time: " 
+              << data->reloadTime << "s), AmmoComponent state updated" << std::endl;
+}
+
 void AmmoSystem::PublishReloadExecutedEvent(uint32_t entityId, int actualReload, int newCurrent, int newTotal) {
     auto* world = GetWorld();
     if (!world) return;
@@ -409,6 +458,46 @@ void AmmoSystem::PublishReloadExecutedEvent(uint32_t entityId, int actualReload,
         std::static_pointer_cast<void>(executedData)
     );
     eventManager.Publish(executedEvent);
+}
+
+void AmmoSystem::UpdateReloadProgress(float deltaTime) {
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& componentManager = world->GetComponentManager();
+    
+    for (auto& [entityId, reloadState] : reloadStates_) {
+        if (!reloadState.isActive) continue;
+        
+        auto* ammo = componentManager.GetComponent<Component::AmmoComponent>(entityId);
+        if (!ammo || !ammo->isReloading) {
+            // 换弹已结束，清理状态
+            reloadState.isActive = false;
+            continue;
+        }
+        
+        // 更新进度
+        reloadState.elapsedTime += deltaTime;
+        float progress = std::min(1.0f, reloadState.elapsedTime / reloadState.reloadTime);
+        ammo->reloadProgress = progress;
+        
+        // 检查是否完成（这里主要是更新进度，实际完成由WeaponSystem处理）
+        if (progress >= 1.0f) {
+            ammo->isReloading = false;
+            ammo->reloadProgress = 0.0f;
+            reloadState.isActive = false;
+        }
+    }
+    
+    // 清理非活跃状态
+    auto it = reloadStates_.begin();
+    while (it != reloadStates_.end()) {
+        if (!it->second.isActive) {
+            it = reloadStates_.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 } // namespace ZombieSurvivor::System 

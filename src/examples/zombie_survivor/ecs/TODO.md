@@ -30,7 +30,7 @@ The following systems need to be implemented:
 2. MovementSystem (handle movement and steering) [✓]  
 3. WeaponSystem (handle shooting logic, use weapon blueprint) [✓] 
 4. AmmoSystem (handle ammo management and reloading, initialize from weapon config) [✓] 
-5. AimingSystem (calculate aiming direction, manage aiming state) 
+5. AimingSystem (calculate aiming direction, manage aiming state) [✓]
 6. HealthSystem (handle health changes and damage) [✓]
 7. DamageSystem (handle damage calculation and distribution) [✓]
 8. ExperienceSystem (handle experience gaining and leveling) [✓]

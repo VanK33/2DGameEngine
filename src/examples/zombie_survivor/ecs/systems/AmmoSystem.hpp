@@ -7,6 +7,7 @@
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
 #include "examples/zombie_survivor/ecs/components/AmmoComponent.hpp"
 #include <string>
+#include <unordered_map>
 
 namespace ZombieSurvivor::System {
 
@@ -36,11 +37,22 @@ public:
     void ExecuteReload(uint32_t entityId, int reloadAmount, int magazineCapacity);
 
 private:
+    // 换弹状态跟踪
+    struct ReloadState {
+        float reloadTime = 0.0f;
+        float elapsedTime = 0.0f;
+        bool isActive = false;
+    };
+    std::unordered_map<uint32_t, ReloadState> reloadStates_;
+    
+    void UpdateReloadProgress(float deltaTime);
+
     void HandleGameEvent(const std::shared_ptr<engine::event::Event>& event);
     void HandleAmmoConsumeRequest(const std::shared_ptr<void>& eventData);
     void HandleAmmoConsumed(const std::shared_ptr<void>& eventData);
     void HandleReloadCompleted(const std::shared_ptr<void>& eventData);
     void HandleWeaponFireRequested(const std::shared_ptr<void>& eventData);
+    void HandleReloadStarted(const std::shared_ptr<void>& eventData);
 
     void HandleReloadExecute(const std::shared_ptr<void>& eventData);
     void HandleWeaponInitialized(const std::shared_ptr<void>& eventData);

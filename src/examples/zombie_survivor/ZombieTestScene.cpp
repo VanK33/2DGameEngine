@@ -517,25 +517,39 @@ void ZombieTestScene::TestWeaponFireSystem() {
     
     std::cout << "    Initial state: Ammo=" << initialAmmo << ", Weapon ready=" << (initialWeaponReady ? "Yes" : "No") << std::endl;
     
-    // Test 1: Publish fire input event
-    if (eventManager_) {
-        auto fireData = std::make_shared<Events::FireInputData>();
-        fireData->playerId = playerId_;
-        fireData->pressed = true;
-        
-        auto fireEvent = std::make_shared<Events::GameEvent>(
-            Events::GameEventType::FIRE_INPUT,
-            std::static_pointer_cast<void>(fireData)
-        );
-        eventManager_->Publish(fireEvent);
-        std::cout << "    ✅ Fire input event published" << std::endl;
+    // Test 1: Simulate fire input through InputComponent
+    auto* input = componentManager.GetComponent<Component::InputComponent>(playerId_);
+    if (!input) {
+        std::cout << "    ❌ No InputComponent found for fire test" << std::endl;
+        return;
     }
+
+    input->shootButtonPressed = true;
+    std::cout << "    ✅ Fire input simulated through InputComponent" << std::endl;
     
-    // Force update systems to handle events
-    if (weaponInputSystem_) weaponInputSystem_->Update(0.016f);
-    if (weaponFireSystem_) weaponFireSystem_->Update(0.016f);
-    if (weaponSystem_) weaponSystem_->Update(0.016f);
-    if (ammoSystem_) ammoSystem_->Update(0.016f);
+    // Force update systems with improved event processing
+    std::cout << "    Processing fire events..." << std::endl;
+    for (int i = 0; i < 8; i++) {
+        auto beforeAmmo = ammo->currentAmmo;
+        
+        // 按正确顺序更新系统
+        if (weaponInputSystem_) weaponInputSystem_->Update(0.016f);  // 1. 处理输入
+        if (eventManager_) eventManager_->Update();                 // 2. 分发事件！
+        if (weaponFireSystem_) weaponFireSystem_->Update(0.016f);    // 3. 处理射击事件
+        if (weaponSystem_) weaponSystem_->Update(0.016f);           // 4. 更新武器状态
+        if (ammoSystem_) ammoSystem_->Update(0.016f);               // 5. 更新弹药
+        
+        auto afterAmmo = ammo->currentAmmo;
+        std::cout << "      Cycle " << (i+1) << ": Ammo " << beforeAmmo << " -> " << afterAmmo << std::endl;
+        
+        if (afterAmmo < beforeAmmo) {
+            std::cout << "      ✅ Fire successfully processed after " << (i+1) << " cycles!" << std::endl;
+            break;
+        }
+        
+        // 重置输入状态，避免重复触发
+        input->shootButtonPressed = false;
+    }
     
     // Check results
     auto afterAmmo = ammo->currentAmmo;
@@ -575,6 +589,7 @@ void ZombieTestScene::TestWeaponFireSystem() {
         
         // Update systems
         if (weaponFireSystem_) weaponFireSystem_->Update(0.016f);
+        if (eventManager_) eventManager_->Update();  // 添加事件分发
         if (weaponSystem_) weaponSystem_->Update(0.016f);
         if (ammoSystem_) ammoSystem_->Update(0.016f);
         
@@ -598,49 +613,57 @@ void ZombieTestScene::TestReloadSystem() {
     auto& componentManager = world_->GetComponentManager();
     auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(playerId_);
     auto* ammo = componentManager.GetComponent<Component::AmmoComponent>(playerId_);
+    auto* input = componentManager.GetComponent<Component::InputComponent>(playerId_);
     
-    if (!weapon || !ammo) {
-        std::cout << "  ❌ Missing weapon or ammo components" << std::endl;
+    if (!weapon || !ammo || !input) {
+        std::cout << "  ❌ Missing required components (weapon/ammo/input)" << std::endl;
         return;
     }
     
     // Simulate ammo depletion state
     ammo->currentAmmo = 0;
     ammo->totalAmmo = 50;
-    bool initialReloadState = ammo->isReloading;
+    ammo->isReloading = false;  // 确保初始状态正确
     
-    std::cout << "    Setting state: Current ammo=0, Total ammo=50, Reloading=" << (initialReloadState ? "Yes" : "No") << std::endl;
+    std::cout << "    Setting state: Current ammo=0, Total ammo=50, Reloading=No" << std::endl;
     
-    // Test 1: Publish reload input event
-    if (eventManager_) {
-        auto reloadData = std::make_shared<Events::ReloadInputData>();
-        reloadData->playerId = playerId_;
+    // Test 1: Simulate reload input through InputComponent
+    input->reloadButtonPressed = true;
+    std::cout << "    ✅ Reload input simulated through InputComponent" << std::endl;
+    
+    // Force update systems to handle events - 改进版本
+    std::cout << "    Processing events..." << std::endl;
+    bool reloadDetected = false;
+    for (int i = 0; i < 8; i++) {
+        // 按正确顺序更新系统
+        if (weaponInputSystem_) weaponInputSystem_->Update(0.016f);  // 1. 处理输入，发布事件
+        if (eventManager_) eventManager_->Update();                 // 2. 分发事件队列！
+        if (weaponSystem_) weaponSystem_->Update(0.016f);           // 3. 接收并处理事件
+        if (ammoSystem_) ammoSystem_->Update(0.016f);               // 4. 更新弹药状态
         
-        auto reloadEvent = std::make_shared<Events::GameEvent>(
-            Events::GameEventType::RELOAD_INPUT,
-            std::static_pointer_cast<void>(reloadData)
-        );
-        eventManager_->Publish(reloadEvent);
-        std::cout << "    ✅ Reload input event published" << std::endl;
+        // 每个周期检查状态
+        bool reloadState = ammo->isReloading;
+        std::cout << "      Cycle " << (i+1) << ": isReloading=" << (reloadState ? "Yes" : "No") << std::endl;
+        
+        if (reloadState) {
+            std::cout << "      ✅ Reload successfully detected after " << (i+1) << " cycles!" << std::endl;
+            reloadDetected = true;
+            break;
+        }
     }
-    
-    // Force update systems to handle events
-    if (weaponInputSystem_) weaponInputSystem_->Update(0.016f);
-    if (weaponSystem_) weaponSystem_->Update(0.016f);
-    if (ammoSystem_) ammoSystem_->Update(0.016f);
     
     // Check if reload started
     bool reloadStarted = ammo->isReloading;
-    std::cout << "    Reload started: " << (reloadStarted ? "Yes" : "No") << std::endl;
+    std::cout << "    Final reload state: " << (reloadStarted ? "Yes" : "No") << std::endl;
     
     if (reloadStarted) {
         std::cout << "    ✅ Reload system correctly responded to input" << std::endl;
         
-        // Test 2: Simulate reload process
+        // Test 2: Simulate reload process (保持原有的换弹模拟逻辑)
         std::cout << "    Simulating reload process..." << std::endl;
         
         float reloadTime = weapon->reloadTime;
-        float timeStep = reloadTime / 5; // Complete reload in 5 steps
+        float timeStep = reloadTime / 5;
         
         for (int i = 1; i <= 5; i++) {
             if (weaponSystem_) weaponSystem_->Update(timeStep);
@@ -657,7 +680,14 @@ void ZombieTestScene::TestReloadSystem() {
             }
         }
         
-        // Check final state
+        // 🔧 给RELOAD_COMPLETED事件处理时间
+        std::cout << "    Processing final reload events..." << std::endl;
+        for (int i = 0; i < 3; i++) {
+            if (eventManager_) eventManager_->Update();  // 处理事件队列
+            if (ammoSystem_) ammoSystem_->Update(0.016f); // 更新AmmoSystem
+        }
+        
+        // Check final state (after event processing)
         int finalAmmo = ammo->currentAmmo;
         bool finalReloadState = ammo->isReloading;
         
@@ -712,3 +742,6 @@ void ZombieTestScene::TestPlayerStatsSystem() {
 }
 
 } // namespace ZombieSurvivor
+
+
+
