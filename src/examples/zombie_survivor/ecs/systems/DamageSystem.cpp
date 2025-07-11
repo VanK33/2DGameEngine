@@ -1,10 +1,12 @@
 #include "DamageSystem.hpp"
 #include "engine/core/ecs/World.hpp"
+#include "engine/core/ecs/components/Tag.hpp"
 #include "engine/core/event/EventManager.hpp"
 #include "engine/core/event/events/PhysicsEvents.hpp"
 #include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/CombatStatsComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/EnemyComponent.hpp"
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include <iostream>
@@ -79,6 +81,12 @@ void DamageSystem::HandleCollisionEvent(const std::shared_ptr<engine::event::Eve
     
     uint32_t entityA = collisionData->entityA;
     uint32_t entityB = collisionData->entityB;
+
+    if ((IsEnemy(entityA) && IsPlayer(entityB)) || 
+    (IsPlayer(entityA) && IsEnemy(entityB))) {
+        HandleEnemyPlayerCollision(entityA, entityB);
+        return;
+    }
     
     auto* weaponA = componentManager.GetComponent<Component::WeaponComponent>(entityA);
     auto* weaponB = componentManager.GetComponent<Component::WeaponComponent>(entityB);
@@ -180,6 +188,58 @@ void DamageSystem::PublishDamageEvent(uint32_t targetEntityId, uint32_t sourceEn
         std::static_pointer_cast<void>(damageData)
     );
     eventManager.Publish(dealtEvent);
+}
+
+void DamageSystem::HandleEnemyPlayerCollision(uint32_t entityA, uint32_t entityB) {
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& componentManager = world->GetComponentManager();
+    
+    Component::EnemyComponent* enemy = nullptr;
+    uint32_t playerEntity = 0;
+    uint32_t enemyEntity = 0;
+    
+    if (IsEnemy(entityA)) {
+        enemy = componentManager.GetComponent<Component::EnemyComponent>(entityA);
+        enemyEntity = entityA;
+        playerEntity = entityB;
+    } else {
+        enemy = componentManager.GetComponent<Component::EnemyComponent>(entityB);
+        enemyEntity = entityB;
+        playerEntity = entityA;
+    }
+    
+    if (!enemy) return;
+    
+    auto* playerHealth = componentManager.GetComponent<Component::HealthComponent>(playerEntity);
+    if (!playerHealth || !playerHealth->isAlive) return;
+    
+    float currentTime = SDL_GetTicks() / 1000.0f;
+    if (currentTime - enemy->lastDamageTime < enemy->damageCooldown) {
+        return;
+    }
+    
+    DealDamage(playerEntity, enemyEntity, enemy->damage, "contact");
+    enemy->lastDamageTime = currentTime;
+    
+    std::cout << "[DamageSystem] Enemy " << enemyEntity 
+              << " dealt contact damage to player " << playerEntity << std::endl;
+}
+
+bool DamageSystem::IsPlayer(uint32_t entityId) {
+    auto* world = GetWorld();
+    if (!world) return false;
+    
+    auto* tag = world->GetComponentManager().GetComponent<engine::ECS::Tag>(entityId);
+    return tag && tag->tag == "Player";
+}
+
+bool DamageSystem::IsEnemy(uint32_t entityId) {
+    auto* world = GetWorld();
+    if (!world) return false;
+    
+    return world->GetComponentManager().GetComponent<Component::EnemyComponent>(entityId) != nullptr;
 }
 
 } // namespace ZombieSurvivor::System 
