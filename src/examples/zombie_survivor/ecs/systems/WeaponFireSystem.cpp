@@ -4,7 +4,10 @@
 #include "WeaponSystem.hpp"
 #include "engine/core/ecs/World.hpp"
 #include "engine/core/event/EventManager.hpp"
+#include "engine/core/ecs/components/Transform2D.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
+#include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
+#include "examples/zombie_survivor/configs/ProjectileConfig.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::System {
@@ -49,6 +52,10 @@ void WeaponFireSystem::HandleGameEvent(const std::shared_ptr<engine::event::Even
             if (data && data->pressed) {
                 HandleFireInput(data->playerId);
             }
+            break;
+        }
+        case Events::GameEventType::AMMO_CONSUMED: {
+            HandleAmmoConsumed(gameEvent->GetData());
             break;
         }
     }
@@ -96,18 +103,7 @@ Component::AmmoType WeaponFireSystem::GetWeaponAmmoType(uint32_t playerId) const
     
     if (!weapon) return Component::AmmoType::NONE;
     
-    // Map weapon type to ammo type
-    // This is a simple mapping - you might want to store ammo type in WeaponComponent
-    switch (weapon->type) {
-        case Component::WeaponType::PISTOL:
-            return Component::AmmoType::PISTOL;
-        case Component::WeaponType::RIFLE:
-            return Component::AmmoType::RIFLE;
-        case Component::WeaponType::SMG:
-            return Component::AmmoType::SMG;
-        default:
-            return Component::AmmoType::NONE;
-    }
+    return weapon->currentAmmoType;
 }
 
 void WeaponFireSystem::PublishAmmoConsumeRequest(uint32_t playerId, Component::AmmoType ammoType) {
@@ -128,4 +124,69 @@ void WeaponFireSystem::PublishAmmoConsumeRequest(uint32_t playerId, Component::A
     eventManager.Publish(consumeEvent);
 }
 
+void WeaponFireSystem::HandleAmmoConsumed(const std::shared_ptr<void>& eventData) {
+    auto data = std::static_pointer_cast<Events::AmmoConsumedData>(eventData);
+    if (!data) return;
+    
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& componentManager = world->GetComponentManager();
+    auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(data->entityId);
+    if (!weapon) return;
+    
+    CreateProjectile(data->entityId, weapon->currentAmmoType);
+    
+    std::cout << "[WeaponFireSystem] Ammo consumed, creating projectile for player " 
+              << data->entityId << std::endl;
+}
+
+void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType ammoType) {
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& componentManager = world->GetComponentManager();
+    auto& eventManager = world->GetEventManager();
+    
+    auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(playerId);
+    auto* aiming = componentManager.GetComponent<Component::AimingComponent>(playerId);
+    auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(playerId);
+    
+    if (!transform || !weapon) return;
+    
+    auto projectileConfig = ZombieSurvivor::Config::ProjectileConfigManager::GetConfig(ammoType);
+    
+    engine::Vector2 direction{1.0f, 0.0f};
+    if (aiming) {
+        direction = aiming->aimDirection;
+        float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        if (length > 0.0f) {
+            direction.x /= length;
+            direction.y /= length;
+        }
+    }
+    
+    // 创建子弹事件
+    auto projectileData = std::make_shared<Events::CreateProjectileData>();
+    projectileData->shooterId = playerId;
+    projectileData->startPosition = {transform->x, transform->y};
+    projectileData->direction = direction;
+    projectileData->damage = projectileConfig.damage;
+    projectileData->speed = projectileConfig.speed;
+    projectileData->lifetime = projectileConfig.lifetime;
+    projectileData->type = projectileConfig.type;
+    projectileData->weaponType = weapon->type;
+    projectileData->penetration = projectileConfig.penetration;
+    
+    auto projectileEvent = std::make_shared<Events::GameEvent>(
+        Events::GameEventType::CREATE_PROJECTILE,
+        std::static_pointer_cast<void>(projectileData)
+    );
+    eventManager.Publish(projectileEvent);
+    
+    std::cout << "[WeaponFireSystem] Created " << static_cast<int>(ammoType) 
+              << " projectile for player " << playerId 
+              << " (damage=" << projectileConfig.damage 
+              << ", speed=" << projectileConfig.speed << ")" << std::endl;
+}
 } // namespace ZombieSurvivor::System

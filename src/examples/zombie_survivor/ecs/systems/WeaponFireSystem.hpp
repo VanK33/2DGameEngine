@@ -22,6 +22,8 @@ public:
 private:
     void HandleGameEvent(const std::shared_ptr<engine::event::Event>& event);
     void HandleFireInput(uint32_t playerId);
+    void HandleAmmoConsumed(const std::shared_ptr<void>& eventData);
+    void CreateProjectile(uint32_t playerId, Component::AmmoType ammoType); 
     
     bool CanFire(uint32_t playerId) const;
     Component::AmmoType GetWeaponAmmoType(uint32_t playerId) const;
