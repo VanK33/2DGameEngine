@@ -22,4 +22,4 @@ struct TargetComponent {
     float lastTargetUpdate = 0.0f;
 };
 
-} // namesapce ZombieSurvivor::Component
+} // namespace ZombieSurvivor::Component
