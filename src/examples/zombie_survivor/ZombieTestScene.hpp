@@ -19,6 +19,7 @@
 #include "ecs/systems/WeaponFireSystem.hpp"
 #include "ecs/systems/WeaponInputSystem.hpp"
 #include "ecs/systems/PlayerStatsSystem.hpp"
+#include "ecs/systems/EnemySpawnSystem.hpp"
 
 // Component includes
 #include "ecs/components/HealthComponent.hpp"
@@ -100,12 +101,14 @@ private:
     std::unique_ptr<System::WeaponFireSystem> weaponFireSystem_;
     std::unique_ptr<System::WeaponInputSystem> weaponInputSystem_;
     std::unique_ptr<System::PlayerStatsSystem> playerStatsSystem_;
+    std::unique_ptr<System::EnemySpawnSystem> enemySpawnSystem_;
 
     // New test methods
     void TestAimingAndRotation();
     void TestWeaponFireSystem();
     void TestReloadSystem();
     void TestPlayerStatsSystem();
+    void TestEnemySpawnSystem();
 };
 
 } // namespace ZombieSurvivor

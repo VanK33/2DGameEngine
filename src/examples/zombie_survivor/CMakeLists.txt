@@ -56,6 +56,8 @@ set(ZOMBIE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/WeaponInputSystem.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/PlayerStatsSystem.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/ZombieAISystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/EnemySpawnSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/ProjectileSystem.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${ENGINE_CORE_SOURCES} ${ZOMBIE_SOURCES})

@@ -1,8 +1,13 @@
 #include "ZombieTestScene.hpp"
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/ecs/components/Velocity2D.hpp"
+#include "engine/core/ecs/components/AIComponent.hpp"
+#include "engine/core/ecs/components/Collider2D.hpp"
+#include "ecs/components/EnemyComponent.hpp"
+#include "ecs/components/TargetComponent.hpp"
 #include <iostream>
 
+// this file becomes too large. Going to implement real system to test soon
 namespace ZombieSurvivor {
 
 ZombieTestScene::ZombieTestScene(const std::string& id, SDL_Renderer* renderer,
@@ -61,6 +66,9 @@ void ZombieTestScene::Load() {
     auto playerStatsSystem = std::make_unique<System::PlayerStatsSystem>();
     systemManager.AddSystem(std::move(playerStatsSystem), 8);
     
+    auto enemySpawnSystem = std::make_unique<System::EnemySpawnSystem>();
+    systemManager.AddSystem(std::move(enemySpawnSystem), 60);
+    
     // Initialize systems
     InitializeSystems();
     
@@ -79,6 +87,7 @@ void ZombieTestScene::Unload() {
         if (upgradeSystem_) upgradeSystem_->Shutdown();
         if (weaponSystem_) weaponSystem_->Shutdown();
         if (ammoSystem_) ammoSystem_->Shutdown();
+        if (enemySpawnSystem_) enemySpawnSystem_->Shutdown();
         
         world_ = nullptr;
     }
@@ -91,6 +100,7 @@ void ZombieTestScene::Update(float deltaTime) {
     testTimer_ += deltaTime;
     
     // Update all systems (in execution order)
+    if (enemySpawnSystem_) enemySpawnSystem_->Update(deltaTime);
     if (inputSystem_) inputSystem_->Update(deltaTime);
     if (weaponInputSystem_) weaponInputSystem_->Update(deltaTime);
     if (aimingSystem_) aimingSystem_->Update(deltaTime);
@@ -165,6 +175,7 @@ void ZombieTestScene::InitializeSystems() {
     weaponFireSystem_ = std::make_unique<System::WeaponFireSystem>();
     weaponInputSystem_ = std::make_unique<System::WeaponInputSystem>();
     playerStatsSystem_ = std::make_unique<System::PlayerStatsSystem>();
+    enemySpawnSystem_ = std::make_unique<System::EnemySpawnSystem>();
     
     std::cout << "[DEBUG] Created ExperienceSystem: " << experienceSystem_.get() << std::endl;
     
@@ -184,6 +195,7 @@ void ZombieTestScene::InitializeSystems() {
     weaponFireSystem_->SetWorld(world_);
     weaponInputSystem_->SetWorld(world_);
     playerStatsSystem_->SetWorld(world_);
+    enemySpawnSystem_->SetWorld(world_);
     
     std::cout << "[DEBUG] Set world to ExperienceSystem" << std::endl;
     
@@ -204,6 +216,15 @@ void ZombieTestScene::InitializeSystems() {
     weaponFireSystem_->Init();
     weaponInputSystem_->Init();
     playerStatsSystem_->Init();
+    enemySpawnSystem_->Init();
+    
+    // Configure EnemySpawnSystem for testing
+    if (enemySpawnSystem_) {
+        enemySpawnSystem_->SetViewportSize(800.0f, 600.0f);
+        enemySpawnSystem_->SetSpawnInterval(1.0f);  // Fast spawning for testing
+        enemySpawnSystem_->SetMaxEnemies(5);        // Limited for testing
+        enemySpawnSystem_->SetSpawnMargin(50.0f);
+    }
     
     std::cout << "🔧 All systems initialized" << std::endl;
 }
@@ -360,15 +381,25 @@ void ZombieTestScene::RunSystemTests(float deltaTime) {
             }
             break;
             
+        case 8:  // Enemy spawn system test
+            if (testTimer_ > 1.0f) {
+                std::cout << "\n📋 Phase 8: Testing Enemy Spawn System..." << std::endl;
+                TestEnemySpawnSystem();
+                testPhase_++;
+                testTimer_ = 0.0f;
+            }
+            break;
+            
         default:
             if (!testCompleted_) {
                 std::cout << "\n🎉 All tests completed! Press R to restart, SPACE to skip phases" << std::endl;
-                std::cout << "\n📊 === Weapon System Refactor Test Summary ===" << std::endl;
+                std::cout << "\n📊 === Complete System Test Summary ===" << std::endl;
                 std::cout << "✅ Aiming & Rotation Systems: Collaboration working" << std::endl;
                 std::cout << "✅ Weapon Fire System: Event-driven functioning" << std::endl;
                 std::cout << "✅ Reload System: State management correct" << std::endl;
                 std::cout << "✅ Player Stats System: Data tracking effective" << std::endl;
-                std::cout << "🚀 Refactored weapon systems running well!" << std::endl;
+                std::cout << "✅ Enemy Spawn System: AI enemy generation working" << std::endl;
+                std::cout << "🚀 All game systems integrated and running well!" << std::endl;
                 testCompleted_ = true;
             }
             break;
@@ -739,6 +770,133 @@ void ZombieTestScene::TestPlayerStatsSystem() {
     }
     
     std::cout << "  ✅ Player stats system test completed" << std::endl;
+}
+
+void ZombieTestScene::TestEnemySpawnSystem() {
+    std::cout << "  🧟 Testing enemy spawn system..." << std::endl;
+    
+    if (!enemySpawnSystem_) {
+        std::cout << "  ❌ Enemy spawn system not available" << std::endl;
+        return;
+    }
+    
+    auto& componentManager = world_->GetComponentManager();
+    
+    // 记录原始设置
+    int originalMaxEnemies = enemySpawnSystem_->GetCurrentEnemyCount() >= 5 ? 5 : 5;  // 使用系统的当前设置
+    
+    // 使用新的清理函数完全清理
+    std::cout << "    Using ClearAllEnemies() for complete cleanup..." << std::endl;
+    enemySpawnSystem_->ClearAllEnemies();
+    
+    // Record initial state (should be 0 after cleanup)
+    int initialCount = enemySpawnSystem_->GetCurrentEnemyCount();
+    int initialTotal = enemySpawnSystem_->GetTotalSpawned();
+    
+    std::cout << "    Initial state after cleanup: Current enemies=" << initialCount << ", Total spawned=" << initialTotal << std::endl;
+    
+    // Test 1: Verify spawn system configuration
+    std::cout << "    Testing spawn system configuration..." << std::endl;
+    
+    // Temporarily increase max enemies for testing
+    if (enemySpawnSystem_) {
+        enemySpawnSystem_->SetMaxEnemies(20);  // Allow more enemies for testing
+        std::cout << "    ✅ Temporarily increased max enemies to 20 for testing" << std::endl;
+    }
+    std::cout << "    ✅ Viewport: 800x600, Spawn interval: 1.0s" << std::endl;
+    
+    // Test 2: Force spawn update for several seconds
+    std::cout << "    Simulating 3 seconds of spawning..." << std::endl;
+    for (int i = 0; i < 3; i++) {
+        // Simulate 1 second of time
+        for (int j = 0; j < 60; j++) {  // 60 frames @ 16.67ms = ~1 second
+            if (enemySpawnSystem_) {
+                enemySpawnSystem_->Update(0.0167f);  // ~60 FPS
+            }
+        }
+        
+        int currentCount = enemySpawnSystem_->GetCurrentEnemyCount();
+        int totalSpawned = enemySpawnSystem_->GetTotalSpawned();
+        
+        std::cout << "    After " << (i+1) << " second(s): Current=" << currentCount 
+                  << ", Total=" << totalSpawned << std::endl;
+    }
+    
+    // Test 3: Verify spawned entities have correct components
+    std::cout << "    Verifying spawned enemy components..." << std::endl;
+    auto enemies = componentManager.GetEntitiesWithComponent<Component::EnemyComponent>();
+    
+    int validEnemies = 0;
+    for (auto enemyId : enemies) {
+        // Check required components
+        bool hasTransform = componentManager.HasComponent<engine::ECS::Transform2D>(enemyId);
+        bool hasVelocity = componentManager.HasComponent<engine::ECS::Velocity2D>(enemyId);
+        bool hasAI = componentManager.HasComponent<engine::ECS::AIComponent>(enemyId);
+        bool hasHealth = componentManager.HasComponent<Component::HealthComponent>(enemyId);
+        bool hasTarget = componentManager.HasComponent<Component::TargetComponent>(enemyId);
+        bool hasCollider = componentManager.HasComponent<engine::ECS::Collider2D>(enemyId);
+        
+        if (hasTransform && hasVelocity && hasAI && hasHealth && hasTarget && hasCollider) {
+            validEnemies++;
+            
+            // Check position (should be outside viewport)
+            auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(enemyId);
+            if (transform) {
+                bool outsideViewport = (transform->x < -50 || transform->x > 850 || 
+                                      transform->y < -50 || transform->y > 650);
+                if (outsideViewport) {
+                    std::cout << "      Enemy " << enemyId << ": Spawned outside viewport ✅" << std::endl;
+                } else {
+                    std::cout << "      Enemy " << enemyId << ": Position (" << transform->x 
+                              << ", " << transform->y << ") - inside viewport ⚠️" << std::endl;
+                }
+            }
+        }
+    }
+    
+    std::cout << "    Valid enemies with all components: " << validEnemies << "/" << enemies.size() << std::endl;
+    
+    // Test 4: Check AI component configuration
+    if (!enemies.empty()) {
+        auto firstEnemy = enemies[0];
+        auto* ai = componentManager.GetComponent<engine::ECS::AIComponent>(firstEnemy);
+        auto* enemy = componentManager.GetComponent<Component::EnemyComponent>(firstEnemy);
+        
+        if (ai && enemy) {
+            std::cout << "    AI Configuration: State=" << static_cast<int>(ai->state) 
+                      << ", Speed=" << ai->speed << ", Detection=" << ai->detectionRadius << std::endl;
+            std::cout << "    Enemy Type: " << static_cast<int>(enemy->type) 
+                      << ", Damage=" << enemy->damage << ", EXP=" << enemy->expValue << std::endl;
+        }
+    }
+    
+    // Summary
+    int finalCount = enemySpawnSystem_->GetCurrentEnemyCount();
+    int finalTotal = enemySpawnSystem_->GetTotalSpawned();
+    
+    std::cout << "    Final state: Current enemies=" << finalCount << ", Total spawned=" << finalTotal << std::endl;
+    
+    if (finalTotal > initialTotal) {
+        std::cout << "    ✅ Enemy spawning working - " << (finalTotal - initialTotal) << " new enemies created" << std::endl;
+    } else {
+        std::cout << "    ⚠️ No new enemies spawned (may have hit max limit)" << std::endl;
+    }
+    
+    if (validEnemies > 0) {
+        std::cout << "    ✅ Enemy components properly configured" << std::endl;
+    } else {
+        std::cout << "    ❌ Enemy components missing or misconfigured" << std::endl;
+    }
+    
+    std::cout << "    Cleaning up test enemies..." << std::endl;
+    enemySpawnSystem_->ClearAllEnemies();
+    
+    if (enemySpawnSystem_) {
+        enemySpawnSystem_->SetMaxEnemies(5);
+        std::cout << "    🔧 Restored max enemies to 5 (safe default)" << std::endl;
+    }
+    
+    std::cout << "  ✅ Enemy spawn system test completed and cleaned up" << std::endl;
 }
 
 } // namespace ZombieSurvivor

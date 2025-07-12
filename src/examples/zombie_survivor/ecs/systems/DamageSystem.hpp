@@ -26,6 +26,7 @@ private:
     void HandleGameEvent(const std::shared_ptr<engine::event::Event>& event);
     void HandleCollisionEvent(const std::shared_ptr<engine::event::Event>& event);
     int CalculateDamage(uint32_t attackerId, uint32_t targetId, int baseDamage);
+    void DamageSystem::HandleProjectileEnemyCollision(engine::EntityID projectileId, engine::EntityID enemyId);
     
     void PublishDamageEvent(uint32_t targetEntityId, uint32_t sourceEntityId, 
                            int damage, const std::string& damageType);

@@ -5,8 +5,13 @@
 #include "engine/core/ecs/systems/AISystem.hpp"
 #include "engine/core/ecs/components/AIComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/TargetComponent.hpp"
+#include "engine/core/Types.hpp"
+#include <vector>
 
 namespace ZombieSurvivor::System {
+
+using EntityID = engine::EntityID;
+using Vector2 = engine::Vector2;
 
 class ZombieAISystem : public engine::ECS::AISystem {
 public:
