@@ -32,7 +32,7 @@ struct ProjectileComponent {
     bool shouldDestroy = false;
 
     float distanceTraveled = 0.0f;
-    // int targetsHit = 0;
+    int targetsHit = 0;
     
     // Visual Tailing Effect (Optional)
     // std::string visualEffect = "bullet_trail";

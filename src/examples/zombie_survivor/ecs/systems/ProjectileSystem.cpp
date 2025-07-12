@@ -110,6 +110,7 @@ void ProjectileSystem::HandleProjectileDestroyed(const std::shared_ptr<void>& ev
     if (projectile) {
         projectile->hasHit = true;
         projectile->shouldDestroy = true;
+        projectile->targetsHit++;
         
         if (projectile->penetration > 1) {
             projectile->penetration--;
@@ -165,19 +166,19 @@ void ProjectileSystem::UpdateProjectileMovement(float deltaTime) {
     if (!world) return;
     
     auto& componentManager = world->GetComponentManager();
-    auto projectiles = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>();
+    
+    auto projectiles = componentManager.GetEntitiesWithComponents<
+        Component::ProjectileComponent,
+        engine::ECS::Velocity2D
+    >();
     
     for (auto projectileId : projectiles) {
         auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
-        auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
         auto* velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(projectileId);
         
-        if (projectile && transform && velocity && !projectile->shouldDestroy) {
-            transform->x += velocity->vx * deltaTime;
-            transform->y += velocity->vy * deltaTime;
-            
-            float distance = projectile->speed * deltaTime;
-            projectile->distanceTraveled += distance;
+        if (projectile && velocity && !projectile->shouldDestroy) {
+            float speed = std::sqrt(velocity->vx * velocity->vx + velocity->vy * velocity->vy);
+            projectile->distanceTraveled += speed * deltaTime;
         }
     }
 }
