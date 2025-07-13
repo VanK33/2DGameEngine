@@ -6,6 +6,9 @@
 #include "ecs/components/EnemyComponent.hpp"
 #include "ecs/components/TargetComponent.hpp"
 #include <iostream>
+#include "ecs/systems/GroundRenderSystem.hpp"
+#include "ecs/systems/GameUISystem.hpp"
+#include "ui/UIAssetManager.hpp"
 
 // this file becomes too large. Going to implement real system to test soon
 namespace ZombieSurvivor {
@@ -249,6 +252,16 @@ void ZombieTestScene::CreateTestEntities() {
     componentManager.AddComponent<engine::ECS::Velocity2D>(playerId_, engine::ECS::Velocity2D{});
     componentManager.AddComponent<Component::AimingComponent>(playerId_, Component::AimingComponent{});
     componentManager.AddComponent<Component::PlayerStatsComponent>(playerId_, Component::PlayerStatsComponent{});
+    
+    // Add player visual components
+    componentManager.AddComponent<engine::ECS::Sprite2D>(playerId_, 
+        engine::ECS::Sprite2D{
+            "characters/player.png",    // Player texture
+            {0, 0, 32, 32},            // Source rectangle (32x32 pixels)
+            true,                       // Visible
+            {255, 255, 255, 255},       // White (no tint)
+            10                          // Entity layer
+        });
     
     // Set initial mouse position for aiming system
     auto* aiming = componentManager.GetComponent<Component::AimingComponent>(playerId_);
