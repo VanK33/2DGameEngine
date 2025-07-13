@@ -51,7 +51,11 @@ void ZombieAISystem::ChaseTarget(EntityID zombieEntity, engine::ECS::AIComponent
     // Debug output
     float distance = GetDistance(zombieEntity, target->targetEntity);
     if (distance < 50.0f) {
-        std::cout << "[ZombieAISystem] Zombie " << zombieEntity << " is close to target! Distance: " << distance << std::endl;
+        // Only log every 60 frames (~1 second at 60fps)
+        static int frameCounter = 0;
+        if (++frameCounter % 60 == 0) {
+            std::cout << "[ZombieAISystem] Zombie " << zombieEntity << " is close to target! Distance: " << distance << std::endl;
+        }
     }
 }
 

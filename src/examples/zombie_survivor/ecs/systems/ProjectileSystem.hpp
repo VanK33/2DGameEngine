@@ -33,7 +33,9 @@ private:
     void UpdateProjectileLifetime(float deltaTime);
     void CleanupExpiredProjectiles();
     void HandleBoundaryChecks();
-    
+
+    engine::EntityID FindOldestProjectile();
+    void DestroyProjectile(engine::EntityID projectileId);
     std::unordered_set<engine::EntityID> activeProjectiles_;
     
     engine::Vector2 worldBounds_{2000.0f, 2000.0f};

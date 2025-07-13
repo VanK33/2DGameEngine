@@ -67,8 +67,15 @@ void ProjectileSystem::HandleCreateProjectile(const std::shared_ptr<void>& event
     if (!data) return;
     
     if (activeProjectiles_.size() >= maxActiveProjectiles_) {
-        std::cout << "[ProjectileSystem] Max projectiles reached, ignoring create request" << std::endl;
-        return;
+        // Remove oldest projectile to make room for new one
+        engine::EntityID oldestProjectile = FindOldestProjectile();
+        if (oldestProjectile != 0) {
+            DestroyProjectile(oldestProjectile);
+            std::cout << "[ProjectileSystem] Removed oldest projectile to make room for new one" << std::endl;
+        } else {
+            std::cout << "[ProjectileSystem] Max projectiles reached, ignoring create request" << std::endl;
+            return;
+        }
     }
     
     engine::EntityID projectileId = CreateProjectileEntity(*data);
@@ -243,6 +250,34 @@ void ProjectileSystem::CleanupExpiredProjectiles() {
             
             std::cout << "[ProjectileSystem] Cleaned up projectile " << projectileId << std::endl;
         }
+    }
+}
+
+engine::EntityID ProjectileSystem::FindOldestProjectile() {
+    auto* world = GetWorld();
+    if (!world) return 0;
+    
+    auto& componentManager = world->GetComponentManager();
+    engine::EntityID oldestId = 0;
+    float longestLifetime = 0.0f;
+    
+    for (engine::EntityID projectileId : activeProjectiles_) {
+        auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
+        if (projectile && projectile->currentLifetime > longestLifetime) {
+            longestLifetime = projectile->currentLifetime;
+            oldestId = projectileId;
+        }
+    }
+    
+    return oldestId;
+}
+
+void ProjectileSystem::DestroyProjectile(engine::EntityID projectileId) {
+    activeProjectiles_.erase(projectileId);
+    
+    auto* world = GetWorld();
+    if (world) {
+        world->GetEntityFactory().DestroyEntity(projectileId);
     }
 }
 

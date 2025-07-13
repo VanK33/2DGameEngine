@@ -115,7 +115,7 @@ void DamageSystem::DealDamage(uint32_t targetEntityId, uint32_t sourceEntityId,
     if (targetStats) {
         targetStats->totalDamageTaken += damage;
         targetStats->lastDamageSource = sourceEntityId;
-        targetStats->lastDamageTime = 0.0f; // 这里应该是当前时间，简化处理
+        targetStats->lastDamageTime = SDL_GetTicks() / 1000.0f;
     }
     
     auto* sourceStats = componentManager.GetComponent<Component::CombatStatsComponent>(sourceEntityId);
