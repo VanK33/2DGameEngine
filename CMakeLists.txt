@@ -35,9 +35,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
-# Collect sources
+# Collect sources (exclude build directories and sandbox main)
 file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+
+# Remove any build directory files that might have been included
+list(FILTER ENGINE_SOURCES EXCLUDE REGEX ".*/build/.*")
+
+# Remove sandbox main.cpp to avoid duplicate main functions
+list(FILTER ENGINE_SOURCES EXCLUDE REGEX ".*/sandbox/main\\.cpp$")
 
 add_executable(${PROJECT_NAME} ${ENGINE_SOURCES})
 

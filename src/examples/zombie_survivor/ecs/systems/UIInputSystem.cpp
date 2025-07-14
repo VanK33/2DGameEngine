@@ -150,7 +150,7 @@ void UIInputSystem::UpdateUIStates() {
     if (!world) return;
     
     auto& componentManager = world->GetComponentManager();
-    auto uiEntities = componentManager.GetEntitiesWithComponents<Component::UIComponent>();
+    auto uiEntities = componentManager.GetEntitiesWithComponent<Component::UIComponent>();
     
     for (uint32_t entityId : uiEntities) {
         auto* ui = componentManager.GetComponent<Component::UIComponent>(entityId);
@@ -178,7 +178,7 @@ uint32_t UIInputSystem::FindElementUnderMouse() const {
     if (!world) return 0;
     
     auto& componentManager = world->GetComponentManager();
-    auto uiEntities = componentManager.GetEntitiesWithComponents<Component::UIComponent>();
+    auto uiEntities = componentManager.GetEntitiesWithComponent<Component::UIComponent>();
     
     // Process in reverse order to handle UI layering (last drawn = top layer)
     for (auto it = uiEntities.rbegin(); it != uiEntities.rend(); ++it) {
@@ -245,8 +245,8 @@ void UIInputSystem::ResetElementStates() {
     if (!world) return;
     
     auto& componentManager = world->GetComponentManager();
-    auto uiEntities = componentManager.GetEntitiesWithComponents<Component::UIComponent>();
-    
+        auto uiEntities = componentManager.GetEntitiesWithComponent<Component::UIComponent>();
+
     for (uint32_t entityId : uiEntities) {
         auto* ui = componentManager.GetComponent<Component::UIComponent>(entityId);
         if (ui && ui->interactive) {
@@ -258,7 +258,7 @@ void UIInputSystem::ResetElementStates() {
 void UIInputSystem::HandleInputEvent(const std::shared_ptr<engine::event::Event>& event) {
     switch (event->GetType()) {
         case engine::event::EventType::MOUSE_MOVE: {
-            auto mouseData = std::static_pointer_cast<engine::event::MouseMotionEventData>(event->GetData());
+            auto mouseData = std::static_pointer_cast<engine::event::MouseEventData>(event->GetData());
             if (mouseData) {
                 OnMouseMove(mouseData->x, mouseData->y);
             }
@@ -267,25 +267,23 @@ void UIInputSystem::HandleInputEvent(const std::shared_ptr<engine::event::Event>
         case engine::event::EventType::MOUSE_CLICK: {
             auto mouseData = std::static_pointer_cast<engine::event::MouseButtonEventData>(event->GetData());
             if (mouseData) {
-                if (mouseData->state == SDL_PRESSED) {
-                    OnMouseButtonDown(mouseData->x, mouseData->y, mouseData->button);
-                } else {
-                    OnMouseButtonUp(mouseData->x, mouseData->y, mouseData->button);
-                }
+                OnMouseButtonDown(mouseData->x, mouseData->y, mouseData->button);
+                // Note: This simplified handling treats all mouse clicks as button down events
+                // For more sophisticated UI interactions, you might need separate events
             }
             break;
         }
         case engine::event::EventType::KEY_DOWN: {
             auto keyData = std::static_pointer_cast<engine::event::KeyEventData>(event->GetData());
             if (keyData) {
-                OnKeyDown(keyData->key);
+                OnKeyDown(keyData->keycode);
             }
             break;
         }
         case engine::event::EventType::KEY_UP: {
             auto keyData = std::static_pointer_cast<engine::event::KeyEventData>(event->GetData());
             if (keyData) {
-                OnKeyUp(keyData->key);
+                OnKeyUp(keyData->keycode);
             }
             break;
         }
