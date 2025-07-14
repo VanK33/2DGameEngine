@@ -233,7 +233,7 @@ bool DamageSystem::IsEnemy(uint32_t entityId) {
 }
 
 
-void DamageSystem::HandleProjectileEnemyCollision(engine::EntityID projectileId, engine::EntityID enemyId) {
+void DamageSystem::HandleProjectileEnemyCollision(engine::ECS::EntityID projectileId, engine::ECS::EntityID enemyId) {
     auto* world = GetWorld();
     if (!world) return;
     

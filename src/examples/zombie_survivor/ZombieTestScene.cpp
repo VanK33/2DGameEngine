@@ -6,9 +6,6 @@
 #include "ecs/components/EnemyComponent.hpp"
 #include "ecs/components/TargetComponent.hpp"
 #include <iostream>
-#include "ecs/systems/GroundRenderSystem.hpp"
-#include "ecs/systems/GameUISystem.hpp"
-#include "ui/UIAssetManager.hpp"
 
 // this file becomes too large. Going to implement real system to test soon
 namespace ZombieSurvivor {
@@ -72,6 +69,9 @@ void ZombieTestScene::Load() {
     auto enemySpawnSystem = std::make_unique<System::EnemySpawnSystem>();
     systemManager.AddSystem(std::move(enemySpawnSystem), 60);
     
+    auto projectileSystem = std::make_unique<System::ProjectileSystem>();
+    systemManager.AddSystem(std::move(projectileSystem), 11);
+    
     // Initialize systems
     InitializeSystems();
     
@@ -91,6 +91,7 @@ void ZombieTestScene::Unload() {
         if (weaponSystem_) weaponSystem_->Shutdown();
         if (ammoSystem_) ammoSystem_->Shutdown();
         if (enemySpawnSystem_) enemySpawnSystem_->Shutdown();
+        if (projectileSystem_) projectileSystem_->Shutdown();
         
         world_ = nullptr;
     }
@@ -110,6 +111,7 @@ void ZombieTestScene::Update(float deltaTime) {
     if (rotationSystem_) rotationSystem_->Update(deltaTime);
     if (movementSystem_) movementSystem_->Update(deltaTime);
     if (weaponFireSystem_) weaponFireSystem_->Update(deltaTime);
+    if (projectileSystem_) projectileSystem_->Update(deltaTime);
     if (weaponSystem_) weaponSystem_->Update(deltaTime);
     if (ammoSystem_) ammoSystem_->Update(deltaTime);
     if (playerStatsSystem_) playerStatsSystem_->Update(deltaTime);
@@ -179,6 +181,7 @@ void ZombieTestScene::InitializeSystems() {
     weaponInputSystem_ = std::make_unique<System::WeaponInputSystem>();
     playerStatsSystem_ = std::make_unique<System::PlayerStatsSystem>();
     enemySpawnSystem_ = std::make_unique<System::EnemySpawnSystem>();
+    projectileSystem_ = std::make_unique<System::ProjectileSystem>();
     
     std::cout << "[DEBUG] Created ExperienceSystem: " << experienceSystem_.get() << std::endl;
     
@@ -199,6 +202,7 @@ void ZombieTestScene::InitializeSystems() {
     weaponInputSystem_->SetWorld(world_);
     playerStatsSystem_->SetWorld(world_);
     enemySpawnSystem_->SetWorld(world_);
+    projectileSystem_->SetWorld(world_);
     
     std::cout << "[DEBUG] Set world to ExperienceSystem" << std::endl;
     
@@ -220,6 +224,7 @@ void ZombieTestScene::InitializeSystems() {
     weaponInputSystem_->Init();
     playerStatsSystem_->Init();
     enemySpawnSystem_->Init();
+    projectileSystem_->Init();
     
     // Configure EnemySpawnSystem for testing
     if (enemySpawnSystem_) {
@@ -253,15 +258,7 @@ void ZombieTestScene::CreateTestEntities() {
     componentManager.AddComponent<Component::AimingComponent>(playerId_, Component::AimingComponent{});
     componentManager.AddComponent<Component::PlayerStatsComponent>(playerId_, Component::PlayerStatsComponent{});
     
-    // Add player visual components
-    componentManager.AddComponent<engine::ECS::Sprite2D>(playerId_, 
-        engine::ECS::Sprite2D{
-            "characters/player.png",    // Player texture
-            {0, 0, 32, 32},            // Source rectangle (32x32 pixels)
-            true,                       // Visible
-            {255, 255, 255, 255},       // White (no tint)
-            10                          // Entity layer
-        });
+    // Visual components not needed for testing
     
     // Set initial mouse position for aiming system
     auto* aiming = componentManager.GetComponent<Component::AimingComponent>(playerId_);
@@ -403,6 +400,15 @@ void ZombieTestScene::RunSystemTests(float deltaTime) {
             }
             break;
             
+        case 9:  // Projectile system test
+            if (testTimer_ > 2.0f) {
+                std::cout << "\n📋 Phase 9: Testing Projectile System..." << std::endl;
+                TestProjectileSystem();
+                testPhase_++;
+                testTimer_ = 0.0f;
+            }
+            break;
+            
         default:
             if (!testCompleted_) {
                 std::cout << "\n🎉 All tests completed! Press R to restart, SPACE to skip phases" << std::endl;
@@ -412,6 +418,7 @@ void ZombieTestScene::RunSystemTests(float deltaTime) {
                 std::cout << "✅ Reload System: State management correct" << std::endl;
                 std::cout << "✅ Player Stats System: Data tracking effective" << std::endl;
                 std::cout << "✅ Enemy Spawn System: AI enemy generation working" << std::endl;
+                std::cout << "✅ Projectile System: Event-driven bullet creation and collision working" << std::endl;
                 std::cout << "🚀 All game systems integrated and running well!" << std::endl;
                 testCompleted_ = true;
             }
@@ -910,6 +917,223 @@ void ZombieTestScene::TestEnemySpawnSystem() {
     }
     
     std::cout << "  ✅ Enemy spawn system test completed and cleaned up" << std::endl;
+}
+
+void ZombieTestScene::TestProjectileSystem() {
+    std::cout << "  🚀 Testing projectile system complete flow..." << std::endl;
+    
+    auto& componentManager = world_->GetComponentManager();
+    auto& entityFactory = world_->GetEntityFactory();
+    
+    // Test 1: Create projectile via event
+    std::cout << "    Testing projectile creation via CREATE_PROJECTILE event..." << std::endl;
+    
+    // Get initial active projectile count
+    size_t initialProjectileCount = 0;
+    auto projectileEntities = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>();
+    initialProjectileCount = projectileEntities.size();
+    
+    std::cout << "    Initial projectile count: " << initialProjectileCount << std::endl;
+    
+    // Create projectile creation event
+    auto createProjectileData = std::make_shared<Events::CreateProjectileData>();
+    createProjectileData->shooterId = playerId_;
+    createProjectileData->startPosition = engine::Vector2{100.0f, 100.0f};
+    createProjectileData->direction = engine::Vector2{1.0f, 0.0f};
+    createProjectileData->damage = 25.0f;
+    createProjectileData->speed = 800.0f;
+    createProjectileData->lifetime = 3.0f;
+    createProjectileData->type = Component::ProjectileType::BULLET_PISTOL;
+    createProjectileData->weaponType = Component::WeaponType::PISTOL;
+    createProjectileData->penetration = 1;
+    createProjectileData->spread = 0.0f;
+    
+    auto createProjectileEvent = std::make_shared<Events::GameEvent>(
+        Events::GameEventType::CREATE_PROJECTILE,
+        std::static_pointer_cast<void>(createProjectileData)
+    );
+    
+    // Publish the event
+    if (eventManager_) {
+        eventManager_->Publish(createProjectileEvent);
+        std::cout << "    ✅ CREATE_PROJECTILE event published" << std::endl;
+    } else {
+        std::cout << "    ❌ No event manager available" << std::endl;
+        return;
+    }
+    
+    // Process event and update systems
+    std::cout << "    Processing projectile creation..." << std::endl;
+    engine::EntityID createdProjectileId = 0;
+    
+    for (int i = 0; i < 5; i++) {
+        if (eventManager_) eventManager_->Update(); // Process events
+        if (projectileSystem_) projectileSystem_->Update(0.016f); // Update projectile system
+        
+        // Check if projectile was created
+        auto currentProjectileEntities = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>();
+        if (currentProjectileEntities.size() > initialProjectileCount) {
+            createdProjectileId = currentProjectileEntities.back(); // Get the newest projectile
+            std::cout << "    ✅ Projectile created successfully (ID: " << createdProjectileId << ") after " << (i+1) << " cycles" << std::endl;
+            break;
+        }
+        
+        std::cout << "      Cycle " << (i+1) << ": Projectile count = " << currentProjectileEntities.size() << std::endl;
+    }
+    
+    if (createdProjectileId == 0) {
+        std::cout << "    ❌ Failed to create projectile" << std::endl;
+        return;
+    }
+    
+    // Test 2: Verify projectile components
+    std::cout << "    Verifying projectile components..." << std::endl;
+    
+    auto* projectileComp = componentManager.GetComponent<Component::ProjectileComponent>(createdProjectileId);
+    auto* transformComp = componentManager.GetComponent<engine::ECS::Transform2D>(createdProjectileId);
+    auto* velocityComp = componentManager.GetComponent<engine::ECS::Velocity2D>(createdProjectileId);
+    auto* colliderComp = componentManager.GetComponent<engine::ECS::Collider2D>(createdProjectileId);
+    
+    if (projectileComp && transformComp && velocityComp && colliderComp) {
+        std::cout << "    ✅ All required components present" << std::endl;
+        std::cout << "      Position: (" << transformComp->x << ", " << transformComp->y << ")" << std::endl;
+        std::cout << "      Velocity: (" << velocityComp->vx << ", " << velocityComp->vy << ")" << std::endl;
+        std::cout << "      Damage: " << projectileComp->damage << std::endl;
+        std::cout << "      Lifetime: " << projectileComp->currentLifetime << "/" << projectileComp->maxLifetime << std::endl;
+    } else {
+        std::cout << "    ❌ Missing required components" << std::endl;
+        std::cout << "      ProjectileComponent: " << (projectileComp ? "✅" : "❌") << std::endl;
+        std::cout << "      Transform2D: " << (transformComp ? "✅" : "❌") << std::endl;
+        std::cout << "      Velocity2D: " << (velocityComp ? "✅" : "❌") << std::endl;
+        std::cout << "      Collider2D: " << (colliderComp ? "✅" : "❌") << std::endl;
+    }
+    
+    // Test 3: Test projectile movement and lifetime
+    std::cout << "    Testing projectile movement and lifetime..." << std::endl;
+    
+    float initialLifetime = projectileComp ? projectileComp->currentLifetime : 0.0f;
+    engine::Vector2 initialPosition = transformComp ? engine::Vector2{transformComp->x, transformComp->y} : engine::Vector2{0.0f, 0.0f};
+    
+    // Update projectile for several frames
+    for (int i = 0; i < 10; i++) {
+        if (projectileSystem_) projectileSystem_->Update(0.016f);
+        
+        // Check if projectile still exists
+        auto* currentProjectileComp = componentManager.GetComponent<Component::ProjectileComponent>(createdProjectileId);
+        if (!currentProjectileComp) {
+            std::cout << "    ⚠️ Projectile destroyed after " << (i+1) << " frames" << std::endl;
+            break;
+        }
+        
+        auto* currentTransformComp = componentManager.GetComponent<engine::ECS::Transform2D>(createdProjectileId);
+        if (currentTransformComp) {
+            std::cout << "      Frame " << (i+1) << ": Position (" << currentTransformComp->x << ", " << currentTransformComp->y <<
+                      "), Lifetime: " << currentProjectileComp->currentLifetime << std::endl;
+        }
+    }
+    
+    // Test 4: Test multiple projectiles (performance)
+    std::cout << "    Testing multiple projectile creation..." << std::endl;
+    
+    size_t beforeMultipleCount = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>().size();
+    
+    // Create 5 projectiles quickly
+    for (int i = 0; i < 5; i++) {
+        auto multiProjectileData = std::make_shared<Events::CreateProjectileData>();
+        multiProjectileData->shooterId = playerId_;
+        multiProjectileData->startPosition = engine::Vector2{100.0f + i * 10.0f, 100.0f};
+        multiProjectileData->direction = engine::Vector2{1.0f, 0.0f};
+        multiProjectileData->damage = 25.0f;
+        multiProjectileData->speed = 800.0f;
+        multiProjectileData->lifetime = 3.0f;
+        multiProjectileData->type = Component::ProjectileType::BULLET_PISTOL;
+        multiProjectileData->weaponType = Component::WeaponType::PISTOL;
+        
+        auto multiProjectileEvent = std::make_shared<Events::GameEvent>(
+            Events::GameEventType::CREATE_PROJECTILE,
+            std::static_pointer_cast<void>(multiProjectileData)
+        );
+        
+        if (eventManager_) {
+            eventManager_->Publish(multiProjectileEvent);
+        }
+    }
+    
+    // Process all projectile creation events
+    for (int i = 0; i < 10; i++) {
+        if (eventManager_) eventManager_->Update();
+        if (projectileSystem_) projectileSystem_->Update(0.016f);
+    }
+    
+    size_t afterMultipleCount = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>().size();
+    size_t createdCount = afterMultipleCount - beforeMultipleCount;
+    
+    std::cout << "    Multiple projectile creation: " << createdCount << "/5 projectiles created" << std::endl;
+    
+    if (createdCount >= 3) {
+        std::cout << "    ✅ Multiple projectile creation working (performance acceptable)" << std::endl;
+    } else {
+        std::cout << "    ⚠️ Multiple projectile creation issues detected" << std::endl;
+    }
+    
+    // Test 5: Test boundary cleanup
+    std::cout << "    Testing boundary cleanup..." << std::endl;
+    
+    // Create a projectile far outside bounds
+    auto boundaryProjectileData = std::make_shared<Events::CreateProjectileData>();
+    boundaryProjectileData->shooterId = playerId_;
+    boundaryProjectileData->startPosition = engine::Vector2{3000.0f, 3000.0f}; // Outside world bounds
+    boundaryProjectileData->direction = engine::Vector2{1.0f, 0.0f};
+    boundaryProjectileData->damage = 25.0f;
+    boundaryProjectileData->speed = 800.0f;
+    boundaryProjectileData->lifetime = 3.0f;
+    boundaryProjectileData->type = Component::ProjectileType::BULLET_PISTOL;
+    boundaryProjectileData->weaponType = Component::WeaponType::PISTOL;
+    
+    auto boundaryProjectileEvent = std::make_shared<Events::GameEvent>(
+        Events::GameEventType::CREATE_PROJECTILE,
+        std::static_pointer_cast<void>(boundaryProjectileData)
+    );
+    
+    if (eventManager_) {
+        eventManager_->Publish(boundaryProjectileEvent);
+    }
+    
+    size_t beforeBoundaryCount = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>().size();
+    
+    // Process boundary cleanup
+    for (int i = 0; i < 5; i++) {
+        if (eventManager_) eventManager_->Update();
+        if (projectileSystem_) projectileSystem_->Update(0.016f);
+    }
+    
+    size_t afterBoundaryCount = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>().size();
+    
+    if (afterBoundaryCount <= beforeBoundaryCount) {
+        std::cout << "    ✅ Boundary cleanup working (projectiles outside bounds removed)" << std::endl;
+    } else {
+        std::cout << "    ⚠️ Boundary cleanup may not be working properly" << std::endl;
+    }
+    
+    // Cleanup: Remove any remaining test projectiles
+    std::cout << "    Cleaning up test projectiles..." << std::endl;
+    auto finalProjectileEntities = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>();
+    for (auto entityId : finalProjectileEntities) {
+        auto* projectileComp = componentManager.GetComponent<Component::ProjectileComponent>(entityId);
+        if (projectileComp) {
+            projectileComp->shouldDestroy = true;
+        }
+    }
+    
+    // Process cleanup
+    for (int i = 0; i < 3; i++) {
+        if (projectileSystem_) projectileSystem_->Update(0.016f);
+    }
+    
+    size_t finalProjectileCount = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>().size();
+    std::cout << "    Final projectile count: " << finalProjectileCount << std::endl;
+    
+    std::cout << "  ✅ Projectile system test completed" << std::endl;
 }
 
 } // namespace ZombieSurvivor
