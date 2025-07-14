@@ -239,17 +239,24 @@ void ProjectileSystem::CleanupExpiredProjectiles() {
     
     auto& componentManager = world->GetComponentManager();
     auto& entityFactory = world->GetEntityFactory();
-    auto projectiles = componentManager.GetEntitiesWithComponent<Component::ProjectileComponent>();
     
-    for (auto projectileId : projectiles) {
+    // 使用迭代器安全地遍历并修改activeProjectiles_集合
+    std::vector<engine::EntityID> toRemove;
+    
+    for (auto projectileId : activeProjectiles_) {
         auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
         
         if (projectile && projectile->shouldDestroy) {
             entityFactory.DestroyEntity(projectileId);
-            activeProjectiles_.erase(projectileId);
+            toRemove.push_back(projectileId);
             
             std::cout << "[ProjectileSystem] Cleaned up projectile " << projectileId << std::endl;
         }
+    }
+    
+    // 从activeProjectiles_中移除已清理的projectile
+    for (auto projectileId : toRemove) {
+        activeProjectiles_.erase(projectileId);
     }
 }
 
