@@ -4,6 +4,10 @@
 #include "engine/core/ecs/SystemManager.hpp"
 #include "engine/core/ecs/ComponentManager.hpp"
 #include "engine/core/ecs/EntityFactory.hpp"
+#include "examples/zombie_survivor/ecs/systems/InputSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/MovementSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/RotationSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/WeaponFollowSystem.hpp"
 
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
@@ -26,7 +30,6 @@ GameScene::GameScene(const std::string& id,
 void GameScene::Load() {
     std::cout << "[GameScene] Loading scene..." << std::endl;
     
-    // ✅ 从基类获取Engine传入的World
     world_ = GetWorld();  
     if (!world_) {
         std::cout << "[GameScene] ERROR: No World provided by Engine!" << std::endl;
@@ -83,17 +86,15 @@ std::string GameScene::GetSceneId() const {
 }
 
 void GameScene::SetEventManager(engine::event::EventManager* manager) {
-    // 基类Scene已经处理了，这里可能不需要额外实现
 }
 
 void GameScene::SetInputManager(engine::input::InputManager* manager) {
-    inputManager_ = manager;  // ✅ 实现Setter
+    inputManager_ = manager;
 }
 
 void GameScene::InitializeSystems() {
     std::cout << "[GameScene] Initializing systems..." << std::endl;
     
-    // ✅ 从基类获取Engine传入的World
     world_ = GetWorld();  
     if (!world_) {
         std::cout << "[GameScene] ERROR: No World provided by Engine!" << std::endl;
@@ -102,20 +103,25 @@ void GameScene::InitializeSystems() {
     
     auto& systemManager = world_->GetSystemManager();
     
-    // 1. 背景渲染系统（创建背景实体）
     auto groundSystem = std::make_unique<System::GroundRenderSystem>();
     systemManager.AddSystem(std::move(groundSystem), 15);
     
-    // 注意：Engine已经在核心系统中添加了RenderSystem（Engine.cpp:117-118）
-    // GameScene不需要创建自己的RenderSystem，Engine的RenderSystem会处理所有Sprite2D组件
-    
-    // ✅ 3. 未来添加需要InputManager的系统
-    // auto inputSystem = std::make_unique<System::InputSystem>();
-    // inputSystem->SetInputManager(inputManager_);  // 传递InputManager
-    // systemManager.AddSystem(std::move(inputSystem), 20);
+    auto inputSystem = std::make_unique<ZombieSurvivor::System::InputSystem>(*inputManager_);
+    systemManager.AddSystem(std::move(inputSystem), 25);
+
+    auto movementSystem = std::make_unique<ZombieSurvivor::System::MovementSystem>();
+    systemManager.AddSystem(std::move(movementSystem), 30);
+
+    auto weaponFollowSystem = std::make_unique<ZombieSurvivor::System::WeaponFollowSystem>();
+    systemManager.AddSystem(std::move(weaponFollowSystem), 35);
+
+    auto aimingSystem = std::make_unique<ZombieSurvivor::System::AimingSystem>();
+    systemManager.AddSystem(std::move(aimingSystem), 38);
+
+    auto rotationSystem = std::make_unique<ZombieSurvivor::System::RotationSystem>();
+    systemManager.AddSystem(std::move(rotationSystem), 40);
     
     std::cout << "[GameScene] Systems initialized successfully!" << std::endl;
-    std::cout << "[GameScene] InputManager available: " << (inputManager_ ? "YES" : "NO") << std::endl;
 }
 
 void GameScene::CreateEntities() {
@@ -129,7 +135,13 @@ void GameScene::CreateEntities() {
     auto& entityFactory = world_->GetEntityFactory();
     auto& componentManager = world_->GetComponentManager();
     
-    gameEntityFactory_->CreatePlayer();
+    // Create player and store ID
+    playerId_ = gameEntityFactory_->CreatePlayer();
+    
+    // Create weapon that follows the player
+    if (playerId_ != 0) {
+        weaponId_ = gameEntityFactory_->CreateWeapon(playerId_);
+    }
     
     std::cout << "[GameScene] Game entities created!" << std::endl;
 }

@@ -7,7 +7,10 @@
 #include "engine/core/event/EventManager.hpp"
 #include "engine/input/InputManager.hpp"
 #include "engine/resource/ResourceManager.hpp"
+#include "engine/core/ecs/systems/PhysicsSystem.hpp"
 #include "ecs/systems/GroundRenderSystem.hpp"
+#include "ecs/systems/WeaponFollowSystem.hpp"
+#include "ecs/systems/AimingSystem.hpp"
 
 #include "examples/zombie_survivor/ecs/GameEntityFactory.hpp"
 
@@ -39,6 +42,11 @@ private:
     engine::input::InputManager* inputManager_;
     engine::resources::ResourceManager* resourceManager_;
     std::unique_ptr<ZombieSurvivor::ECS::GameEntityFactory> gameEntityFactory_;
+    
+    // Entity tracking
+    engine::EntityID playerId_ = 0;
+    engine::EntityID weaponId_ = 0;
+    
     void InitializeSystems();  // 通过SystemManager添加系统
     void CreateEntities();     // 只负责创建游戏实体
 };

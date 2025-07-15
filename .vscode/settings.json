@@ -64,6 +64,9 @@
         "csignal": "cpp",
         "fstream": "cpp",
         "source_location": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "cinttypes": "cpp",
+        "forward_list": "cpp",
+        "future": "cpp"
     }
 }

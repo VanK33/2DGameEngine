@@ -62,21 +62,15 @@ void RenderSystem::CollectRenderableSprites(std::vector<RenderableSprite>& rende
     auto& componentManager = world_->GetComponentManager();
     auto entities = componentManager.GetEntitiesWithComponents<Transform2D, Sprite2D>();
     
-    std::cout << "[RenderSystem] Found " << entities.size() << " entities with Transform2D and Sprite2D components" << std::endl;
-    
     renderables.reserve(entities.size());
     
     for (EntityID entityId : entities) {
         auto* transform = componentManager.GetComponent<Transform2D>(entityId);
         auto* sprite = componentManager.GetComponent<Sprite2D>(entityId);
         
-        std::cout << "[RenderSystem] Entity " << entityId << " - Transform: " << (transform ? "YES" : "NO") 
-                  << " Sprite: " << (sprite ? "YES" : "NO") << " Visible: " << (sprite ? (sprite->visible ? "YES" : "NO") : "N/A") << std::endl;
-        
         // Only collect visible sprites
         if (transform && sprite && sprite->visible) {
             renderables.push_back({entityId, transform, sprite});
-            std::cout << "[RenderSystem] Added entity " << entityId << " to renderables (texture: " << sprite->texturePath << ")" << std::endl;
         }
     }
 }
@@ -88,8 +82,6 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
         std::cout << "[RenderSystem] ERROR: Failed to get texture for path: " << renderable.sprite->texturePath << std::endl;
         return;
     }
-    
-    std::cout << "[RenderSystem] Rendering entity " << renderable.entityId << " with texture: " << renderable.sprite->texturePath << std::endl;
     
     // Calculate rendering parameters
     Transform2D* transform = renderable.transform;
