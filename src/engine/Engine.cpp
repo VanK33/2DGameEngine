@@ -58,11 +58,8 @@ void Engine::Run() {
         UpdateTiming();
         HandleEvents();
         UpdateSystems();
-        
         // Render
-        renderer_.BeginFrame();
         sceneManager_.Render(renderer_.GetSDLRenderer());
-        renderer_.EndFrame();
     }
     
     std::cout << "[Engine] Main loop ended" << std::endl;

@@ -1,14 +1,17 @@
 #include "RenderSystem.hpp"
 #include "engine/core/ecs/World.hpp"
+#include "engine/graphics/renderer/Renderer.hpp"
 #include <algorithm>
 #include <iostream>
 
 namespace engine::ECS {
 
 RenderSystem::RenderSystem(engine::graphics::SpriteRenderer* spriteRenderer, 
-                           engine::resources::ResourceManager* resourceManager)
+                           engine::resources::ResourceManager* resourceManager,
+                           engine::graphics::Renderer* renderer)
     : spriteRenderer_(spriteRenderer)
     , resourceManager_(resourceManager)
+    , renderer_(renderer)
     , renderedSpriteCount_(0) {
 }
 
@@ -20,6 +23,8 @@ void RenderSystem::Update(float deltaTime) {
     if (!world_ || !spriteRenderer_ || !resourceManager_) {
         return;
     }
+
+    renderer_->BeginFrame();
 
     renderedSpriteCount_ = 0;
     
@@ -40,6 +45,8 @@ void RenderSystem::Update(float deltaTime) {
         std::cout << "[RenderSystem] Rendered " << renderedSpriteCount_ << " sprites" << std::endl;
     }
     #endif
+
+    renderer_->EndFrame(); 
 }
 
 void RenderSystem::Shutdown() {
@@ -55,26 +62,34 @@ void RenderSystem::CollectRenderableSprites(std::vector<RenderableSprite>& rende
     auto& componentManager = world_->GetComponentManager();
     auto entities = componentManager.GetEntitiesWithComponents<Transform2D, Sprite2D>();
     
+    std::cout << "[RenderSystem] Found " << entities.size() << " entities with Transform2D and Sprite2D components" << std::endl;
+    
     renderables.reserve(entities.size());
     
     for (EntityID entityId : entities) {
         auto* transform = componentManager.GetComponent<Transform2D>(entityId);
         auto* sprite = componentManager.GetComponent<Sprite2D>(entityId);
         
+        std::cout << "[RenderSystem] Entity " << entityId << " - Transform: " << (transform ? "YES" : "NO") 
+                  << " Sprite: " << (sprite ? "YES" : "NO") << " Visible: " << (sprite ? (sprite->visible ? "YES" : "NO") : "N/A") << std::endl;
+        
         // Only collect visible sprites
         if (transform && sprite && sprite->visible) {
             renderables.push_back({entityId, transform, sprite});
+            std::cout << "[RenderSystem] Added entity " << entityId << " to renderables (texture: " << sprite->texturePath << ")" << std::endl;
         }
     }
 }
 
 void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
-    // Load texture
-    SDL_Texture* texture = resourceManager_->LoadTexture(renderable.sprite->texturePath);
+    SDL_Texture* texture = resourceManager_->GetTexture(renderable.sprite->texturePath);
     if (!texture) {
         // Texture loading failed, skip rendering
+        std::cout << "[RenderSystem] ERROR: Failed to get texture for path: " << renderable.sprite->texturePath << std::endl;
         return;
     }
+    
+    std::cout << "[RenderSystem] Rendering entity " << renderable.entityId << " with texture: " << renderable.sprite->texturePath << std::endl;
     
     // Calculate rendering parameters
     Transform2D* transform = renderable.transform;
@@ -103,6 +118,7 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
                          transform->x, transform->y,
                          spriteWidth, spriteHeight,
                          transform->rotation);
+
     
     renderedSpriteCount_++;
 }

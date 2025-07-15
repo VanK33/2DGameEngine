@@ -4,6 +4,7 @@
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/ecs/components/Sprite2D.hpp"
 #include "engine/graphics/sprite/SpriteRenderer.hpp"
+#include "engine/graphics/renderer/Renderer.hpp"
 #include "engine/resource/ResourceManager.hpp"
 #include "engine/core/Types.hpp"
 #include <vector>
@@ -15,7 +16,8 @@ using engine::EntityID;
 class RenderSystem : public System {
 public:
     RenderSystem(engine::graphics::SpriteRenderer* spriteRenderer, 
-                 engine::resources::ResourceManager* resourceManager);
+                 engine::resources::ResourceManager* resourceManager,
+                 engine::graphics::Renderer* renderer);
     ~RenderSystem() = default;
 
     void Init() override;
@@ -45,6 +47,7 @@ private:
 
     engine::graphics::SpriteRenderer* spriteRenderer_;
     engine::resources::ResourceManager* resourceManager_;
+    engine::graphics::Renderer* renderer_;
     
     size_t renderedSpriteCount_ = 0;
 };

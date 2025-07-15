@@ -17,8 +17,9 @@
 namespace ZombieSurvivor {
 
 GameScene::GameScene(const std::string& id, 
-                     engine::input::InputManager* inputManager) 
-    : sceneId_(id), inputManager_(inputManager) {  // ✅ 初始化inputManager_
+                     engine::input::InputManager* inputManager,
+                     engine::resources::ResourceManager* resourceManager) 
+    : sceneId_(id), inputManager_(inputManager), resourceManager_(resourceManager) {
     std::cout << "[GameScene] Created with ID: " << sceneId_ << std::endl;
 }
 
@@ -32,7 +33,8 @@ void GameScene::Load() {
         return;
     }
     
-    // 现在可以安全地使用world_了
+    gameEntityFactory_ = std::make_unique<ZombieSurvivor::ECS::GameEntityFactory>(world_, resourceManager_);
+
     InitializeSystems();
     CreateEntities();
     
@@ -42,7 +44,6 @@ void GameScene::Load() {
 void GameScene::Unload() {
     std::cout << "[GameScene] Unloading scene..." << std::endl;
     
-    // SystemManager 会自动处理所有系统的 Shutdown
     if (world_) {
         world_->GetSystemManager().ClearAllSystems();
         world_->ClearAllEntities();
@@ -53,20 +54,15 @@ void GameScene::Unload() {
 
 void GameScene::Update(float deltaTime) {
     if (!world_) return;
-    
-    // ✅ 一行代码搞定所有系统更新
     world_->GetSystemManager().Update(deltaTime);
 }
 
 void GameScene::Render(SDL_Renderer* renderer) {
     if (!world_) return;
     
-    // 清空屏幕（基础背景色）
-    SDL_SetRenderDrawColor(renderer, 20, 40, 20, 255);
-    SDL_RenderClear(renderer);
+    // Background is already cleared by Renderer::BeginFrame()
+    // Don't clear again here - it would wipe out all sprite rendering!
     
-    // 渲染已经在SystemManager.Update()中处理了
-    // RenderSystem 会在其 Update() 方法中进行实际渲染
 }
 
 void GameScene::HandleEvent(const SDL_Event& event) {
@@ -74,7 +70,6 @@ void GameScene::HandleEvent(const SDL_Event& event) {
         if (event.key.key == SDLK_ESCAPE) {
             std::cout << "[GameScene] ESC pressed - requesting quit" << std::endl;
             
-            // ✅ 发送SDL_QUIT事件，引擎会自动处理
             SDL_Event quitEvent;
             quitEvent.type = SDL_EVENT_QUIT;
             quitEvent.common.timestamp = SDL_GetTicks();
@@ -109,9 +104,12 @@ void GameScene::InitializeSystems() {
     
     // 1. 背景渲染系统（创建背景实体）
     auto groundSystem = std::make_unique<System::GroundRenderSystem>();
-    systemManager.AddSystem(std::move(groundSystem), 10);
+    systemManager.AddSystem(std::move(groundSystem), 15);
     
-    // ✅ 2. 未来添加需要InputManager的系统
+    // 注意：Engine已经在核心系统中添加了RenderSystem（Engine.cpp:117-118）
+    // GameScene不需要创建自己的RenderSystem，Engine的RenderSystem会处理所有Sprite2D组件
+    
+    // ✅ 3. 未来添加需要InputManager的系统
     // auto inputSystem = std::make_unique<System::InputSystem>();
     // inputSystem->SetInputManager(inputManager_);  // 传递InputManager
     // systemManager.AddSystem(std::move(inputSystem), 20);
@@ -131,8 +129,7 @@ void GameScene::CreateEntities() {
     auto& entityFactory = world_->GetEntityFactory();
     auto& componentManager = world_->GetComponentManager();
     
-    // ✅ 未来在这里创建玩家
-    // CreatePlayer(entityFactory, componentManager);
+    gameEntityFactory_->CreatePlayer();
     
     std::cout << "[GameScene] Game entities created!" << std::endl;
 }

@@ -36,7 +36,7 @@ void GroundRenderSystem::CreateGroundBackground() {
             "terrain/ground_tile.png",
             {0, 0, 0, 0},
             true,
-            {200, 150, 100, 255},
+            {135, 206, 235, 180},  // Sky blue with transparency
             ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::BACKGROUND)
         });
 

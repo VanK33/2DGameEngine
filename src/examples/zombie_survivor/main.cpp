@@ -25,15 +25,17 @@ int main() {
     
     // 注册游戏场景
     auto& sceneManager = gameEngine.GetSceneManager();
-    auto& inputManager = gameEngine.GetInputManager();  // ✅ 获取InputManager
+    auto& inputManager = gameEngine.GetInputManager();
+    auto& resourceManager = gameEngine.GetResourceManager();
     auto& eventManager = gameEngine.GetEventManager();
     auto& renderer = gameEngine.GetRenderer();
     
-    // ✅ 创建并注册游戏场景（传入InputManager）
+    // 创建并注册游戏场景（传入InputManager和ResourceManager）
     gameEngine.RegisterScene<ZombieSurvivor::GameScene>(
         "game_scene", 
         "game_scene",
-        &inputManager  // ✅ 传递InputManager指针
+        &inputManager,
+        &resourceManager
     );
     
     // 切换到游戏场景
