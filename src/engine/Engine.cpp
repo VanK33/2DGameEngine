@@ -58,11 +58,8 @@ void Engine::Run() {
         UpdateTiming();
         HandleEvents();
         UpdateSystems();
-        
         // Render
-        renderer_.BeginFrame();
         sceneManager_.Render(renderer_.GetSDLRenderer());
-        renderer_.EndFrame();
     }
     
     std::cout << "[Engine] Main loop ended" << std::endl;
@@ -114,7 +111,7 @@ void Engine::InitializeSystems() {
     systemManager.AddSystem(std::move(lifetimeSystem), 30);
     
     // 4. Add render system (lowest priority - render after all logic updates)
-    auto renderSystem = std::make_unique<ECS::RenderSystem>(spriteRenderer_.get(), resourceManager_.get());
+    auto renderSystem = std::make_unique<ECS::RenderSystem>(spriteRenderer_.get(), resourceManager_.get(), &renderer_);
     systemManager.AddSystem(std::move(renderSystem), 50);
 
     // 5. Add debug render system (lowest priority - render debug info on top)

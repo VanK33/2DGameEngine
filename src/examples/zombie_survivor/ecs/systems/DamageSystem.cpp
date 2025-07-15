@@ -1,12 +1,16 @@
 #include "DamageSystem.hpp"
 #include "engine/core/ecs/World.hpp"
+#include "engine/core/ecs/components/Tag.hpp"
+#include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/event/EventManager.hpp"
 #include "engine/core/event/events/PhysicsEvents.hpp"
 #include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/CombatStatsComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/EnemyComponent.hpp"
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
+#include "examples/zombie_survivor/events/ProjectileEventUtils.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::System {
@@ -21,7 +25,7 @@ void DamageSystem::Init() {
     eventManager.Subscribe(engine::event::EventType::COLLISION_STARTED, this);
     eventManager.Subscribe(engine::event::EventType::CUSTOM, this);
     
-    std::cout << "[DamageSystem] Initialized and subscribed to collision events" << std::endl;
+    std::cout << "[DamageSystem] Subscribed to collision events" << std::endl;
 }
 
 void DamageSystem::Update(float deltaTime) {
@@ -69,31 +73,25 @@ void DamageSystem::HandleCollisionEvent(const std::shared_ptr<engine::event::Eve
     if (!world) return;
     
     auto& componentManager = world->GetComponentManager();
-    
-    // 尝试获取碰撞数据
     auto collisionData = std::static_pointer_cast<engine::event::CollisionData>(event->GetData());
-    if (!collisionData) {
-        std::cout << "[DamageSystem] Warning: No collision data in collision event" << std::endl;
-        return;
+    if (!collisionData) return;
+    
+    engine::EntityID entityA = collisionData->entityA;
+    engine::EntityID entityB = collisionData->entityB;
+    
+    bool isProjectileA = componentManager.HasComponent<Component::ProjectileComponent>(entityA);
+    bool isProjectileB = componentManager.HasComponent<Component::ProjectileComponent>(entityB);
+    bool isEnemyA = componentManager.HasComponent<Component::EnemyComponent>(entityA);
+    bool isEnemyB = componentManager.HasComponent<Component::EnemyComponent>(entityB);
+    
+    if (isProjectileA && isEnemyB) {
+        HandleProjectileEnemyCollision(entityA, entityB);
+    } else if (isProjectileB && isEnemyA) {
+        HandleProjectileEnemyCollision(entityB, entityA);
     }
     
-    uint32_t entityA = collisionData->entityA;
-    uint32_t entityB = collisionData->entityB;
-    
-    auto* weaponA = componentManager.GetComponent<Component::WeaponComponent>(entityA);
-    auto* weaponB = componentManager.GetComponent<Component::WeaponComponent>(entityB);
-
-    auto* healthA = componentManager.GetComponent<Component::HealthComponent>(entityA);
-    auto* healthB = componentManager.GetComponent<Component::HealthComponent>(entityB);
-    
-    if (weaponA && healthB && healthB->isAlive) {
-        int damage = CalculateDamage(entityA, entityB, static_cast<int>(weaponA->damage));
-        DealDamage(entityB, entityA, damage, "weapon");
-    }
-    
-    if (weaponB && healthA && healthA->isAlive) {
-        int damage = CalculateDamage(entityB, entityA, static_cast<int>(weaponB->damage));
-        DealDamage(entityA, entityB, damage, "weapon");
+    if ((isEnemyA && IsPlayer(entityB)) || (isEnemyB && IsPlayer(entityA))) {
+        HandleEnemyPlayerCollision(entityA, entityB);
     }
 }
 
@@ -117,7 +115,7 @@ void DamageSystem::DealDamage(uint32_t targetEntityId, uint32_t sourceEntityId,
     if (targetStats) {
         targetStats->totalDamageTaken += damage;
         targetStats->lastDamageSource = sourceEntityId;
-        targetStats->lastDamageTime = 0.0f; // 这里应该是当前时间，简化处理
+        targetStats->lastDamageTime = SDL_GetTicks() / 1000.0f;
     }
     
     auto* sourceStats = componentManager.GetComponent<Component::CombatStatsComponent>(sourceEntityId);
@@ -180,6 +178,87 @@ void DamageSystem::PublishDamageEvent(uint32_t targetEntityId, uint32_t sourceEn
         std::static_pointer_cast<void>(damageData)
     );
     eventManager.Publish(dealtEvent);
+}
+
+void DamageSystem::HandleEnemyPlayerCollision(uint32_t entityA, uint32_t entityB) {
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& componentManager = world->GetComponentManager();
+    
+    Component::EnemyComponent* enemy = nullptr;
+    uint32_t playerEntity = 0;
+    uint32_t enemyEntity = 0;
+    
+    if (IsEnemy(entityA)) {
+        enemy = componentManager.GetComponent<Component::EnemyComponent>(entityA);
+        enemyEntity = entityA;
+        playerEntity = entityB;
+    } else {
+        enemy = componentManager.GetComponent<Component::EnemyComponent>(entityB);
+        enemyEntity = entityB;
+        playerEntity = entityA;
+    }
+    
+    if (!enemy) return;
+    
+    auto* playerHealth = componentManager.GetComponent<Component::HealthComponent>(playerEntity);
+    if (!playerHealth || !playerHealth->isAlive) return;
+    
+    float currentTime = SDL_GetTicks() / 1000.0f;
+    if (currentTime - enemy->lastDamageTime < enemy->damageCooldown) {
+        return;
+    }
+    
+    DealDamage(playerEntity, enemyEntity, enemy->damage, "contact");
+    enemy->lastDamageTime = currentTime;
+    
+    std::cout << "[DamageSystem] Enemy " << enemyEntity 
+              << " dealt contact damage to player " << playerEntity << std::endl;
+}
+
+bool DamageSystem::IsPlayer(uint32_t entityId) {
+    auto* world = GetWorld();
+    if (!world) return false;
+    
+    auto* tag = world->GetComponentManager().GetComponent<engine::ECS::Tag>(entityId);
+    return tag && tag->tag == "Player";
+}
+
+bool DamageSystem::IsEnemy(uint32_t entityId) {
+    auto* world = GetWorld();
+    if (!world) return false;
+    
+    return world->GetComponentManager().GetComponent<Component::EnemyComponent>(entityId) != nullptr;
+}
+
+
+void DamageSystem::HandleProjectileEnemyCollision(engine::ECS::EntityID projectileId, engine::ECS::EntityID enemyId) {
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& componentManager = world->GetComponentManager();
+    
+    auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
+    if (!projectile) return;
+    
+    DealDamage(enemyId, projectile->shooterId, 
+               static_cast<int>(projectile->damage), "projectile");
+    
+    auto& eventManager = world->GetEventManager();
+    auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
+    
+    Events::ProjectileEventUtils::PublishProjectileHit(
+        eventManager,
+        projectileId,
+        enemyId,
+        projectile->shooterId,
+        projectile->damage,
+        transform ? engine::Vector2{transform->x, transform->y} : engine::Vector2{0, 0},
+        "enemy"
+    );
+    
+    std::cout << "[DamageSystem] Projectile hit enemy, damage: " << projectile->damage << std::endl;
 }
 
 } // namespace ZombieSurvivor::System 

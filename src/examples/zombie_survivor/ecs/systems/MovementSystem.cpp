@@ -61,8 +61,11 @@ void MovementSystem::ProcessMovement(
         }
     }
 
-    float currentSpeed = std::sqrt(velocity->vx * velocity->vx + velocity->vy * velocity->vy);
-    if (currentSpeed > velocity->maxSpeed) {
+    float speedSquared = velocity->vx * velocity->vx + velocity->vy * velocity->vy;
+    float maxSpeedSquared = velocity->maxSpeed * velocity->maxSpeed;
+
+    if (speedSquared > maxSpeedSquared) {
+        float currentSpeed = std::sqrt(speedSquared);
         float scale = velocity->maxSpeed / currentSpeed;
         velocity->vx *= scale;
         velocity->vy *= scale;

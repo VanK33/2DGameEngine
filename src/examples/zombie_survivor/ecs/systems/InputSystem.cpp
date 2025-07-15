@@ -62,6 +62,7 @@ engine::Vector2 InputSystem::GetMoveInputVector() const {
     bool leftPressed = inputManager_.IsKeyHeld(SDLK_A) || inputManager_.IsKeyHeld(SDLK_LEFT);
     bool rightPressed = inputManager_.IsKeyHeld(SDLK_D) || inputManager_.IsKeyHeld(SDLK_RIGHT);
     
+    
     engine::Vector2 moveInput{0.0f, 0.0f};
     
     if (upPressed && !downPressed) moveInput.y = -1.0f;

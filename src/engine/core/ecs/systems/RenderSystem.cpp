@@ -1,14 +1,17 @@
 #include "RenderSystem.hpp"
 #include "engine/core/ecs/World.hpp"
+#include "engine/graphics/renderer/Renderer.hpp"
 #include <algorithm>
 #include <iostream>
 
 namespace engine::ECS {
 
 RenderSystem::RenderSystem(engine::graphics::SpriteRenderer* spriteRenderer, 
-                           engine::resources::ResourceManager* resourceManager)
+                           engine::resources::ResourceManager* resourceManager,
+                           engine::graphics::Renderer* renderer)
     : spriteRenderer_(spriteRenderer)
     , resourceManager_(resourceManager)
+    , renderer_(renderer)
     , renderedSpriteCount_(0) {
 }
 
@@ -20,6 +23,8 @@ void RenderSystem::Update(float deltaTime) {
     if (!world_ || !spriteRenderer_ || !resourceManager_) {
         return;
     }
+
+    renderer_->BeginFrame();
 
     renderedSpriteCount_ = 0;
     
@@ -40,6 +45,8 @@ void RenderSystem::Update(float deltaTime) {
         std::cout << "[RenderSystem] Rendered " << renderedSpriteCount_ << " sprites" << std::endl;
     }
     #endif
+
+    renderer_->EndFrame(); 
 }
 
 void RenderSystem::Shutdown() {
@@ -69,10 +76,10 @@ void RenderSystem::CollectRenderableSprites(std::vector<RenderableSprite>& rende
 }
 
 void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
-    // Load texture
-    SDL_Texture* texture = resourceManager_->LoadTexture(renderable.sprite->texturePath);
+    SDL_Texture* texture = resourceManager_->GetTexture(renderable.sprite->texturePath);
     if (!texture) {
         // Texture loading failed, skip rendering
+        std::cout << "[RenderSystem] ERROR: Failed to get texture for path: " << renderable.sprite->texturePath << std::endl;
         return;
     }
     
@@ -103,6 +110,7 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
                          transform->x, transform->y,
                          spriteWidth, spriteHeight,
                          transform->rotation);
+
     
     renderedSpriteCount_++;
 }

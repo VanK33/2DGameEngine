@@ -33,3 +33,4 @@ Makefile
 .cursor
 .idea
 .vscode
+.claude

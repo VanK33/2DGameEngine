@@ -55,6 +55,10 @@ set(ZOMBIE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/WeaponFireSystem.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/WeaponInputSystem.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/PlayerStatsSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/ZombieAISystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/EnemySpawnSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/ProjectileSystem.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/configs/ProjectileConfig.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${ENGINE_CORE_SOURCES} ${ZOMBIE_SOURCES})
@@ -64,8 +68,22 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE 
-    SDL3::SDL3 
-    SDL3_image::SDL3_image
-    glm
-)
+target_link_libraries(${PROJECT_NAME} PRIVATE glm)
+
+# SDL3 linking with fallback
+if(TARGET SDL3::SDL3)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
+elseif(TARGET SDL3-shared)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-shared)
+elseif(TARGET SDL3)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3)
+endif()
+
+# SDL3_image linking with fallback
+if(TARGET SDL3_image::SDL3_image)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_image::SDL3_image)
+elseif(TARGET SDL3_image-shared)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_image-shared)
+elseif(TARGET SDL3_image)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_image)
+endif()

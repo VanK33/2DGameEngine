@@ -21,3 +21,12 @@ struct AmmoComponent {
 };
 
 } // namespace ZombieSurvivor::Component
+
+namespace std {
+    template<>
+    struct hash<ZombieSurvivor::Component::AmmoType> {
+        size_t operator()(const ZombieSurvivor::Component::AmmoType& type) const {
+            return hash<int>()(static_cast<int>(type));
+        }
+    };
+}

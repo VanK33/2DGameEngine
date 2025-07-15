@@ -4,6 +4,7 @@
 
 #include "examples/zombie_survivor/ecs/components/AmmoComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/ProjectileComponent.hpp"
 #include <string>
 #include <cstdint>
 
@@ -145,6 +146,44 @@ struct WeaponPickupData {
     uint32_t playerId;
     Component::WeaponType weaponType;
     int carriedAmmo;
+};
+
+struct CreateProjectileData {
+    engine::EntityID shooterId;
+    engine::Vector2 startPosition;
+    engine::Vector2 direction;
+    float damage;
+    float speed;
+    float lifetime;
+    Component::ProjectileType type;
+    
+    Component::WeaponType weaponType;
+    int penetration = 1;
+    float spread = 0.0f;
+};
+
+struct ProjectileCreatedData {
+    engine::EntityID projectileId;
+    engine::EntityID shooterId;
+    engine::Vector2 position;
+    engine::Vector2 direction;
+    Component::ProjectileType type;
+};
+
+struct ProjectileHitData {
+    engine::EntityID projectileId;
+    engine::EntityID targetId;
+    engine::EntityID shooterId;
+    float damage;
+    engine::Vector2 hitPosition;
+    std::string hitType; // "enemy", "wall", "boundary"
+};
+
+struct ProjectileDestroyedData {
+    engine::EntityID projectileId;
+    engine::EntityID shooterId;
+    std::string destroyReason; // "hit", "lifetime", "boundary"
+    engine::Vector2 lastPosition;
 };
 
 } // namespace ZombieSurvivor::Events

@@ -489,14 +489,17 @@ void AmmoSystem::UpdateReloadProgress(float deltaTime) {
         }
     }
     
-    // 清理非活跃状态
-    auto it = reloadStates_.begin();
-    while (it != reloadStates_.end()) {
-        if (!it->second.isActive) {
-            it = reloadStates_.erase(it);
-        } else {
-            ++it;
+    std::vector<uint32_t> toRemove;
+    toRemove.reserve(16); // Reserve reasonable capacity
+    
+    for (const auto& [entityId, state] : reloadStates_) {
+        if (!state.isActive) {
+            toRemove.push_back(entityId);
         }
+    }
+    
+    for (uint32_t entityId : toRemove) {
+        reloadStates_.erase(entityId);
     }
 }
 

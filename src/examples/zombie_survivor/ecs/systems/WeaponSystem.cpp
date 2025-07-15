@@ -28,10 +28,10 @@ void WeaponSystem::Update(float deltaTime) {
 void WeaponSystem::Shutdown() {
     auto* world = GetWorld();
     if (!world) return;
-
+    
     auto& eventManager = world->GetEventManager();
     eventManager.Unsubscribe(engine::event::EventType::CUSTOM, this);
-
+    
     playerWeaponStates_.clear();
     std::cout << "[WeaponSystem] Shutdown" << std::endl;
 }
@@ -90,13 +90,13 @@ void WeaponSystem::UpdateWeaponReloads(float deltaTime) {
             if (state.reloadTimer >= state.reloadTime) {
                 // Complete reload
                 state.isReloading = false;
-                state.reloadTimer = 0.0f;
-                
+    state.reloadTimer = 0.0f;
+    
                 // Notify reload completion
                 OnReloadCompleted(playerId);
-                
+    
                 std::cout << "[WeaponSystem] Player " << playerId << " completed reload" << std::endl;
-            }
+}
         }
     }
 }
@@ -119,7 +119,7 @@ void WeaponSystem::HandleGameEvent(const std::shared_ptr<engine::event::Event>& 
                 OnReloadStarted(data->playerId);
             }
             break;
-        }
+    }
         case Events::GameEventType::WEAPON_SWITCHED: {
             auto data = std::static_pointer_cast<Events::WeaponSwitchedData>(gameEvent->GetData());
             if (data) {
@@ -156,19 +156,19 @@ void WeaponSystem::OnReloadStarted(uint32_t playerId) {
     // Publish reload started event
     auto* world = GetWorld();
     if (world) {
-        auto& eventManager = world->GetEventManager();
+    auto& eventManager = world->GetEventManager();
         
-        auto reloadData = std::make_shared<Events::ReloadData>();
+    auto reloadData = std::make_shared<Events::ReloadData>();
         reloadData->entityId = playerId;
         reloadData->reloadTime = state.reloadTime;
-        
-        auto reloadEvent = std::make_shared<Events::GameEvent>(
-            Events::GameEventType::RELOAD_STARTED,
-            std::static_pointer_cast<void>(reloadData)
-        );
-        eventManager.Publish(reloadEvent);
-    }
     
+    auto reloadEvent = std::make_shared<Events::GameEvent>(
+        Events::GameEventType::RELOAD_STARTED,
+        std::static_pointer_cast<void>(reloadData)
+    );
+    eventManager.Publish(reloadEvent);
+}
+
     std::cout << "[WeaponSystem] Player " << playerId << " started reload, time: " 
               << state.reloadTime << "s" << std::endl;
 }
@@ -238,4 +238,4 @@ float WeaponSystem::GetWeaponReloadTime(uint32_t playerId) const {
     return it != playerWeaponStates_.end() ? it->second.reloadTime : 1.5f;
 }
 
-} // namespace ZombieSurvivor::System
+} // namespace ZombieSurvivor::System 

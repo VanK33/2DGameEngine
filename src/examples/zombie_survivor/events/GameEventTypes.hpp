@@ -35,7 +35,11 @@ enum class GameEventType {
     WEAPON_DROPPED,
     WEAPON_DESTORYED,
     AMMO_CONSUME_REQUEST,
-    AMMO_REFRESH
+    AMMO_REFRESH,
+    CREATE_PROJECTILE,
+    PROJECTILE_CREATED,
+    PROJECTILE_HIT,
+    PROJECTILE_DESTROYED
 };
 
 class GameEvent : public engine::event::Event {

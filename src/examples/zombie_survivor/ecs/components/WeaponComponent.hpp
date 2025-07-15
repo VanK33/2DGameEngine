@@ -1,6 +1,7 @@
 // src/examples/zombie_survivor/ecs/components/WeaponComponent.hpp
 #pragma once
 
+#include "AmmoComponent.hpp"
 #include <string>
 
 namespace ZombieSurvivor::Component {
@@ -14,14 +15,18 @@ enum class WeaponType {
 
 struct WeaponComponent {
     WeaponType type = WeaponType::PISTOL;
-    float damage = 15.0f;
-    float range = 250.0f;
+    float damage = 15.0f;  // Likely be over-written by bullet property
+    float range = 250.0f;  // Likely be over-written by bullet property
     float fireRate = 3.0f;
     float reloadTime = 2.0f;
+    bool isReloading = false;     // 是否正在装弹
+    float lastFireTime = 0.0f; 
 
     int magazineCapacity = 12;
     int defaultTotalAmmo = 120;
     int maxTotalAmmo = 300;
+
+    Component::AmmoType currentAmmoType = Component::AmmoType::PISTOL; 
 };
 
 }
