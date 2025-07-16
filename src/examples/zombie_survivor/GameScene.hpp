@@ -49,6 +49,7 @@ private:
     
     void InitializeSystems();  // 通过SystemManager添加系统
     void CreateEntities();     // 只负责创建游戏实体
+    void RenderDebugAiming(SDL_Renderer* renderer); // Debug rendering for aiming
 };
 
 } // namespace ZombieSurvivor

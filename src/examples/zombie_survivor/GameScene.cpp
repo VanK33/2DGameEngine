@@ -12,6 +12,8 @@
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/ecs/components/Sprite2D.hpp"
+#include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/InputComponent.hpp"
 
 // 系统
 #include "ecs/systems/GroundRenderSystem.hpp"
@@ -66,6 +68,8 @@ void GameScene::Render(SDL_Renderer* renderer) {
     // Background is already cleared by Renderer::BeginFrame()
     // Don't clear again here - it would wipe out all sprite rendering!
     
+    // Debug: Draw weapon aim direction and mouse position
+    RenderDebugAiming(renderer);
 }
 
 void GameScene::HandleEvent(const SDL_Event& event) {
@@ -144,6 +148,45 @@ void GameScene::CreateEntities() {
     }
     
     std::cout << "[GameScene] Game entities created!" << std::endl;
+}
+
+void GameScene::RenderDebugAiming(SDL_Renderer* renderer) {
+    if (!world_ || !weaponId_) return;
+    
+    auto& componentManager = world_->GetComponentManager();
+    
+    // Get weapon components
+    auto* weaponTransform = componentManager.GetComponent<engine::ECS::Transform2D>(weaponId_);
+    auto* weaponAiming = componentManager.GetComponent<Component::AimingComponent>(weaponId_);
+    auto* weaponInput = componentManager.GetComponent<Component::InputComponent>(weaponId_);
+    
+    if (!weaponTransform || !weaponAiming || !weaponInput) return;
+    
+    // Set debug colors
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red for mouse position
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green for weapon direction
+    
+    // Draw mouse position as a circle (approximated with cross)
+    float mouseX = weaponInput->mousePosition.x;
+    float mouseY = weaponInput->mousePosition.y;
+    SDL_RenderLine(renderer, mouseX - 10, mouseY, mouseX + 10, mouseY);
+    SDL_RenderLine(renderer, mouseX, mouseY - 10, mouseX, mouseY + 10);
+    
+    // Draw weapon position
+    float weaponX = weaponTransform->x;
+    float weaponY = weaponTransform->y;
+    
+    // Draw weapon direction line (50 pixels long)
+    float aimX = weaponAiming->aimDirection.x * 50.0f;
+    float aimY = weaponAiming->aimDirection.y * 50.0f;
+    
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green
+    SDL_RenderLine(renderer, weaponX, weaponY, weaponX + aimX, weaponY + aimY);
+    
+    // Draw weapon center as small cross
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
+    SDL_RenderLine(renderer, weaponX - 3, weaponY, weaponX + 3, weaponY);
+    SDL_RenderLine(renderer, weaponX, weaponY - 3, weaponX, weaponY + 3);
 }
 
 } // namespace ZombieSurvivor

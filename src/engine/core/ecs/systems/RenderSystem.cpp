@@ -105,11 +105,23 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
     SDL_SetTextureColorMod(texture, sprite->tint.r, sprite->tint.g, sprite->tint.b);
     SDL_SetTextureAlphaMod(texture, sprite->tint.a);
     
+    // Calculate pivot point if specified
+    SDL_FPoint* pivotPtr = nullptr;
+    SDL_FPoint calculatedPivot;
+    if (sprite->pivotOffset.x >= 0.0f && sprite->pivotOffset.y >= 0.0f) {
+        // Convert relative pivot offset to absolute pixel coordinates
+        calculatedPivot.x = spriteWidth * sprite->pivotOffset.x;
+        calculatedPivot.y = spriteHeight * sprite->pivotOffset.y;
+        pivotPtr = &calculatedPivot;
+    }
+    
     // Call SpriteRenderer for rendering
     spriteRenderer_->Draw(texture, 
                          transform->x, transform->y,
                          spriteWidth, spriteHeight,
-                         transform->rotation);
+                         transform->rotation,
+                         SDL_FLIP_NONE,
+                         pivotPtr);
 
     
     renderedSpriteCount_++;

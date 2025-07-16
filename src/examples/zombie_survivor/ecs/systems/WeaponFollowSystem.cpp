@@ -1,7 +1,6 @@
 #include "WeaponFollowSystem.hpp"
 #include "engine/core/ecs/World.hpp"
 #include "examples/zombie_survivor/ecs/components/InputComponent.hpp"
-#include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::System {
@@ -42,25 +41,17 @@ void WeaponFollowSystem::UpdateFollowPosition(engine::EntityID followerId, const
     auto* targetTransform = componentManager.GetComponent<engine::ECS::Transform2D>(follow.targetEntityId);
     if (!targetTransform) return;
 
-    // Get weapon's aiming component to get aim direction
-    auto* weaponAiming = componentManager.GetComponent<Component::AimingComponent>(followerId);
-    if (!weaponAiming) return;
-
     // Calculate weapon position like a clock hand
     // Center point: player position + offset (5 pixels to the left)
     float centerX = targetTransform->x + follow.offset.x;
     float centerY = targetTransform->y + follow.offset.y;
-    
-    // Calculate angle from aim direction
-    float angle = std::atan2(weaponAiming->aimDirection.y, weaponAiming->aimDirection.x);
     
     // Position weapon at the center (like clock center)
     // The weapon will rotate around this point, but start at center
     followerTransform->x = centerX;
     followerTransform->y = centerY;
     
-    // Set rotation to point in aim direction
-    followerTransform->rotation = angle;
+    // Let RotationSystem handle rotation - don't set it here
 }
 
 void WeaponFollowSystem::CopyMouseInputFromPlayer(engine::EntityID weaponId, const Component::FollowComponent& follow) {

@@ -14,7 +14,8 @@ void SpriteRenderer::Draw(SDL_Texture* texture,
                           float x, float y,
                           float width, float height,
                           float rotation,
-                          SDL_FlipMode flip) {
+                          SDL_FlipMode flip,
+                          const SDL_FPoint* pivot) {
     if (!texture || !renderer_) return;
 
     SDL_FRect dstRect = { x, y, width, height };
@@ -23,9 +24,16 @@ void SpriteRenderer::Draw(SDL_Texture* texture,
     if (rotation == 0.0f) {
         SDL_RenderTexture(renderer_, texture, nullptr, &dstRect);
     } else {
-        SDL_FPoint center = { width / 2.0f, height / 2.0f };
+        SDL_FPoint center;
+        if (pivot) {
+            center = *pivot;
+        } else {
+            center = { width / 2.0f, height / 2.0f };
+        }
+        // Convert radians to degrees for SDL3 with negative and 180° offset
+        double rotationInDegrees = -rotation * 180.0 / M_PI + 180.0;
         SDL_RenderTextureRotated(renderer_, texture, nullptr, &dstRect,
-                                 rotation, &center, flip);
+                                 rotationInDegrees, &center, flip);
     }
 }
 

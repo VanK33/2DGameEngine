@@ -37,7 +37,7 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             {0, 0, 64, 64},                 // 64x64 pixel display
             true,                           // visible
             {255, 0, 0, 255},               // RED tint to make visible
-            ToInt(RenderLayer::UI)          // HIGHEST layer (20) - should be on top of everything
+            ToInt(RenderLayer::ENTITIES)    // ENTITIES layer (10) - player should be below weapon
         });
     
     // 添加s碰撞组件
@@ -116,7 +116,8 @@ uint32_t GameEntityFactory::CreateWeapon(engine::EntityID playerEntityId, const 
             {0, 0, 40, 12},               // sourceRect - 40x12 weapon sprite (bigger)
             true,                         // visible
             {0, 255, 0, 255},             // tint - green to make it visible
-            ToInt(RenderLayer::WEAPON)    // renderLayer - convert enum to int
+            ToInt(RenderLayer::WEAPON),   // renderLayer - convert enum to int
+            {1.0f, 0.5f}                  // pivotOffset - right edge center for clock hand behavior
         });
     
     // Add FollowComponent to make weapon follow player
