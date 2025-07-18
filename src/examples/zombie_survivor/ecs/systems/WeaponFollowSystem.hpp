@@ -19,7 +19,7 @@ public:
 
 private:
     void UpdateFollowPosition(engine::EntityID followerId, const Component::FollowComponent& follow, float deltaTime);
-    void CopyMouseInputFromPlayer(engine::EntityID weaponId, const Component::FollowComponent& follow);
+    void CopyInputFromPlayer(engine::EntityID weaponId, const Component::FollowComponent& follow);
 };
 
 } // namespace ZombieSurvivor::System

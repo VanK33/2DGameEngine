@@ -52,11 +52,8 @@ void AimingSystem::UpdateAiming(uint32_t entityId) {
     engine::Vector2 entityPos{transform->x, transform->y};
     aiming->aimDirection = CalculateAimDirection(entityPos, aiming->mouseWorldPos);
     
-    // Debug: Print angles in degrees for comparison
-    float mouseAngle = std::atan2(-(input->mousePosition.y - entityPos.y), input->mousePosition.x - entityPos.x);
-    float weaponAngle = std::atan2(aiming->aimDirection.y, aiming->aimDirection.x);
-    
-    // Convert to degrees for easier reading
+    // Apply rotation to Transform2D so entity faces mouse direction
+    transform->rotation = std::atan2(aiming->aimDirection.y, aiming->aimDirection.x);
 }
 
 engine::Vector2 AimingSystem::CalculateAimDirection(const engine::Vector2& fromPos, const engine::Vector2& toPos) const {

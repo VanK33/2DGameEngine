@@ -5,6 +5,7 @@
 #include "examples/zombie_survivor/ecs/components/MovementComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/FollowComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::ECS {
@@ -37,7 +38,8 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             {0, 0, 64, 64},                 // 64x64 pixel display
             true,                           // visible
             {255, 0, 0, 255},               // RED tint to make visible
-            ToInt(RenderLayer::ENTITIES)    // ENTITIES layer (10) - player should be below weapon
+            ToInt(RenderLayer::ENTITIES),   // ENTITIES layer (10) - player should be below weapon
+            {0.5f, 0.5f}                    // pivotOffset: center of sprite for proper rotation
         });
     
     // 添加s碰撞组件
@@ -80,7 +82,31 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             false,   // instantResponse
             true     // canMove
         });
-      
+    
+    // Add AimingComponent to player for mouse-based rotation
+    componentManager.AddComponent<Component::AimingComponent>(playerId,
+        Component::AimingComponent{
+            {1.0f, 0.0f},    // aimDirection (pointing right initially)
+            {0.0f, 0.0f},    // mouseWorldPos
+            true,            // showAimLine
+            250.0f           // maxAimRange
+        });
+    
+    // Add WeaponComponent to player for WeaponInputSystem to find
+    componentManager.AddComponent<ZombieSurvivor::Component::WeaponComponent>(playerId,
+        ZombieSurvivor::Component::WeaponComponent{
+            ZombieSurvivor::Component::WeaponType::PISTOL,  // type
+            15.0f,   // damage
+            250.0f,  // range
+            3.0f,    // fireRate
+            2.0f,    // reloadTime
+            false,   // isReloading
+            0.0f,    // lastFireTime
+            12,      // magazineCapacity
+            120,     // defaultTotalAmmo
+            300,     // maxTotalAmmo
+            ZombieSurvivor::Component::AmmoType::PISTOL     // currentAmmoType
+        });
     
     std::cout << "[GameEntityFactory] Created player entity: " << playerId << std::endl;
     return playerId;
@@ -117,35 +143,50 @@ uint32_t GameEntityFactory::CreateWeapon(engine::EntityID playerEntityId, const 
             true,                         // visible
             {0, 255, 0, 255},             // tint - green to make it visible
             ToInt(RenderLayer::WEAPON),   // renderLayer - convert enum to int
-            {1.0f, 0.5f}                  // pivotOffset - right edge center for clock hand behavior
+            {0.25f, 0.5f}                 // pivotOffset - grip point at 1/4 from left edge, vertical center
         });
     
-    // Add FollowComponent to make weapon follow player
+    // Add FollowComponent to make weapon follow player (position AND rotation)
     componentManager.AddComponent<Component::FollowComponent>(weaponId,
         Component::FollowComponent{
             playerEntityId,  // follow the player
             offset,          // maintain offset
-            false,           // don't follow player rotation
+            true,            // follow player rotation (NEW: synchronized rotation)
             50.0f            // follow distance
         });
     
-    // Add InputComponent for AimingSystem compatibility (will be updated by WeaponFollowSystem)
+    // Add InputComponent and AimingComponent to weapon for independent aiming
     componentManager.AddComponent<Component::InputComponent>(weaponId,
         Component::InputComponent{
-            {0.0f, 0.0f},    // moveInput (not used)
+            {0.0f, 0.0f},    // movementInput
             {0.0f, 0.0f},    // mousePosition (will be copied from player)
-            false,           // shootButtonPressed (not used)
-            false,           // reloadButtonPressed (not used)
-            -1               // targetEntityId (not used)
+            false,           // leftMousePressed
+            false,           // rightMousePressed
+            -1               // lastInputFrame
         });
     
-    // Add AimingComponent for mouse-based rotation
     componentManager.AddComponent<Component::AimingComponent>(weaponId,
         Component::AimingComponent{
             {1.0f, 0.0f},    // aimDirection (pointing right initially)
             {0.0f, 0.0f},    // mouseWorldPos
             true,            // showAimLine
             250.0f           // maxAimRange
+        });
+    
+    // Add WeaponComponent for firing system
+    componentManager.AddComponent<Component::WeaponComponent>(weaponId,
+        Component::WeaponComponent{
+            Component::WeaponType::PISTOL,  // type
+            15.0f,                          // damage
+            250.0f,                         // range
+            3.0f,                           // fireRate
+            2.0f,                           // reloadTime
+            false,                          // isReloading
+            0.0f,                           // lastFireTime
+            12,                             // magazineCapacity
+            120,                            // defaultTotalAmmo
+            300,                            // maxTotalAmmo
+            Component::AmmoType::PISTOL     // currentAmmoType
         });
     
     std::cout << "[GameEntityFactory] Created weapon entity: " << weaponId << " for player: " << playerEntityId << std::endl;

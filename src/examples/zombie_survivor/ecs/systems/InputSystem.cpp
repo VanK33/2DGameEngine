@@ -30,6 +30,7 @@ void InputSystem::Update(float deltaTime) {
         input->mousePosition = GetMouseScreenPosition();
 
         if (IsShootButtonPressed()) {
+            std::cout << "[InputSystem] Mouse button detected for entity " << entityId << std::endl;
             input->shootButtonPressed = true;
         }
 
@@ -44,7 +45,7 @@ bool InputSystem::IsMovementKeyPressed(SDL_Keycode key) const {
 }
 
 bool InputSystem::IsShootButtonPressed() const {
-    return inputManager_.IsMouseButtonDown(SDL_BUTTON_LEFT);
+    return inputManager_.IsMouseButtonHeld(SDL_BUTTON_LEFT);
 }
 
 bool InputSystem::IsReloadButtonPressed() const {

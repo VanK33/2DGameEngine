@@ -11,6 +11,10 @@
 #include "ecs/systems/GroundRenderSystem.hpp"
 #include "ecs/systems/WeaponFollowSystem.hpp"
 #include "ecs/systems/AimingSystem.hpp"
+#include "ecs/systems/WeaponInputSystem.hpp"
+#include "ecs/systems/WeaponSystem.hpp"
+#include "ecs/systems/WeaponFireSystem.hpp"
+#include "ecs/systems/ProjectileSystem.hpp"
 
 #include "examples/zombie_survivor/ecs/GameEntityFactory.hpp"
 

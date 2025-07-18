@@ -7,19 +7,25 @@
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/FollowComponent.hpp"
 #include "examples/zombie_survivor/configs/ProjectileConfig.hpp"
 #include <iostream>
+#include <cmath>
 
 namespace ZombieSurvivor::System {
 
 void WeaponFireSystem::Init() {
+    std::cout << "[WeaponFireSystem] Init() called" << std::endl;
     auto* world = GetWorld();
-    if (!world) return;
+    if (!world) {
+        std::cout << "[WeaponFireSystem] ERROR: No world available during Init!" << std::endl;
+        return;
+    }
 
     auto& eventManager = world->GetEventManager();
     eventManager.Subscribe(engine::event::EventType::CUSTOM, this);
     
-    std::cout << "[WeaponFireSystem] Initialized" << std::endl;
+    std::cout << "[WeaponFireSystem] Initialized and subscribed to CUSTOM events" << std::endl;
 }
 
 void WeaponFireSystem::Update(float deltaTime) {
@@ -46,6 +52,8 @@ void WeaponFireSystem::HandleGameEvent(const std::shared_ptr<engine::event::Even
     auto gameEvent = std::dynamic_pointer_cast<Events::GameEvent>(event);
     if (!gameEvent) return;
     
+    std::cout << "[WeaponFireSystem] Received GameEvent type: " << static_cast<int>(gameEvent->GetGameEventType()) << std::endl;
+    
     switch (gameEvent->GetGameEventType()) {
         case Events::GameEventType::FIRE_INPUT: {
             auto data = std::static_pointer_cast<Events::FireInputData>(gameEvent->GetData());
@@ -62,6 +70,7 @@ void WeaponFireSystem::HandleGameEvent(const std::shared_ptr<engine::event::Even
 }
 
 void WeaponFireSystem::HandleFireInput(uint32_t playerId) {
+    std::cout << "[WeaponFireSystem] Received FIRE_INPUT event for player " << playerId << std::endl;
     if (!CanFire(playerId)) {
         std::cout << "[WeaponFireSystem] Player " << playerId << " cannot fire" << std::endl;
         return;
@@ -99,8 +108,12 @@ Component::AmmoType WeaponFireSystem::GetWeaponAmmoType(uint32_t playerId) const
     if (!world) return Component::AmmoType::NONE;
     
     auto& componentManager = world->GetComponentManager();
-    auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(playerId);
     
+    // Find the weapon entity for this player
+    engine::EntityID weaponEntityId = FindWeaponEntityForPlayer(playerId);
+    if (weaponEntityId == 0) return Component::AmmoType::NONE;
+    
+    auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(weaponEntityId);
     if (!weapon) return Component::AmmoType::NONE;
     
     return weapon->currentAmmoType;
@@ -148,17 +161,29 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
     auto& componentManager = world->GetComponentManager();
     auto& eventManager = world->GetEventManager();
     
-    auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(playerId);
-    auto* aiming = componentManager.GetComponent<Component::AimingComponent>(playerId);
-    auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(playerId);
+    // Find the weapon entity for this player
+    engine::EntityID weaponEntityId = FindWeaponEntityForPlayer(playerId);
+    if (weaponEntityId == 0) {
+        std::cout << "[WeaponFireSystem] No weapon found for player " << playerId << std::endl;
+        return;
+    }
     
-    if (!transform || !weapon) return;
+    // Use weapon entity components instead of player components
+    auto* weaponTransform = componentManager.GetComponent<engine::ECS::Transform2D>(weaponEntityId);
+    auto* weaponAiming = componentManager.GetComponent<Component::AimingComponent>(weaponEntityId);
+    auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(weaponEntityId);
+    
+    if (!weaponTransform || !weapon) {
+        std::cout << "[WeaponFireSystem] Missing weapon components for entity " << weaponEntityId << std::endl;
+        return;
+    }
     
     auto projectileConfig = ZombieSurvivor::Config::ProjectileConfigManager::GetConfig(ammoType);
     
+    // Use weapon's aiming direction
     engine::Vector2 direction{1.0f, 0.0f};
-    if (aiming) {
-        direction = aiming->aimDirection;
+    if (weaponAiming) {
+        direction = weaponAiming->aimDirection;
         float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
         if (length > 0.0f) {
             direction.x /= length;
@@ -166,10 +191,13 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
         }
     }
     
+    // Calculate weapon tip position for projectile spawn
+    engine::Vector2 tipPosition = CalculateWeaponTipPosition(weaponEntityId);
+    
     // 创建子弹事件
     auto projectileData = std::make_shared<Events::CreateProjectileData>();
     projectileData->shooterId = playerId;
-    projectileData->startPosition = {transform->x, transform->y};
+    projectileData->startPosition = tipPosition;
     projectileData->direction = direction;
     projectileData->damage = projectileConfig.damage;
     projectileData->speed = projectileConfig.speed;
@@ -189,4 +217,63 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
               << " (damage=" << projectileConfig.damage 
               << ", speed=" << projectileConfig.speed << ")" << std::endl;
 }
+
+engine::EntityID WeaponFireSystem::FindWeaponEntityForPlayer(uint32_t playerId) const {
+    auto* world = GetWorld();
+    if (!world) return 0;
+    
+    auto& componentManager = world->GetComponentManager();
+    
+    std::cout << "[WeaponFireSystem] Finding weapon for player " << playerId << std::endl;
+    
+    // Find weapon entity that follows this player
+    auto entities = componentManager.GetEntitiesWithComponent<Component::FollowComponent>();
+    std::cout << "[WeaponFireSystem] Found " << entities.size() << " entities with FollowComponent" << std::endl;
+    
+    for (const auto& entityId : entities) {
+        auto* follow = componentManager.GetComponent<Component::FollowComponent>(entityId);
+        if (follow) {
+            std::cout << "[WeaponFireSystem] Entity " << entityId << " follows " << follow->targetEntityId << std::endl;
+            if (follow->targetEntityId == playerId) {
+                // This entity follows the player - check if it's a weapon
+                auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(entityId);
+                std::cout << "[WeaponFireSystem] Entity " << entityId << " follows player " << playerId 
+                          << ", has weapon: " << (weapon ? "yes" : "no") << std::endl;
+                if (weapon) {
+                    std::cout << "[WeaponFireSystem] Found weapon entity " << entityId << " for player " << playerId << std::endl;
+                    return entityId;
+                }
+            }
+        }
+    }
+    
+    std::cout << "[WeaponFireSystem] No weapon found for player " << playerId << std::endl;
+    return 0; // No weapon found
+}
+
+engine::Vector2 WeaponFireSystem::CalculateWeaponTipPosition(engine::EntityID weaponEntityId) const {
+    auto* world = GetWorld();
+    if (!world) return {0.0f, 0.0f};
+    
+    auto& componentManager = world->GetComponentManager();
+    
+    // Get weapon transform
+    auto* weaponTransform = componentManager.GetComponent<engine::ECS::Transform2D>(weaponEntityId);
+    if (!weaponTransform) {
+        return {0.0f, 0.0f};
+    }
+    
+    // Weapon specifications:
+    // - Pivot point: {1.0f, 0.5f} (right edge center)
+    // - Dimensions: 40x12 pixels
+    // - Tip is at the LEFT edge (opposite to pivot)
+    
+    // Calculate tip position: move 40 pixels from pivot in opposite direction of weapon orientation
+    float tipDistance = 40.0f;
+    float tipX = weaponTransform->x + tipDistance * std::cos(weaponTransform->rotation + M_PI);
+    float tipY = weaponTransform->y + tipDistance * std::sin(weaponTransform->rotation + M_PI);
+    
+    return engine::Vector2{tipX, tipY};
+}
+
 } // namespace ZombieSurvivor::System

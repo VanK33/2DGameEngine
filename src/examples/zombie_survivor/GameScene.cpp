@@ -124,6 +124,18 @@ void GameScene::InitializeSystems() {
 
     auto rotationSystem = std::make_unique<ZombieSurvivor::System::RotationSystem>();
     systemManager.AddSystem(std::move(rotationSystem), 40);
+
+    auto weaponInputSystem = std::make_unique<ZombieSurvivor::System::WeaponInputSystem>();
+    systemManager.AddSystem(std::move(weaponInputSystem), 42);
+
+    auto weaponSystem = std::make_unique<ZombieSurvivor::System::WeaponSystem>();
+    systemManager.AddSystem(std::move(weaponSystem), 43);
+
+    auto weaponFireSystem = std::make_unique<ZombieSurvivor::System::WeaponFireSystem>();
+    systemManager.AddSystem(std::move(weaponFireSystem), 45);
+
+    auto projectileSystem = std::make_unique<ZombieSurvivor::System::ProjectileSystem>();
+    systemManager.AddSystem(std::move(projectileSystem), 50);
     
     std::cout << "[GameScene] Systems initialized successfully!" << std::endl;
 }
@@ -151,42 +163,74 @@ void GameScene::CreateEntities() {
 }
 
 void GameScene::RenderDebugAiming(SDL_Renderer* renderer) {
-    if (!world_ || !weaponId_) return;
+    if (!world_ || !weaponId_ || !playerId_) return;
     
     auto& componentManager = world_->GetComponentManager();
+    
+    // Get player components
+    auto* playerTransform = componentManager.GetComponent<engine::ECS::Transform2D>(playerId_);
+    auto* playerAiming = componentManager.GetComponent<Component::AimingComponent>(playerId_);
     
     // Get weapon components
     auto* weaponTransform = componentManager.GetComponent<engine::ECS::Transform2D>(weaponId_);
     auto* weaponAiming = componentManager.GetComponent<Component::AimingComponent>(weaponId_);
-    auto* weaponInput = componentManager.GetComponent<Component::InputComponent>(weaponId_);
+    auto* weaponInput = componentManager.GetComponent<Component::InputComponent>(playerId_); // Player has input, not weapon
     
-    if (!weaponTransform || !weaponAiming || !weaponInput) return;
+    if (!playerTransform || !weaponTransform || !weaponAiming || !weaponInput) return;
     
-    // Set debug colors
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red for mouse position
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green for weapon direction
+    // === PLAYER DEBUG VISUALIZATION ===
+    float playerX = playerTransform->x;
+    float playerY = playerTransform->y;
     
-    // Draw mouse position as a circle (approximated with cross)
-    float mouseX = weaponInput->mousePosition.x;
-    float mouseY = weaponInput->mousePosition.y;
-    SDL_RenderLine(renderer, mouseX - 10, mouseY, mouseX + 10, mouseY);
-    SDL_RenderLine(renderer, mouseX, mouseY - 10, mouseX, mouseY + 10);
+    // Draw player center as BLUE cross (8px)
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue
+    SDL_RenderLine(renderer, playerX - 8, playerY, playerX + 8, playerY);
+    SDL_RenderLine(renderer, playerX, playerY - 8, playerX, playerY + 8);
     
-    // Draw weapon position
+    // Draw player rotation direction (30px line from center)
+    float playerRotX = std::cos(playerTransform->rotation) * 30.0f;
+    float playerRotY = std::sin(playerTransform->rotation) * 30.0f;
+    SDL_SetRenderDrawColor(renderer, 0, 150, 255, 255); // Light blue
+    SDL_RenderLine(renderer, playerX, playerY, playerX + playerRotX, playerY + playerRotY);
+    
+    // === WEAPON DEBUG VISUALIZATION ===
     float weaponX = weaponTransform->x;
     float weaponY = weaponTransform->y;
+    
+    // Draw weapon position as YELLOW cross (6px)
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
+    SDL_RenderLine(renderer, weaponX - 6, weaponY, weaponX + 6, weaponY);
+    SDL_RenderLine(renderer, weaponX, weaponY - 6, weaponX, weaponY + 6);
     
     // Draw weapon direction line (50 pixels long)
     float aimX = weaponAiming->aimDirection.x * 50.0f;
     float aimY = weaponAiming->aimDirection.y * 50.0f;
-    
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green
     SDL_RenderLine(renderer, weaponX, weaponY, weaponX + aimX, weaponY + aimY);
     
-    // Draw weapon center as small cross
-    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
-    SDL_RenderLine(renderer, weaponX - 3, weaponY, weaponX + 3, weaponY);
-    SDL_RenderLine(renderer, weaponX, weaponY - 3, weaponX, weaponY + 3);
+    // Draw line connecting player center to weapon position
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+    SDL_RenderLine(renderer, playerX, playerY, weaponX, weaponY);
+    
+    // === MOUSE DEBUG VISUALIZATION ===
+    // Draw mouse position as RED cross (10px)
+    float mouseX = weaponInput->mousePosition.x;
+    float mouseY = weaponInput->mousePosition.y;
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
+    SDL_RenderLine(renderer, mouseX - 10, mouseY, mouseX + 10, mouseY);
+    SDL_RenderLine(renderer, mouseX, mouseY - 10, mouseX, mouseY + 10);
+    
+    // === DEBUG TEXT INFO ===
+    // Print debug info to console (every 60 frames to avoid spam)
+    static int frameCount = 0;
+    frameCount++;
+    if (frameCount % 60 == 0) {
+        std::cout << "\n[DEBUG] Player center: (" << playerX << ", " << playerY << ")" << std::endl;
+        std::cout << "[DEBUG] Player rotation: " << playerTransform->rotation << " radians" << std::endl;
+        std::cout << "[DEBUG] Weapon position: (" << weaponX << ", " << weaponY << ")" << std::endl;
+        std::cout << "[DEBUG] Weapon direction: (" << weaponAiming->aimDirection.x << ", " << weaponAiming->aimDirection.y << ")" << std::endl;
+        std::cout << "[DEBUG] Expected weapon position for facing up: player + (0, 20) = (" << playerX << ", " << playerY + 20 << ")" << std::endl;
+    }
 }
 
 } // namespace ZombieSurvivor

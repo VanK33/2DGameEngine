@@ -30,8 +30,9 @@ void SpriteRenderer::Draw(SDL_Texture* texture,
         } else {
             center = { width / 2.0f, height / 2.0f };
         }
-        // Convert radians to degrees for SDL3 with negative and 180° offset
-        double rotationInDegrees = -rotation * 180.0 / M_PI + 180.0;
+        // Convert radians to degrees for SDL3 (with negation to fix direction)
+        double rotationInDegrees = -rotation * 180.0 / M_PI;
+        
         SDL_RenderTextureRotated(renderer_, texture, nullptr, &dstRect,
                                  rotationInDegrees, &center, flip);
     }

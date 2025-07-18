@@ -7,6 +7,7 @@
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
 #include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/AmmoComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/FollowComponent.hpp"
 
 namespace ZombieSurvivor::System {
 
@@ -29,6 +30,10 @@ private:
     Component::AmmoType GetWeaponAmmoType(uint32_t playerId) const;
     
     void PublishAmmoConsumeRequest(uint32_t playerId, Component::AmmoType ammoType);
+    
+    // Weapon entity helpers
+    engine::EntityID FindWeaponEntityForPlayer(uint32_t playerId) const;
+    engine::Vector2 CalculateWeaponTipPosition(engine::EntityID weaponEntityId) const;
 };
 
 } // namespace ZombieSurvivor::System

@@ -19,11 +19,8 @@ void WeaponInputSystem::Update(float deltaTime) {
     
     auto& componentManager = world->GetComponentManager();
     
-    // Get all entities with input and weapon components
-    auto entities = componentManager.GetEntitiesWithComponents<
-        Component::InputComponent,
-        Component::WeaponComponent  // Ensure entity can use weapons
-    >();
+    // Get all entities with input components (players)
+    auto entities = componentManager.GetEntitiesWithComponent<Component::InputComponent>();
     
     for (const auto& playerId : entities) {
         auto* input = componentManager.GetComponent<Component::InputComponent>(playerId);
@@ -31,6 +28,7 @@ void WeaponInputSystem::Update(float deltaTime) {
         
         // Process shoot input
         if (input->shootButtonPressed) {
+            std::cout << "[WeaponInputSystem] Shoot button pressed for player " << playerId << std::endl;
             ProcessShootInput(playerId, true);
         }
         
@@ -84,6 +82,9 @@ void WeaponInputSystem::PublishFireInput(uint32_t playerId) {
         std::static_pointer_cast<void>(fireData)
     );
     eventManager.Publish(fireEvent);
+    
+    std::cout << "[WeaponInputSystem] Published FIRE_INPUT event for player " << playerId 
+              << " (type: " << static_cast<int>(Events::GameEventType::FIRE_INPUT) << ")" << std::endl;
 }
 
 void WeaponInputSystem::PublishReloadInput(uint32_t playerId) {

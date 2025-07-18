@@ -5,6 +5,7 @@
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/ecs/components/Velocity2D.hpp"
 #include "engine/core/ecs/components/Collider2D.hpp"
+#include "engine/core/ecs/components/Sprite2D.hpp"
 #include "engine/core/ecs/components/Tag.hpp"
 #include "examples/zombie_survivor/ecs/components/ProjectileComponent.hpp"
 #include "examples/zombie_survivor/events/ProjectileEventUtils.hpp"
@@ -147,6 +148,16 @@ engine::EntityID ProjectileSystem::CreateProjectileEntity(const ZombieSurvivor::
     
     componentManager.AddComponent<engine::ECS::Collider2D>(projectileId,
         engine::ECS::Collider2D{{0, 0, 4, 4}, false, "projectile"});
+    
+    // Add Sprite2D component to make projectile visible
+    componentManager.AddComponent<engine::ECS::Sprite2D>(projectileId,
+        engine::ECS::Sprite2D{
+            "pixel.png",                    // texture path
+            {0, 0, 8, 8},                   // sourceRect - bigger 8x8 bullet for visibility
+            true,                           // visible
+            {255, 255, 0, 255},             // tint - bright yellow bullet
+            15                              // renderLayer - higher than ENTITIES (10) and WEAPON (12)
+        });
     
     Component::ProjectileComponent projectile;
     projectile.damage = data.damage;

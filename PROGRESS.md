@@ -70,13 +70,54 @@ Weapon Entity (ID: 2):
 - `src/examples/zombie_survivor/ecs/RenderLayer.hpp` (added WEAPON layer)
 - `src/examples/zombie_survivor/ecs/systems/InputSystem.cpp` (removed debug logs)
 
-### 🎯 Known Issues to Address:
-1. **Weapon rotation system needs refinement** - currently working but may need fine-tuning
-2. **Layering issue** - weapon should partially cover player (currently working correctly)
-3. **Weapon positioning** - clock hand behavior implemented and working
+### ✅ Recent Fixes (2025-07-17):
+1. **Weapon rotation system FIXED** - weapon now properly follows player's rotation direction
+   - Issue: Weapon was pointing independently at mouse instead of following player rotation
+   - Fix: Restored CopyRotationFromPlayer in WeaponFollowSystem
+   - Result: Player and weapon rotate together toward mouse (synchronized rotation)
 
-### 🚀 Next Potential Features:
-- Weapon firing system
+### 🚀 Next Development Sprint (3-4 Days Target)
+
+## High Priority Tasks:
+
+### 1. **Fix Projectile System** 🔫
+**Problem**: Weapon firing system exists but projectiles are not being spawned
+**Tasks**:
+- Debug WeaponFireSystem to identify why bullets aren't generating
+- Verify ProjectileComponent and projectile entity creation
+- Ensure proper input handling for weapon firing
+- Test bullet physics and movement
+**Timeline**: Day 1
+
+### 2. **Zombie Enemy System** 🧟
+**Problem**: Need enemy entities with proper collision detection
+**Tasks**:
+- Create ZombieComponent with health and AI behavior
+- Implement zombie spawning system at map edges
+- Verify zombie-bullet collision (zombie takes damage/dies)
+- Verify zombie-player collision (player takes damage)
+- Add basic zombie AI movement toward player
+**Timeline**: Day 2-3
+
+### 3. **Animation System Implementation** 🎬
+**Problem**: Engine lacks animation support for sprite sequences
+**Tasks**:
+- Create `AnimationComponent.hpp` with frame data and timing
+- Implement `AnimationSystem.hpp` to update sprite frames
+- Extend Sprite2D to support sprite sheets and UV coordinates
+- Add animation state management (idle, walking, attacking, dying)
+- Apply animations to player, zombies, and weapon effects
+**Timeline**: Day 3-4
+
+## Success Criteria:
+- ✅ Player can fire bullets that spawn and move correctly
+- ✅ Zombies spawn and chase player with basic AI
+- ✅ Collision detection works: bullets kill zombies, zombies damage player
+- ✅ Basic animations play for all entities (player walk, zombie move, etc.)
+- ✅ All systems integrate properly with existing ECS architecture
+
+## Future Features (Post-Sprint):
 - Multiple weapon types
 - Weapon switching
-- Projectile spawning from weapon position
+- Powerups and upgrades
+- Audio system integration
