@@ -268,10 +268,10 @@ engine::Vector2 WeaponFireSystem::CalculateWeaponTipPosition(engine::EntityID we
     // - Dimensions: 40x12 pixels
     // - Tip is at the LEFT edge (opposite to pivot)
     
-    // Calculate tip position: move 40 pixels from pivot in opposite direction of weapon orientation
-    float tipDistance = 40.0f;
-    float tipX = weaponTransform->x + tipDistance * std::cos(weaponTransform->rotation + M_PI);
-    float tipY = weaponTransform->y + tipDistance * std::sin(weaponTransform->rotation + M_PI);
+    // Calculate tip position: move 20 pixels from weapon center in weapon facing direction
+    float tipDistance = 20.0f;  // Half weapon length to get tip from center
+    float tipX = weaponTransform->x + tipDistance * std::cos(weaponTransform->rotation);
+    float tipY = weaponTransform->y + tipDistance * std::sin(weaponTransform->rotation);
     
     return engine::Vector2{tipX, tipY};
 }

@@ -13,6 +13,7 @@
 #include "ecs/systems/AimingSystem.hpp"
 #include "ecs/systems/WeaponInputSystem.hpp"
 #include "ecs/systems/WeaponSystem.hpp"
+#include "ecs/systems/AmmoSystem.hpp"
 #include "ecs/systems/WeaponFireSystem.hpp"
 #include "ecs/systems/ProjectileSystem.hpp"
 

@@ -7,6 +7,7 @@
 #include "engine/core/ecs/components/Collider2D.hpp"
 #include "engine/core/ecs/components/Sprite2D.hpp"
 #include "engine/core/ecs/components/Tag.hpp"
+#include "engine/core/ecs/components/PhysicsMode.hpp"
 #include "examples/zombie_survivor/ecs/components/ProjectileComponent.hpp"
 #include "examples/zombie_survivor/events/ProjectileEventUtils.hpp"
 #include <iostream>
@@ -145,6 +146,16 @@ engine::EntityID ProjectileSystem::CreateProjectileEntity(const ZombieSurvivor::
     engine::Vector2 velocity = data.direction * data.speed;
     componentManager.AddComponent<engine::ECS::Velocity2D>(projectileId,
         engine::ECS::Velocity2D{velocity.x, velocity.y, data.speed});
+    
+    // Add PhysicsModeComponent for PhysicsSystem to process movement
+    componentManager.AddComponent<engine::ECS::PhysicsModeComponent>(projectileId,
+        engine::ECS::PhysicsModeComponent{
+            engine::ECS::PhysicsMode::TOP_DOWN,  // 2D physics mode
+            0.0f, 0.0f, 0.0f,                    // no gravity
+            false,                               // disable gravity
+            false,                               // disable friction for projectiles
+            1.0f                                 // friction factor (unused when friction disabled)
+        });
     
     componentManager.AddComponent<engine::ECS::Collider2D>(projectileId,
         engine::ECS::Collider2D{{0, 0, 4, 4}, false, "projectile"});

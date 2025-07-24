@@ -6,6 +6,7 @@
 #include "examples/zombie_survivor/ecs/components/FollowComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/AmmoComponent.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::ECS {
@@ -106,6 +107,16 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             120,     // defaultTotalAmmo
             300,     // maxTotalAmmo
             ZombieSurvivor::Component::AmmoType::PISTOL     // currentAmmoType
+        });
+    
+    // Add AmmoComponent for ammunition management
+    componentManager.AddComponent<ZombieSurvivor::Component::AmmoComponent>(playerId,
+        ZombieSurvivor::Component::AmmoComponent{
+            12,     // currentAmmo (matches weapon magazine capacity)
+            120,    // totalAmmo
+            300,    // maxTotalAmmo
+            false,  // isReloading
+            0.0f    // reloadProgress
         });
     
     std::cout << "[GameEntityFactory] Created player entity: " << playerId << std::endl;
@@ -244,6 +255,16 @@ uint32_t GameEntityFactory::CreateProjectile(const engine::Vector2& position,
     engine::Vector2 velocity = direction * speed;
     componentManager.AddComponent<engine::ECS::Velocity2D>(projectileId,
         engine::ECS::Velocity2D{velocity.x, velocity.y, speed});
+    
+    // Add PhysicsModeComponent for PhysicsSystem to process movement
+    componentManager.AddComponent<engine::ECS::PhysicsModeComponent>(projectileId,
+        engine::ECS::PhysicsModeComponent{
+            engine::ECS::PhysicsMode::TOP_DOWN,  // 2D physics mode
+            0.0f, 0.0f, 0.0f,                    // no gravity
+            false,                               // disable gravity
+            false,                               // disable friction
+            1.0f                                 // no friction factor
+        });
     
     std::cout << "[GameEntityFactory] Created projectile: " << projectileId << std::endl;
     return projectileId;

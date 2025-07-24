@@ -131,6 +131,9 @@ void GameScene::InitializeSystems() {
     auto weaponSystem = std::make_unique<ZombieSurvivor::System::WeaponSystem>();
     systemManager.AddSystem(std::move(weaponSystem), 43);
 
+    auto ammoSystem = std::make_unique<ZombieSurvivor::System::AmmoSystem>();
+    systemManager.AddSystem(std::move(ammoSystem), 44);
+
     auto weaponFireSystem = std::make_unique<ZombieSurvivor::System::WeaponFireSystem>();
     systemManager.AddSystem(std::move(weaponFireSystem), 45);
 
