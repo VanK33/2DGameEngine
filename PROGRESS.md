@@ -44,11 +44,13 @@ Weapon Entity (ID: 2):
 1. **InputSystem (25)**: Updates player's InputComponent with WASD movement and mouse position
 2. **MovementSystem (30)**: Processes player movement input, updates Velocity2D
 3. **BoundarySystem (32)**: Prevents player movement outside screen boundaries using predictive collision
+
 4. **WeaponFollowSystem (35)**: 
    - Positions weapon at player center + offset (-5px, 0px)
    - Copies mouse input from player to weapon's InputComponent
 5. **AimingSystem (38)**: Calculates weapon aim direction from weapon position to mouse
 6. **RotationSystem (40)**: Applies rotation to weapon Transform2D based on aim direction
+
 7. **PhysicsSystem (20)**: Applies velocity to all entities with Transform2D (handled by Engine)
 
 ### 🎮 Current Behavior:
@@ -57,7 +59,7 @@ Weapon Entity (ID: 2):
 - **Weapon Following**: Green rectangle stays at player's left side (5px offset)
 - **Weapon Rotation**: Green rectangle rotates like clock hand to point at mouse cursor
 - **Weapon Firing**: Mouse click creates projectiles that travel from weapon tip toward mouse position
-- **Projectile Range**: Bullets travel correct distances (PISTOL: 250px, RIFLE: 500px, SMG: 250px)
+
 - **Layering**: Weapon renders on top of player (WEAPON layer 12 > ENTITIES layer 10)
 
 ### 🛠️ Files Created/Modified:
@@ -66,11 +68,12 @@ Weapon Entity (ID: 2):
 - `src/examples/zombie_survivor/ecs/systems/WeaponFollowSystem.hpp/.cpp`
 - `src/examples/zombie_survivor/ecs/components/BoundaryComponent.hpp` (screen boundary constraints)
 - `src/examples/zombie_survivor/ecs/systems/BoundarySystem.hpp/.cpp` (boundary collision system)
-- `PROGRESS.md`
+
 
 **Modified Files:**
 - `src/engine/Engine.cpp` (fixed RenderSystem constructor)
 - `src/engine/core/ecs/systems/RenderSystem.cpp` (removed debug logs)
+
 - `src/examples/zombie_survivor/GameScene.hpp/.cpp` (added systems, entity tracking, BoundarySystem integration)
 - `src/examples/zombie_survivor/ecs/GameEntityFactory.hpp/.cpp` (added CreateWeapon method, BoundaryComponent for player)
 - `src/examples/zombie_survivor/ecs/RenderLayer.hpp` (added WEAPON layer)
