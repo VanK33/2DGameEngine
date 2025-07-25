@@ -284,23 +284,43 @@ engine::Vector2 WeaponFireSystem::CalculateWeaponTipPosition(engine::EntityID we
     
     auto& componentManager = world->GetComponentManager();
     
-    // Get weapon transform
+    // Get weapon transform and input (for consistent coordinate system)
     auto* weaponTransform = componentManager.GetComponent<engine::ECS::Transform2D>(weaponEntityId);
+    auto* weaponInput = componentManager.GetComponent<Component::InputComponent>(weaponEntityId);
+    
     if (!weaponTransform) {
         return {0.0f, 0.0f};
     }
     
-    // Weapon specifications:
-    // - Pivot point: {1.0f, 0.5f} (right edge center)
-    // - Dimensions: 40x12 pixels
-    // - Tip is at the LEFT edge (opposite to pivot)
-    
-    // Calculate tip position: move 20 pixels from weapon center in weapon facing direction
+    // Calculate tip position using the same direction as bullets (SDL coordinates)
     float tipDistance = 20.0f;  // Half weapon length to get tip from center
-    float tipX = weaponTransform->x + tipDistance * std::cos(weaponTransform->rotation);
-    float tipY = weaponTransform->y + tipDistance * std::sin(weaponTransform->rotation);
+    engine::Vector2 weaponPos{weaponTransform->x, weaponTransform->y};
     
-    return engine::Vector2{tipX, tipY};
+    if (weaponInput) {
+        // Use same SDL coordinate direction calculation as bullets
+        engine::Vector2 mousePos = weaponInput->mousePosition;
+        engine::Vector2 direction{mousePos.x - weaponPos.x, mousePos.y - weaponPos.y};
+        
+        // Normalize direction
+        float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        if (length > 0.001f) {
+            direction.x /= length;
+            direction.y /= length;
+        } else {
+            direction = engine::Vector2{1.0f, 0.0f}; // fallback to right
+        }
+        
+        // Calculate tip position using normalized direction
+        float tipX = weaponPos.x + tipDistance * direction.x;
+        float tipY = weaponPos.y + tipDistance * direction.y;
+        
+        return engine::Vector2{tipX, tipY};
+    } else {
+        // Fallback: use transform rotation (old method)
+        float tipX = weaponTransform->x + tipDistance * std::cos(weaponTransform->rotation);
+        float tipY = weaponTransform->y + tipDistance * std::sin(weaponTransform->rotation);
+        return engine::Vector2{tipX, tipY};
+    }
 }
 
 } // namespace ZombieSurvivor::System
