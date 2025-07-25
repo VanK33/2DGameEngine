@@ -3,7 +3,9 @@
 #include "InputSystem.hpp"
 #include "engine/core/ecs/World.hpp"
 #include "engine/core/ecs/components/Tag.hpp"
+#include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
 #include <cmath>
+#include <algorithm>
 
 namespace ZombieSurvivor::System {
 
@@ -41,6 +43,23 @@ void InputSystem::Update(float deltaTime) {
 
         if (IsReloadButtonPressed()) {
             input->reloadButtonPressed = true;
+        }
+        
+        // 测试血量减少 - 按X键减血，按C键加血
+        if (inputManager_.IsKeyDown(SDLK_X)) {
+            auto* health = componentManager.GetComponent<ZombieSurvivor::Component::HealthComponent>(entityId);
+            if (health && health->health > 0) {
+                health->health = std::max(0.0f, health->health - 10.0f);  // 每次减10血
+                std::cout << "[InputSystem] Health decreased to: " << health->health << "/" << health->maxHealth << std::endl;
+            }
+        }
+        
+        if (inputManager_.IsKeyDown(SDLK_C)) {
+            auto* health = componentManager.GetComponent<ZombieSurvivor::Component::HealthComponent>(entityId);
+            if (health && health->health < health->maxHealth) {
+                health->health = std::min(health->maxHealth, health->health + 10.0f);  // 每次加10血
+                std::cout << "[InputSystem] Health increased to: " << health->health << "/" << health->maxHealth << std::endl;
+            }
         }
     }
 }

@@ -22,6 +22,7 @@ void HUDRenderSystem::Shutdown() {
     }
     visualEntities_.clear();
     hudToVisualMap_.clear();
+    hudToForegroundMap_.clear();
     
     std::cout << "[HUDRenderSystem] Shutdown and cleaned up visual entities" << std::endl;
 }
@@ -68,6 +69,14 @@ void HUDRenderSystem::CreateHUDVisuals() {
         if (visualEntityId != 0) {
             hudToVisualMap_[hudEntityId] = visualEntityId;
             visualEntities_.push_back(visualEntityId);
+            
+            // For health bars, also track the foreground entity
+            if (hud->type == Component::HUDElementType::HEALTH_BAR) {
+                if (lastCreatedForegroundEntity_ != 0) {
+                    hudToForegroundMap_[hudEntityId] = lastCreatedForegroundEntity_;
+                    lastCreatedForegroundEntity_ = 0; // Reset for next use
+                }
+            }
         }
     }
 }
@@ -111,10 +120,18 @@ void HUDRenderSystem::UpdateHUDVisuals() {
     
     // Clean up invalid entities
     for (uint32_t hudEntityId : invalidHudEntities) {
+        // Clean up background entity
         auto it = hudToVisualMap_.find(hudEntityId);
         if (it != hudToVisualMap_.end()) {
             CleanupVisualEntity(it->second);
             hudToVisualMap_.erase(it);
+        }
+        
+        // Clean up foreground entity if it exists
+        auto fgIt = hudToForegroundMap_.find(hudEntityId);
+        if (fgIt != hudToForegroundMap_.end()) {
+            CleanupVisualEntity(fgIt->second);
+            hudToForegroundMap_.erase(fgIt);
         }
     }
     
@@ -154,7 +171,7 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
     auto& entityFactory = world->GetEntityFactory();
     auto& componentManager = world->GetComponentManager();
     
-    uint32_t visualEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type, "Background"));
+    uint32_t backgroundEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type, "Background"));
     
     std::cout << "[HUDRenderSystem] Creating health bar with bounds: (" 
               << hud->bounds.x << "," << hud->bounds.y << "," << hud->bounds.w << "," << hud->bounds.h << ")" << std::endl;
@@ -173,7 +190,7 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
     std::cout << "[HUDRenderSystem] Final screen position: (" 
               << screenPos.x << "," << screenPos.y << "," << screenPos.w << "," << screenPos.h << ")" << std::endl;
     
-    componentManager.AddComponent<engine::ECS::Transform2D>(visualEntityId,
+    componentManager.AddComponent<engine::ECS::Transform2D>(backgroundEntityId,
         engine::ECS::Transform2D{
             static_cast<float>(screenPos.x),
             static_cast<float>(screenPos.y),
@@ -182,7 +199,7 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
             1.0f
         });
     
-    componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
+    componentManager.AddComponent<engine::ECS::Sprite2D>(backgroundEntityId,
         engine::ECS::Sprite2D{
             "pixel.png",
             {0, 0, hud->bounds.w, hud->bounds.h},
@@ -217,8 +234,18 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
     
     visualEntities_.push_back(foregroundEntityId);
     
-    std::cout << "[HUDRenderSystem] Created health bar visual entities" << std::endl;
-    return visualEntityId;
+    // Store the foreground entity for later updates - we'll set this after the background is mapped
+    // Note: We can't set hudToForegroundMap_ here because the hudEntityId mapping isn't established yet
+    // We'll need to handle this in the calling code
+    
+    std::cout << "[HUDRenderSystem] Created health bar visual entities (bg: " << backgroundEntityId 
+              << ", fg: " << foregroundEntityId << ")" << std::endl;
+              
+    // Store the foreground entity ID in a temporary way that we can retrieve later
+    // We'll create a special mapping right after this method returns
+    lastCreatedForegroundEntity_ = foregroundEntityId;
+    
+    return backgroundEntityId;
 }
 
 uint32_t HUDRenderSystem::CreateAmmoCounterVisual(const Component::HUDComponent* hud) {
@@ -407,6 +434,25 @@ uint32_t HUDRenderSystem::CreateCrosshairVisual(const Component::HUDComponent* h
 }
 
 void HUDRenderSystem::UpdateHealthBarVisual(uint32_t visualEntityId, const Component::HUDComponent* hud) {
+    // For health bars, we need to update the foreground entity, not the background
+    // Find the HUD entity ID that corresponds to this visual entity
+    uint32_t hudEntityId = 0;
+    for (const auto& [hudId, bgVisualId] : hudToVisualMap_) {
+        if (bgVisualId == visualEntityId) {
+            hudEntityId = hudId;
+            break;
+        }
+    }
+    
+    if (hudEntityId != 0) {
+        auto foregroundIt = hudToForegroundMap_.find(hudEntityId);
+        if (foregroundIt != hudToForegroundMap_.end()) {
+            UpdateBarVisual(foregroundIt->second, hud);
+            return;
+        }
+    }
+    
+    // Fallback to updating the background entity (shouldn't happen for health bars)
     UpdateBarVisual(visualEntityId, hud);
 }
 

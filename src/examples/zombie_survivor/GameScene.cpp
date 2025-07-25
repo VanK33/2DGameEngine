@@ -11,6 +11,7 @@
 #include "examples/zombie_survivor/ecs/systems/RotationSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/WeaponFollowSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/HUDRenderSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/HUDDataSystem.hpp"
 
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
@@ -143,9 +144,12 @@ void GameScene::InitializeSystems() {
     auto projectileSystem = std::make_unique<ZombieSurvivor::System::ProjectileSystem>();
     systemManager.AddSystem(std::move(projectileSystem), 48);  // Before RenderSystem(50) to ensure cleanup
 
+    auto hudDataSystem = std::make_unique<ZombieSurvivor::System::HUDDataSystem>();
+    systemManager.AddSystem(std::move(hudDataSystem), 52);  // Update HUD data before rendering
+
     auto hudRenderSystem = std::make_unique<ZombieSurvivor::System::HUDRenderSystem>();
     hudRenderSystem->SetScreenSize(1512, 982); // Set correct window dimensions
-    systemManager.AddSystem(std::move(hudRenderSystem), 55); // After RenderSystem(50) but before DebugRenderSystem(100)
+    systemManager.AddSystem(std::move(hudRenderSystem), 55); // After HUDDataSystem and RenderSystem
     
     std::cout << "[GameScene] Systems initialized successfully!" << std::endl;
 }
