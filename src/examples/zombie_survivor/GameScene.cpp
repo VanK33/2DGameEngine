@@ -6,6 +6,7 @@
 #include "engine/core/ecs/EntityFactory.hpp"
 #include "examples/zombie_survivor/ecs/systems/InputSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/MovementSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/BoundarySystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/RotationSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/WeaponFollowSystem.hpp"
 
@@ -115,6 +116,9 @@ void GameScene::InitializeSystems() {
 
     auto movementSystem = std::make_unique<ZombieSurvivor::System::MovementSystem>();
     systemManager.AddSystem(std::move(movementSystem), 30);
+
+    auto boundarySystem = std::make_unique<ZombieSurvivor::System::BoundarySystem>();
+    systemManager.AddSystem(std::move(boundarySystem), 32);
 
     auto weaponFollowSystem = std::make_unique<ZombieSurvivor::System::WeaponFollowSystem>();
     systemManager.AddSystem(std::move(weaponFollowSystem), 35);

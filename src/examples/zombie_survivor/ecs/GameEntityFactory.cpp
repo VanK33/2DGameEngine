@@ -4,6 +4,7 @@
 #include "engine/core/ecs/components/Tag.hpp"
 #include "examples/zombie_survivor/ecs/components/InputComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/MovementComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/BoundaryComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/FollowComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
@@ -124,6 +125,15 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
     // Adding "Player" Tag to player
     componentManager.AddComponent<engine::ECS::Tag>(playerId, 
         engine::ECS::Tag{"player"});
+    
+    // Add boundary constraint for screen bounds
+    componentManager.AddComponent<ZombieSurvivor::Component::BoundaryComponent>(playerId,
+        ZombieSurvivor::Component::BoundaryComponent{
+            ZombieSurvivor::Component::BoundaryType::SCREEN_BOUNDS,  // Screen boundaries
+            64.0f,  // Entity size (64x64 pixels)
+            0.0f, 800.0f, 0.0f, 600.0f,  // Screen boundary parameters
+            true    // Enable boundary constraint
+        });
     
     // DEBUG: Verify ammo was set correctly
     auto* ammoCheck = componentManager.GetComponent<ZombieSurvivor::Component::AmmoComponent>(playerId);
