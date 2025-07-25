@@ -21,6 +21,7 @@ struct ProjectileComponent {
     
     engine::Vector2 direction{1.0f, 0.0f};
     engine::Vector2 velocity{0.0f, 0.0f};
+    engine::Vector2 startPosition{0.0f, 0.0f};  // For distance calculation and debugging
     
     engine::EntityID shooterId = 0;
     ProjectileType type = ProjectileType::BULLET_PISTOL;

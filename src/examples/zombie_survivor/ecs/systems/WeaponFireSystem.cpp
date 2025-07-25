@@ -74,7 +74,7 @@ void WeaponFireSystem::HandleFireInput(uint32_t playerId) {
     
     // Check if weapon is ready (cooldown, reloading) 
     if (!CanFire(playerId)) {
-        std::cout << "[WeaponFireSystem] Player " << playerId << " weapon not ready (cooldown/reloading)" << std::endl;
+        std::cout << "[WeaponFireSystem] Player " << playerId << " weapon not ready (cooldown/reloading) - REJECTED SHOT ATTEMPT" << std::endl;
         return;
     }
     
@@ -230,7 +230,7 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
     projectileData->direction = direction;
     projectileData->damage = projectileConfig.damage;
     projectileData->speed = projectileConfig.speed;
-    projectileData->lifetime = projectileConfig.lifetime;
+    projectileData->lifetime = projectileConfig.GetLifetime();
     projectileData->type = projectileConfig.type;
     projectileData->weaponType = weapon->type;
     projectileData->penetration = projectileConfig.penetration;

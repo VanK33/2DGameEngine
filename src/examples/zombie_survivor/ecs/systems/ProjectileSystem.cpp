@@ -11,6 +11,8 @@
 #include "examples/zombie_survivor/ecs/components/ProjectileComponent.hpp"
 #include "examples/zombie_survivor/events/ProjectileEventUtils.hpp"
 #include <iostream>
+#include <iomanip>
+#include <cmath>
 
 namespace ZombieSurvivor::System {
 
@@ -102,7 +104,10 @@ void ProjectileSystem::HandleCreateProjectile(const std::shared_ptr<void>& event
         }
         
         std::cout << "[ProjectileSystem] Created projectile " << projectileId 
-                  << " for shooter " << data->shooterId << std::endl;
+                  << " for shooter " << data->shooterId 
+                  << " at (" << std::fixed << std::setprecision(1) << data->startPosition.x << ", " << data->startPosition.y << ")"
+                  << " - Expected range: " << (data->speed * data->lifetime) << "px"
+                  << " (speed=" << data->speed << "px/s, lifetime=" << std::setprecision(3) << data->lifetime << "s)" << std::endl;
     }
 }
 
@@ -176,6 +181,7 @@ engine::EntityID ProjectileSystem::CreateProjectileEntity(const ZombieSurvivor::
     projectile.maxLifetime = data.lifetime;
     projectile.direction = data.direction;
     projectile.velocity = velocity;
+    projectile.startPosition = data.startPosition;  // Record start position for distance tracking
     projectile.shooterId = data.shooterId;
     projectile.type = data.type;
     projectile.sourceWeaponType = data.weaponType;
@@ -198,16 +204,36 @@ void ProjectileSystem::UpdateProjectileMovement(float deltaTime) {
     
     auto projectiles = componentManager.GetEntitiesWithComponents<
         Component::ProjectileComponent,
-        engine::ECS::Velocity2D
+        engine::ECS::Velocity2D,
+        engine::ECS::Transform2D
     >();
     
     for (auto projectileId : projectiles) {
         auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
         auto* velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(projectileId);
+        auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
         
-        if (projectile && velocity && !projectile->shouldDestroy) {
+        if (projectile && velocity && transform && !projectile->shouldDestroy) {
+            // Calculate distance moved this frame
             float speed = std::sqrt(velocity->vx * velocity->vx + velocity->vy * velocity->vy);
-            projectile->distanceTraveled += speed * deltaTime;
+            float distanceThisFrame = speed * deltaTime;
+            projectile->distanceTraveled += distanceThisFrame;
+            
+            // Calculate actual straight-line distance from start position
+            float actualDistance = std::sqrt(
+                (transform->x - projectile->startPosition.x) * (transform->x - projectile->startPosition.x) +
+                (transform->y - projectile->startPosition.y) * (transform->y - projectile->startPosition.y)
+            );
+            
+            // Debug output every 0.1 seconds (roughly every 6 frames at 60fps)
+            if (static_cast<int>(projectile->currentLifetime * 10) != static_cast<int>((projectile->currentLifetime - deltaTime) * 10)) {
+                std::cout << "[DEBUG] Projectile " << projectileId 
+                          << " - Time: " << std::fixed << std::setprecision(3) << projectile->currentLifetime
+                          << "s, Traveled: " << std::setprecision(1) << projectile->distanceTraveled 
+                          << "px, Actual: " << actualDistance 
+                          << "px, Pos: (" << transform->x << ", " << transform->y << ")"
+                          << ", Start: (" << projectile->startPosition.x << ", " << projectile->startPosition.y << ")" << std::endl;
+            }
         }
     }
 }
@@ -227,7 +253,9 @@ void ProjectileSystem::UpdateProjectileLifetime(float deltaTime) {
             if (projectile->currentLifetime >= projectile->maxLifetime) {
                 projectile->shouldDestroy = true;
                 std::cout << "[ProjectileSystem] Projectile " << projectileId 
-                          << " expired after " << projectile->currentLifetime << "s" << std::endl;
+                          << " EXPIRED after " << std::fixed << std::setprecision(3) << projectile->currentLifetime 
+                          << "s (max: " << projectile->maxLifetime << "s)"
+                          << " - Distance traveled: " << std::setprecision(1) << projectile->distanceTraveled << "px" << std::endl;
             }
         }
     }
@@ -249,7 +277,10 @@ void ProjectileSystem::HandleBoundaryChecks() {
                 transform->y < -worldBounds_.y || transform->y > worldBounds_.y) {
                 projectile->shouldDestroy = true;
                 std::cout << "[ProjectileSystem] Projectile " << projectileId 
-                          << " destroyed at boundary (" << transform->x << ", " << transform->y << ")" << std::endl;
+                          << " HIT BOUNDARY at (" << std::fixed << std::setprecision(1) << transform->x << ", " << transform->y << ")"
+                          << " after " << std::setprecision(3) << projectile->currentLifetime << "s"
+                          << " - Distance: " << std::setprecision(1) << projectile->distanceTraveled << "px"
+                          << " [BOUNDARY BOUNDS: " << worldBounds_.x << "x" << worldBounds_.y << "]" << std::endl;
             }
         }
     }
