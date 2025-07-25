@@ -280,8 +280,8 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
 
     Component::HUDComponent healthHUD; 
     healthHUD.type = Component::HUDElementType::HEALTH_BAR;
-    healthHUD.position = Component::HUDPosition::BOTTOM_LEFT;
-    healthHUD.bounds = {20, 20, 200, 20};  // x, y, width, height
+    healthHUD.position = Component::HUDPosition::CUSTOM;
+    healthHUD.bounds = {20, 932, 200, 20};  // 左下角：x=20, y=932 (距底部50px)
     healthHUD.visible = true;
     healthHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
 
@@ -319,8 +319,8 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
     
     Component::HUDComponent expHUD;
     expHUD.type = Component::HUDElementType::EXPERIENCE_BAR;
-    expHUD.position = Component::HUDPosition::TOP_LEFT;
-    expHUD.bounds = {20, 50, 200, 15};
+    expHUD.position = Component::HUDPosition::CUSTOM;
+    expHUD.bounds = {20, 957, 200, 15};  // 左下角：x=20, y=957 (距底部25px)
     expHUD.visible = true;
     expHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
     

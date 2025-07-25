@@ -156,7 +156,22 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
     
     uint32_t visualEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type, "Background"));
     
-    SDL_Rect screenPos = CalculateScreenPosition(hud->position, hud->bounds.w, hud->bounds.h);
+    std::cout << "[HUDRenderSystem] Creating health bar with bounds: (" 
+              << hud->bounds.x << "," << hud->bounds.y << "," << hud->bounds.w << "," << hud->bounds.h << ")" << std::endl;
+    std::cout << "[HUDRenderSystem] HUD position type: " << static_cast<int>(hud->position) << std::endl;
+    
+    SDL_Rect screenPos;
+    
+    if (hud->position == Component::HUDPosition::CUSTOM) {
+        screenPos = CalculateCustomPosition(hud->bounds);
+        std::cout << "[HUDRenderSystem] Using CUSTOM position from bounds" << std::endl;
+    } else {
+        screenPos = CalculateScreenPosition(hud->position, hud->bounds.w, hud->bounds.h);
+        std::cout << "[HUDRenderSystem] Using calculated position for preset position" << std::endl;
+    }
+    
+    std::cout << "[HUDRenderSystem] Final screen position: (" 
+              << screenPos.x << "," << screenPos.y << "," << screenPos.w << "," << screenPos.h << ")" << std::endl;
     
     componentManager.AddComponent<engine::ECS::Transform2D>(visualEntityId,
         engine::ECS::Transform2D{
@@ -248,7 +263,21 @@ uint32_t HUDRenderSystem::CreateExperienceBarVisual(const Component::HUDComponen
     
     uint32_t visualEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type));
     
-    SDL_Rect screenPos = CalculateScreenPosition(hud->position, hud->bounds.w, hud->bounds.h);
+    std::cout << "[HUDRenderSystem] Creating experience bar with bounds: (" 
+              << hud->bounds.x << "," << hud->bounds.y << "," << hud->bounds.w << "," << hud->bounds.h << ")" << std::endl;
+    
+    SDL_Rect screenPos;
+    
+    if (hud->position == Component::HUDPosition::CUSTOM) {
+        screenPos = CalculateCustomPosition(hud->bounds);
+        std::cout << "[HUDRenderSystem] Experience bar using CUSTOM position from bounds" << std::endl;
+    } else {
+        screenPos = CalculateScreenPosition(hud->position, hud->bounds.w, hud->bounds.h);
+        std::cout << "[HUDRenderSystem] Experience bar using calculated position for preset position" << std::endl;
+    }
+    
+    std::cout << "[HUDRenderSystem] Experience bar final screen position: (" 
+              << screenPos.x << "," << screenPos.y << "," << screenPos.w << "," << screenPos.h << ")" << std::endl;
     
     componentManager.AddComponent<engine::ECS::Transform2D>(visualEntityId,
         engine::ECS::Transform2D{
