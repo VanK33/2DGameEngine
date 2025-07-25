@@ -48,7 +48,7 @@ void Renderer::Shutdown() {
 }
 
 void Renderer::BeginFrame() {
-    SDL_SetRenderDrawColor(renderer_, 30, 30, 30, 255); // Dark gray background
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255); // Deep black background for UI area
     SDL_RenderClear(renderer_);
 }
 

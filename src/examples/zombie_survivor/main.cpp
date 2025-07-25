@@ -10,9 +10,9 @@ int main() {
     
     // 配置引擎
     engine::EngineConfig config;
-    config.windowTitle = "Game Scene - Background Test";
-    config.windowWidth = 800;
-    config.windowHeight = 600;
+    config.windowTitle = "ZombieSurvivor - 2D Game Engine";
+    config.windowWidth = 1512;
+    config.windowHeight = 982;
     config.targetFPS = 60;
     
     // 初始化引擎

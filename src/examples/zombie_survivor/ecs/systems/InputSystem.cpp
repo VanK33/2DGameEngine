@@ -63,7 +63,15 @@ bool InputSystem::IsReloadButtonPressed() const {
 
 engine::Vector2 InputSystem::GetMouseScreenPosition() const {
     auto mousePos = inputManager_.GetMousePosition();
-    return engine::Vector2{static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)};
+    
+    // Convert window coordinates to game world coordinates by subtracting viewport offset
+    const float GAME_WORLD_OFFSET_X = 331.0f; // (1512-850)/2
+    const float GAME_WORLD_OFFSET_Y = 66.0f;  // (982-850)/2
+    
+    float gameWorldX = static_cast<float>(mousePos.x) - GAME_WORLD_OFFSET_X;
+    float gameWorldY = static_cast<float>(mousePos.y) - GAME_WORLD_OFFSET_Y;
+    
+    return engine::Vector2{gameWorldX, gameWorldY};
 }
 
 engine::Vector2 InputSystem::GetMoveInputVector() const {

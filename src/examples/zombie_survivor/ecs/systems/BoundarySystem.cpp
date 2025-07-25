@@ -56,15 +56,15 @@ void BoundarySystem::ApplyScreenBounds(
     float entitySize,
     float deltaTime
 ) const {
-    // Screen dimensions (matches main.cpp config)
-    const float SCREEN_WIDTH = 800.0f;
-    const float SCREEN_HEIGHT = 600.0f;
+    // Game world dimensions (850x850 game world)
+    const float GAME_WORLD_WIDTH = 850.0f;
+    const float GAME_WORLD_HEIGHT = 850.0f;
     
     // Boundary calculation: transform is top-left corner coordinate
-    const float MIN_X = 0.0f;                           // Left boundary
-    const float MAX_X = SCREEN_WIDTH - entitySize;      // Right boundary (800 - 64 = 736)
-    const float MIN_Y = 0.0f;                           // Top boundary  
-    const float MAX_Y = SCREEN_HEIGHT - entitySize;     // Bottom boundary (600 - 64 = 536)
+    const float MIN_X = 0.0f;                               // Left boundary
+    const float MAX_X = GAME_WORLD_WIDTH - entitySize;      // Right boundary (850 - 64 = 786)
+    const float MIN_Y = 0.0f;                               // Top boundary  
+    const float MAX_Y = GAME_WORLD_HEIGHT - entitySize;     // Bottom boundary (850 - 64 = 786)
     
     // Predict next frame position
     float nextX = transform->x + velocity->vx * deltaTime;

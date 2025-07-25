@@ -29,15 +29,23 @@ void GroundRenderSystem::CreateGroundBackground() {
 
     groundEntityId_ = entityFactory.CreateEntity("Ground");
     componentManager.AddComponent<engine::ECS::Transform2D>(groundEntityId_, 
-        engine::ECS::Transform2D{0, 0, 0, 20.0f, 20.0f});
-    
+        engine::ECS::Transform2D{
+            0.0f,
+            0.0f, 
+            0.0f,
+            850.0f,
+            850.0f
+        });
+
     componentManager.AddComponent<engine::ECS::Sprite2D>(groundEntityId_,
         engine::ECS::Sprite2D{
-            "terrain/ground_tile.png",
-            {0, 0, 0, 0},
+            // "terrain/ground_tile.png",
+            "pixel.png",
+            {0, 0, 1, 1},
             true,
-            {135, 206, 235, 180},  // Sky blue with transparency
-            ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::BACKGROUND)
+            {45, 52, 35, 255},
+            ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::BACKGROUND),
+            {0.0f, 0.0f} 
         });
 
     std::cout << "[GroundRenderSystem] Created ground background entity: " << groundEntityId_ << std::endl;
@@ -59,7 +67,7 @@ void GroundRenderSystem::AddGroundDecorations() {
             "terrain/rock.png",
             {0, 0, 0, 0},
             true,
-            {255, 255, 255, 255},
+            {80, 70, 60, 255},
             ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::GROUND_DETAILS)
         });
     
@@ -74,7 +82,7 @@ void GroundRenderSystem::AddGroundDecorations() {
             "terrain/grass.png",
             {0, 0, 0, 0},
             true,
-            {100, 255, 100, 255},
+            {85, 95, 45, 255},
             ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::GROUND_DETAILS)
         });
     

@@ -4,6 +4,7 @@
 #include "engine/core/ecs/SystemManager.hpp"
 #include "engine/core/ecs/ComponentManager.hpp"
 #include "engine/core/ecs/EntityFactory.hpp"
+#include "engine/core/ecs/systems/RenderSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/InputSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/MovementSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/BoundarySystem.hpp"
@@ -43,6 +44,7 @@ void GameScene::Load() {
 
     InitializeSystems();
     CreateEntities();
+    SetupGameWorldViewport();
     
     std::cout << "[GameScene] Scene loaded successfully!" << std::endl;
 }
@@ -163,6 +165,32 @@ void GameScene::CreateEntities() {
     }
     
     std::cout << "[GameScene] Game entities created!" << std::endl;
+}
+
+void GameScene::SetupGameWorldViewport() {
+    if (!world_) return;
+    
+    // 计算游戏世界居中位置
+    const float WINDOW_WIDTH = 1512.0f;
+    const float WINDOW_HEIGHT = 982.0f;
+    const float GAME_WORLD_WIDTH = 850.0f;
+    const float GAME_WORLD_HEIGHT = 850.0f;
+    
+    float offsetX = (WINDOW_WIDTH - GAME_WORLD_WIDTH) / 2.0f;   // (1512-850)/2 = 331
+    float offsetY = (WINDOW_HEIGHT - GAME_WORLD_HEIGHT) / 2.0f; // (982-850)/2 = 66
+    
+    // 获取RenderSystem并设置视口
+    auto* renderSystem = static_cast<engine::ECS::RenderSystem*>(
+        world_->GetSystemManager().GetSystem("RenderSystem")
+    );
+    
+    if (renderSystem) {
+        renderSystem->SetGameWorldViewport(offsetX, offsetY, GAME_WORLD_WIDTH, GAME_WORLD_HEIGHT);
+        std::cout << "[GameScene] Game world viewport set: offset(" << offsetX << ", " << offsetY 
+                  << "), size(" << GAME_WORLD_WIDTH << "x" << GAME_WORLD_HEIGHT << ")" << std::endl;
+    } else {
+        std::cout << "[GameScene] WARNING: RenderSystem not found, viewport not set!" << std::endl;
+    }
 }
 
 void GameScene::RenderDebugAiming(SDL_Renderer* renderer) {

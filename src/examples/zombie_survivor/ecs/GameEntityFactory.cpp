@@ -131,7 +131,7 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
         ZombieSurvivor::Component::BoundaryComponent{
             ZombieSurvivor::Component::BoundaryType::SCREEN_BOUNDS,  // Screen boundaries
             64.0f,  // Entity size (64x64 pixels)
-            0.0f, 800.0f, 0.0f, 600.0f,  // Screen boundary parameters
+            0.0f, 850.0f, 0.0f, 850.0f,  // Game world boundary parameters (850x850)
             true    // Enable boundary constraint
         });
     
