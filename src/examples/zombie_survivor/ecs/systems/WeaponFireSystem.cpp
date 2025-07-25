@@ -7,6 +7,7 @@
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/InputComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/FollowComponent.hpp"
 #include "examples/zombie_survivor/configs/ProjectileConfig.hpp"
 #include <iostream>
@@ -180,15 +181,41 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
     
     auto projectileConfig = ZombieSurvivor::Config::ProjectileConfigManager::GetConfig(ammoType);
     
-    // Use weapon's aiming direction
+    // Calculate direction directly using SDL coordinates (no Y-flip)
     engine::Vector2 direction{1.0f, 0.0f};
-    if (weaponAiming) {
+    
+    // Try to get mouse position from weapon's InputComponent (copied by WeaponFollowSystem)
+    auto* weaponInput = componentManager.GetComponent<Component::InputComponent>(weaponEntityId);
+    if (weaponInput) {
+        // Calculate direction from weapon position to mouse position (SDL coordinates)
+        engine::Vector2 weaponPos{weaponTransform->x, weaponTransform->y};
+        engine::Vector2 mousePos = weaponInput->mousePosition;
+        
+        // Direct SDL coordinate direction calculation (no Y-flip)
+        direction = engine::Vector2{mousePos.x - weaponPos.x, mousePos.y - weaponPos.y};
+        
+        // Normalize direction vector
+        float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        if (length > 0.001f) {
+            direction.x /= length;
+            direction.y /= length;
+        } else {
+            direction = engine::Vector2{1.0f, 0.0f}; // fallback to right
+        }
+        
+        std::cout << "[WeaponFireSystem] Using direct SDL coordinates - Mouse: (" 
+                  << mousePos.x << ", " << mousePos.y << "), Weapon: (" 
+                  << weaponPos.x << ", " << weaponPos.y << "), Direction: (" 
+                  << direction.x << ", " << direction.y << ")" << std::endl;
+    } else if (weaponAiming) {
+        // Fallback to existing aiming direction (with Y-flip)
         direction = weaponAiming->aimDirection;
         float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
         if (length > 0.0f) {
             direction.x /= length;
             direction.y /= length;
         }
+        std::cout << "[WeaponFireSystem] Using AimingComponent direction (Y-flipped)" << std::endl;
     }
     
     // Calculate weapon tip position for projectile spawn
