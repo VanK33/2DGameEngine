@@ -9,6 +9,8 @@
 #include "examples/zombie_survivor/ecs/RenderLayer.hpp"
 #include <vector>
 #include <unordered_map>
+#include <string>
+#include <SDL3/SDL.h>
 
 namespace ZombieSurvivor::System {
 

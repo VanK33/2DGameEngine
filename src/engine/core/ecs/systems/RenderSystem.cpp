@@ -111,25 +111,30 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
     float renderY = transform->y;
     
     if (useGameWorldViewport_) {
-        renderX += gameWorldOffsetX_;
-        renderY += gameWorldOffsetY_;
+        // UI elements (renderLayer >= 20) are not affected by game world viewport
+        bool isUIElement = sprite->renderLayer >= 20;
+        
+        if (!isUIElement) {
+            renderX += gameWorldOffsetX_;
+            renderY += gameWorldOffsetY_;
 
-        
-        float spriteLeft = renderX - (spriteWidth * sprite->pivotOffset.x);
-        float spriteRight = spriteLeft + spriteWidth;
-        float spriteTop = renderY - (spriteHeight * sprite->pivotOffset.y);
-        float spriteBottom = spriteTop + spriteHeight;
-        
-        float worldLeft = gameWorldOffsetX_;
-        float worldRight = gameWorldOffsetX_ + gameWorldWidth_;
-        float worldTop = gameWorldOffsetY_;
-        float worldBottom = gameWorldOffsetY_ + gameWorldHeight_;
-        
-        // 如果精灵完全在游戏世界外，跳过渲染
-        if (spriteRight < worldLeft || spriteLeft > worldRight ||
-            spriteBottom < worldTop || spriteTop > worldBottom) {
-            return; // 精灵在视口外，不渲染
+            float spriteLeft = renderX - (spriteWidth * sprite->pivotOffset.x);
+            float spriteRight = spriteLeft + spriteWidth;
+            float spriteTop = renderY - (spriteHeight * sprite->pivotOffset.y);
+            float spriteBottom = spriteTop + spriteHeight;
+            
+            float worldLeft = gameWorldOffsetX_;
+            float worldRight = gameWorldOffsetX_ + gameWorldWidth_;
+            float worldTop = gameWorldOffsetY_;
+            float worldBottom = gameWorldOffsetY_ + gameWorldHeight_;
+            
+            // 如果精灵完全在游戏世界外，跳过渲染
+            if (spriteRight < worldLeft || spriteLeft > worldRight ||
+                spriteBottom < worldTop || spriteTop > worldBottom) {
+                return; // 精灵在视口外，不渲染
+            }
         }
+        // UI elements use their original positions without viewport offset
     }
     
     // Set color tinting
@@ -149,18 +154,24 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
     bool needsClipping = false;
     
     if (useGameWorldViewport_) {
-        clipRect = {
-            static_cast<int>(gameWorldOffsetX_),
-            static_cast<int>(gameWorldOffsetY_),
-            static_cast<int>(gameWorldWidth_),
-            static_cast<int>(gameWorldHeight_)
-        };
+        // UI elements (renderLayer >= 20) are not clipped to game world
+        bool isUIElement = sprite->renderLayer >= 20;
         
-        auto* sdlRenderer = renderer_->GetSDLRenderer();
-        if (sdlRenderer) {
-            SDL_SetRenderClipRect(sdlRenderer, &clipRect);
-            needsClipping = true;
+        if (!isUIElement) {
+            clipRect = {
+                static_cast<int>(gameWorldOffsetX_),
+                static_cast<int>(gameWorldOffsetY_),
+                static_cast<int>(gameWorldWidth_),
+                static_cast<int>(gameWorldHeight_)
+            };
+            
+            auto* sdlRenderer = renderer_->GetSDLRenderer();
+            if (sdlRenderer) {
+                SDL_SetRenderClipRect(sdlRenderer, &clipRect);
+                needsClipping = true;
+            }
         }
+        // UI elements render without clipping
     }
     
     // Call SpriteRenderer for rendering

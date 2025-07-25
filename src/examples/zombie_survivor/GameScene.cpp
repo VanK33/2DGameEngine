@@ -10,6 +10,7 @@
 #include "examples/zombie_survivor/ecs/systems/BoundarySystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/RotationSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/WeaponFollowSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/HUDRenderSystem.hpp"
 
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
@@ -141,6 +142,10 @@ void GameScene::InitializeSystems() {
 
     auto projectileSystem = std::make_unique<ZombieSurvivor::System::ProjectileSystem>();
     systemManager.AddSystem(std::move(projectileSystem), 48);  // Before RenderSystem(50) to ensure cleanup
+
+    auto hudRenderSystem = std::make_unique<ZombieSurvivor::System::HUDRenderSystem>();
+    hudRenderSystem->SetScreenSize(1512, 982); // Set correct window dimensions
+    systemManager.AddSystem(std::move(hudRenderSystem), 55); // After RenderSystem(50) but before DebugRenderSystem(100)
     
     std::cout << "[GameScene] Systems initialized successfully!" << std::endl;
 }
@@ -162,6 +167,10 @@ void GameScene::CreateEntities() {
     // Create weapon that follows the player
     if (playerId_ != 0) {
         weaponId_ = gameEntityFactory_->CreateWeapon(playerId_);
+
+        hudId_ = gameEntityFactory_->CreatePlayerHUD(playerId_);
+        std::cout << "[GameScene] Created HUD for player " << playerId_ 
+                  << ", HUD ID: " << hudId_ << std::endl;
     }
     
     std::cout << "[GameScene] Game entities created!" << std::endl;
@@ -170,7 +179,6 @@ void GameScene::CreateEntities() {
 void GameScene::SetupGameWorldViewport() {
     if (!world_) return;
     
-    // 计算游戏世界居中位置
     const float WINDOW_WIDTH = 1512.0f;
     const float WINDOW_HEIGHT = 982.0f;
     const float GAME_WORLD_WIDTH = 850.0f;
@@ -179,7 +187,6 @@ void GameScene::SetupGameWorldViewport() {
     float offsetX = (WINDOW_WIDTH - GAME_WORLD_WIDTH) / 2.0f;   // (1512-850)/2 = 331
     float offsetY = (WINDOW_HEIGHT - GAME_WORLD_HEIGHT) / 2.0f; // (982-850)/2 = 66
     
-    // 获取RenderSystem并设置视口
     auto* renderSystem = static_cast<engine::ECS::RenderSystem*>(
         world_->GetSystemManager().GetSystem("RenderSystem")
     );

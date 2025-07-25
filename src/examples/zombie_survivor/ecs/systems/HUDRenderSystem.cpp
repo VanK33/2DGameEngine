@@ -78,10 +78,12 @@ void HUDRenderSystem::UpdateHUDVisuals() {
     
     auto& componentManager = world->GetComponentManager();
     
-    // Update existing visuals
+    // Update existing visuals (collect invalid entities first to avoid iterator invalidation)
+    std::vector<uint32_t> invalidHudEntities;
+    
     for (auto& [hudEntityId, visualEntityId] : hudToVisualMap_) {
         if (!IsHUDEntityValid(hudEntityId)) {
-            CleanupVisualEntity(visualEntityId);
+            invalidHudEntities.push_back(hudEntityId);
             continue;
         }
         
@@ -104,6 +106,15 @@ void HUDRenderSystem::UpdateHUDVisuals() {
                 break;
             default:
                 break;
+        }
+    }
+    
+    // Clean up invalid entities
+    for (uint32_t hudEntityId : invalidHudEntities) {
+        auto it = hudToVisualMap_.find(hudEntityId);
+        if (it != hudToVisualMap_.end()) {
+            CleanupVisualEntity(it->second);
+            hudToVisualMap_.erase(it);
         }
     }
     
@@ -158,7 +169,7 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
     
     componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
-            "ui/health_bar_bg.png",
+            "pixel.png",
             {0, 0, hud->bounds.w, hud->bounds.h},
             hud->visible,
             {hud->backgroundColor.r, hud->backgroundColor.g, hud->backgroundColor.b, hud->backgroundColor.a},
@@ -182,7 +193,7 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
     
     componentManager.AddComponent<engine::ECS::Sprite2D>(foregroundEntityId,
         engine::ECS::Sprite2D{
-            "ui/health_bar_fill.png",
+            "pixel.png",
             {0, 0, fillWidth, hud->bounds.h},
             hud->visible,
             {barColor.r, barColor.g, barColor.b, barColor.a},
@@ -217,7 +228,7 @@ uint32_t HUDRenderSystem::CreateAmmoCounterVisual(const Component::HUDComponent*
     
     componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
-            "ui/ammo_counter_bg.png",
+            "pixel.png",
             {0, 0, hud->bounds.w, hud->bounds.h},
             hud->visible,
             {hud->backgroundColor.r, hud->backgroundColor.g, hud->backgroundColor.b, hud->backgroundColor.a},
@@ -250,7 +261,7 @@ uint32_t HUDRenderSystem::CreateExperienceBarVisual(const Component::HUDComponen
     
     componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
-            "ui/experience_bar.png",
+            "pixel.png",
             {0, 0, hud->bounds.w, hud->bounds.h},
             hud->visible,
             {hud->foregroundColor.r, hud->foregroundColor.g, hud->foregroundColor.b, hud->foregroundColor.a},
@@ -283,7 +294,7 @@ uint32_t HUDRenderSystem::CreateKillCounterVisual(const Component::HUDComponent*
     
     componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
-            "ui/text_background.png",
+            "pixel.png",
             {0, 0, hud->bounds.w, hud->bounds.h},
             hud->visible,
             {hud->backgroundColor.r, hud->backgroundColor.g, hud->backgroundColor.b, hud->backgroundColor.a},
@@ -316,7 +327,7 @@ uint32_t HUDRenderSystem::CreateSurvivalTimerVisual(const Component::HUDComponen
     
     componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
-            "ui/timer_background.png",
+            "pixel.png",
             {0, 0, hud->bounds.w, hud->bounds.h},
             hud->visible,
             {hud->backgroundColor.r, hud->backgroundColor.g, hud->backgroundColor.b, hud->backgroundColor.a},
@@ -355,7 +366,7 @@ uint32_t HUDRenderSystem::CreateCrosshairVisual(const Component::HUDComponent* h
     
     componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
-            "ui/crosshair.png",
+            "pixel.png",
             {0, 0, hud->crosshairSize, hud->crosshairSize},
             hud->visible,
             {hud->crosshairColor.r, hud->crosshairColor.g, hud->crosshairColor.b, hud->crosshairColor.a},

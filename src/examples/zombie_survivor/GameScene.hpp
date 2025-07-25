@@ -51,6 +51,7 @@ private:
     // Entity tracking
     engine::EntityID playerId_ = 0;
     engine::EntityID weaponId_ = 0;
+    engine::EntityID hudId_ = 0;
     
     void InitializeSystems();  // 通过SystemManager添加系统
     void CreateEntities();     // 只负责创建游戏实体

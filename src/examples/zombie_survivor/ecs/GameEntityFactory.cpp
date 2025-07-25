@@ -9,6 +9,9 @@
 #include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/AmmoComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/HUDComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/ExperienceComponent.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::ECS {
@@ -24,17 +27,14 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
         resourceManager_->LoadTexture("pixel.png");
     }
     
-    // ✅ 使用现有的 EntityFactory 获取ID
     auto& entityFactory = world_->GetEntityFactory();
     auto& componentManager = world_->GetComponentManager();
     
     uint32_t playerId = entityFactory.CreateEntity("Player");
     
-    // 添加Transform组件 - center of screen
     componentManager.AddComponent<engine::ECS::Transform2D>(playerId,
         engine::ECS::Transform2D{position.x, position.y, 0.0f, 1.0f, 1.0f});
     
-    // 添加Sprite组件 - large WHITE square for testing (no color tint)
     componentManager.AddComponent<engine::ECS::Sprite2D>(playerId,
         engine::ECS::Sprite2D{
             "pixel.png",                    // 16x16 white texture
@@ -45,7 +45,6 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             {0.5f, 0.5f}                    // pivotOffset: center of sprite for proper rotation
         });
     
-    // 添加碰撞组件
     componentManager.AddComponent<engine::ECS::Collider2D>(playerId,
         engine::ECS::Collider2D{
             {-16, -16, 32, 32},    // 32x32碰撞框
@@ -53,11 +52,9 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             "player"               // 玩家层
         });
     
-    // 添加移动组件
     componentManager.AddComponent<engine::ECS::Velocity2D>(playerId,
-        engine::ECS::Velocity2D{0.0f, 0.0f, 200.0f});  // 最大速度200
+        engine::ECS::Velocity2D{0.0f, 0.0f, 250.0f}); 
 
-    // 添加物理模式组件（top-down 2D游戏）
     componentManager.AddComponent<engine::ECS::PhysicsModeComponent>(playerId,
         engine::ECS::PhysicsModeComponent{
             engine::ECS::PhysicsMode::TOP_DOWN,
@@ -121,6 +118,37 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             false,  // isReloading
             0.0f    // reloadProgress
         });
+
+    // Add HealthComponent for health
+    componentManager.AddComponent<ZombieSurvivor::Component::HealthComponent>(playerId,
+        ZombieSurvivor::Component::HealthComponent{
+            100.0f,  // health
+            100.0f,  // maxHealth  
+            true     // isAlive
+        });
+    
+    componentManager.AddComponent<ZombieSurvivor::Component::ExperienceComponent>(playerId,
+        ZombieSurvivor::Component::ExperienceComponent{
+            1,     // level
+            0,     // experience
+            100,   // experienceToNext
+            0,     // skillPoints
+            false  // canLevelUp
+        });
+    
+    auto* healthCheck = componentManager.GetComponent<ZombieSurvivor::Component::HealthComponent>(playerId);
+    auto* expCheck = componentManager.GetComponent<ZombieSurvivor::Component::ExperienceComponent>(playerId);
+    
+    if (healthCheck) {
+        std::cout << "[GameEntityFactory] Player " << playerId << " health: " 
+                  << healthCheck->health << "/" << healthCheck->maxHealth << std::endl;
+    }
+    
+    if (expCheck) {
+        std::cout << "[GameEntityFactory] Player " << playerId << " experience: " 
+                  << expCheck->experience << "/" << expCheck->experienceToNext 
+                  << " (Level " << expCheck->level << ")" << std::endl;
+    }
     
     // Adding "Player" Tag to player
     componentManager.AddComponent<engine::ECS::Tag>(playerId, 
@@ -233,6 +261,108 @@ uint32_t GameEntityFactory::CreateWeapon(engine::EntityID playerEntityId, const 
     return weaponId;
 }
 
+uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
+    std::cout << "[GameEntityFactory] *** CreatePlayerHUD called for player " << playerEntityId << " ***" << std::endl;
+    
+    if (!ValidateWorld()) {
+        std::cout << "[GameEntityFactory] ERROR: World validation failed!" << std::endl;
+        return 0;
+    }
+    
+    std::cout << "[GameEntityFactory] World validation passed" << std::endl;
+    
+    if (!ValidateWorld()) return 0;
+
+    auto& entityFactory = world_->GetEntityFactory();
+    auto& componentManager = world_->GetComponentManager();
+
+    engine::EntityID healthHudId = entityFactory.CreateEntity("PlayerHealthHUD");
+
+    Component::HUDComponent healthHUD; 
+    healthHUD.type = Component::HUDElementType::HEALTH_BAR;
+    healthHUD.position = Component::HUDPosition::BOTTOM_LEFT;
+    healthHUD.bounds = {20, 20, 200, 20};  // x, y, width, height
+    healthHUD.visible = true;
+    healthHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
+
+    healthHUD.targetEntityId = playerEntityId;
+    healthHUD.componentProperty = "health";
+
+    healthHUD.backgroundColor = {80, 80, 80, 120};
+    healthHUD.foregroundColor = {255, 0, 0, 255};     // 红色前景色
+    healthHUD.criticalColor = {255, 100, 100, 255};   // 危险时稍亮的红色
+    healthHUD.criticalThreshold = 0.25f;   
+
+    auto* playerHealth = componentManager.GetComponent<Component::HealthComponent>(playerEntityId);
+    if (playerHealth) {
+        healthHUD.currentValue = playerHealth->health;
+        healthHUD.maxValue = playerHealth->maxHealth;
+    } else {
+        healthHUD.currentValue = 100.0f;
+        healthHUD.maxValue = 100.0f;
+    }
+
+    healthHUD.showNumbers = true;
+    healthHUD.showPercentage = false;
+    healthHUD.textFormat = "{0}/{1}";
+
+    healthHUD.animateChanges = true;
+    healthHUD.animationSpeed = 50.0f;
+
+    componentManager.AddComponent<Component::HUDComponent>(healthHudId, healthHUD);
+    componentManager.AddComponent<engine::ECS::Tag>(healthHudId, 
+        engine::ECS::Tag{"player_health_hud"});
+    
+    std::cout << "[GameEntityFactory] Created player health HUD: " << healthHudId << std::endl;
+
+    engine::EntityID expHudId = entityFactory.CreateEntity("PlayerExperienceHUD");
+    
+    Component::HUDComponent expHUD;
+    expHUD.type = Component::HUDElementType::EXPERIENCE_BAR;
+    expHUD.position = Component::HUDPosition::TOP_LEFT;
+    expHUD.bounds = {20, 50, 200, 15};
+    expHUD.visible = true;
+    expHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
+    
+    expHUD.targetEntityId = playerEntityId;
+    expHUD.componentProperty = "experience";
+    
+    expHUD.backgroundColor = {80, 80, 80, 120};        // 半透明灰色（点阵背景效果）
+    expHUD.foregroundColor = {0, 100, 255, 255};       // 蓝色前景（经验条）
+    expHUD.criticalColor = {100, 150, 255, 255};       // 接近升级时稍亮的蓝色
+    expHUD.criticalThreshold = 0.9f;                   // 90%以上显示亮色
+    
+
+    auto* playerExp = componentManager.GetComponent<Component::ExperienceComponent>(playerEntityId);
+    if (playerExp) {
+        expHUD.currentValue = static_cast<float>(playerExp->experience);
+        expHUD.maxValue = static_cast<float>(playerExp->experienceToNext);
+    } else {
+        expHUD.currentValue = 0.0f;
+        expHUD.maxValue = 100.0f;
+    }
+
+    expHUD.showNumbers = true;
+    expHUD.showPercentage = true;      // 也显示百分比
+    expHUD.textFormat = "{0}/{1} ({2}%)";  // "30/100 (30%)" 格式
+    
+    expHUD.animateChanges = true;
+    expHUD.animationSpeed = 25.0f;
+    
+    componentManager.AddComponent<Component::HUDComponent>(expHudId, expHUD);
+    componentManager.AddComponent<engine::ECS::Tag>(expHudId, 
+        engine::ECS::Tag{"player_experience_hud"});
+    
+    std::cout << "[GameEntityFactory] Created player experience HUD: " << expHudId << std::endl;
+    
+    std::cout << "[GameEntityFactory] Health HUD created with bounds: " 
+    << healthHUD.bounds.x << "," << healthHUD.bounds.y << " " 
+    << healthHUD.bounds.w << "x" << healthHUD.bounds.h << std::endl;
+    std::cout << "[GameEntityFactory] Health HUD values: " 
+    << healthHUD.currentValue << "/" << healthHUD.maxValue << std::endl;
+    return healthHudId;
+}
+
 uint32_t GameEntityFactory::SpawnZombie(const engine::Vector2& position) {
     if (!ValidateWorld()) return 0;
     
@@ -268,7 +398,6 @@ uint32_t GameEntityFactory::CreateProjectile(const engine::Vector2& position,
     
     uint32_t projectileId = entityFactory.CreateEntity("Projectile");
     
-    // 添加组件...
     componentManager.AddComponent<engine::ECS::Transform2D>(projectileId,
         engine::ECS::Transform2D{position.x, position.y, 0.0f, 1.0f, 1.0f});
     
