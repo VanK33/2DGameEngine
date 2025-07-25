@@ -11,6 +11,11 @@
 #include "ecs/systems/GroundRenderSystem.hpp"
 #include "ecs/systems/WeaponFollowSystem.hpp"
 #include "ecs/systems/AimingSystem.hpp"
+#include "ecs/systems/WeaponInputSystem.hpp"
+#include "ecs/systems/WeaponSystem.hpp"
+#include "ecs/systems/AmmoSystem.hpp"
+#include "ecs/systems/WeaponFireSystem.hpp"
+#include "ecs/systems/ProjectileSystem.hpp"
 
 #include "examples/zombie_survivor/ecs/GameEntityFactory.hpp"
 
@@ -49,6 +54,7 @@ private:
     
     void InitializeSystems();  // 通过SystemManager添加系统
     void CreateEntities();     // 只负责创建游戏实体
+    void RenderDebugAiming(SDL_Renderer* renderer); // Debug rendering for aiming
 };
 
 } // namespace ZombieSurvivor

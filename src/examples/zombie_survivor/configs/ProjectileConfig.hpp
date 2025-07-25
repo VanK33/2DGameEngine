@@ -9,10 +9,13 @@ namespace ZombieSurvivor::Config {
 
 struct ProjectileConfig {
     float speed;
-    float lifetime;
+    float range;      // Effective range in pixels (replaces lifetime)
     float damage;
     int penetration;
     Component::ProjectileType type;
+    
+    // Dynamically calculate lifetime based on range and speed
+    float GetLifetime() const { return range / speed; }
 };
 
 class ProjectileConfigManager {

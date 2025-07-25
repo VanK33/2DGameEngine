@@ -19,6 +19,9 @@ void InputManager::HandleEvent(const SDL_Event& event) {
         case SDL_EVENT_KEY_DOWN:
             keyDown_[event.key.key] = true;
             keyHeld_[event.key.key] = true;
+            if (event.key.key == SDLK_R) {
+                std::cout << "[InputManager] R key pressed detected!" << std::endl;
+            }
             PublishKeyEvent(engine::event::EventType::KEY_DOWN, event);
             break;
         case SDL_EVENT_KEY_UP:
@@ -29,6 +32,7 @@ void InputManager::HandleEvent(const SDL_Event& event) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             mouseButtonDown_[event.button.button] = true;
             mouseButtonHeld_[event.button.button] = true;
+            std::cout << "[InputManager] Mouse button " << static_cast<int>(event.button.button) << " pressed" << std::endl;
             PublishMouseButtonEvent(engine::event::EventType::MOUSE_CLICK, event);
             break;
         case SDL_EVENT_MOUSE_BUTTON_UP:
@@ -101,7 +105,11 @@ bool InputManager::IsKeyUp(SDL_Keycode key) const {
 
 bool InputManager::IsMouseButtonDown(Uint8 button) const {
     auto it = mouseButtonDown_.find(button);
-    return it != mouseButtonDown_.end() && it->second;
+    bool result = it != mouseButtonDown_.end() && it->second;
+    if (result) {
+        std::cout << "[InputManager] IsMouseButtonDown(" << static_cast<int>(button) << ") = true" << std::endl;
+    }
+    return result;
 }
 
 bool InputManager::IsMouseButtonUp(Uint8 button) const {

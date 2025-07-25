@@ -6,12 +6,15 @@
 #include "engine/core/ecs/EntityFactory.hpp"
 #include "examples/zombie_survivor/ecs/systems/InputSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/MovementSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/BoundarySystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/RotationSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/WeaponFollowSystem.hpp"
 
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/ecs/components/Sprite2D.hpp"
+#include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/InputComponent.hpp"
 
 // 系统
 #include "ecs/systems/GroundRenderSystem.hpp"
@@ -57,15 +60,13 @@ void GameScene::Unload() {
 
 void GameScene::Update(float deltaTime) {
     if (!world_) return;
-    world_->GetSystemManager().Update(deltaTime);
 }
 
 void GameScene::Render(SDL_Renderer* renderer) {
     if (!world_) return;
     
-    // Background is already cleared by Renderer::BeginFrame()
-    // Don't clear again here - it would wipe out all sprite rendering!
-    
+    // Debug: Draw weapon aim direction and mouse position
+    RenderDebugAiming(renderer);
 }
 
 void GameScene::HandleEvent(const SDL_Event& event) {
@@ -112,6 +113,9 @@ void GameScene::InitializeSystems() {
     auto movementSystem = std::make_unique<ZombieSurvivor::System::MovementSystem>();
     systemManager.AddSystem(std::move(movementSystem), 30);
 
+    auto boundarySystem = std::make_unique<ZombieSurvivor::System::BoundarySystem>();
+    systemManager.AddSystem(std::move(boundarySystem), 32);
+
     auto weaponFollowSystem = std::make_unique<ZombieSurvivor::System::WeaponFollowSystem>();
     systemManager.AddSystem(std::move(weaponFollowSystem), 35);
 
@@ -120,6 +124,21 @@ void GameScene::InitializeSystems() {
 
     auto rotationSystem = std::make_unique<ZombieSurvivor::System::RotationSystem>();
     systemManager.AddSystem(std::move(rotationSystem), 40);
+
+    auto weaponInputSystem = std::make_unique<ZombieSurvivor::System::WeaponInputSystem>();
+    systemManager.AddSystem(std::move(weaponInputSystem), 42);
+
+    auto weaponSystem = std::make_unique<ZombieSurvivor::System::WeaponSystem>();
+    systemManager.AddSystem(std::move(weaponSystem), 43);
+
+    auto ammoSystem = std::make_unique<ZombieSurvivor::System::AmmoSystem>();
+    systemManager.AddSystem(std::move(ammoSystem), 44);
+
+    auto weaponFireSystem = std::make_unique<ZombieSurvivor::System::WeaponFireSystem>();
+    systemManager.AddSystem(std::move(weaponFireSystem), 45);
+
+    auto projectileSystem = std::make_unique<ZombieSurvivor::System::ProjectileSystem>();
+    systemManager.AddSystem(std::move(projectileSystem), 48);  // Before RenderSystem(50) to ensure cleanup
     
     std::cout << "[GameScene] Systems initialized successfully!" << std::endl;
 }
@@ -144,6 +163,66 @@ void GameScene::CreateEntities() {
     }
     
     std::cout << "[GameScene] Game entities created!" << std::endl;
+}
+
+void GameScene::RenderDebugAiming(SDL_Renderer* renderer) {
+    if (!world_ || !weaponId_ || !playerId_) return;
+    
+    auto& componentManager = world_->GetComponentManager();
+    
+    // Get player components
+    auto* playerTransform = componentManager.GetComponent<engine::ECS::Transform2D>(playerId_);
+    auto* playerAiming = componentManager.GetComponent<Component::AimingComponent>(playerId_);
+    
+    // Get weapon components
+    auto* weaponTransform = componentManager.GetComponent<engine::ECS::Transform2D>(weaponId_);
+    auto* weaponAiming = componentManager.GetComponent<Component::AimingComponent>(weaponId_);
+    auto* weaponInput = componentManager.GetComponent<Component::InputComponent>(playerId_); // Player has input, not weapon
+    
+    if (!playerTransform || !weaponTransform || !weaponAiming || !weaponInput) return;
+    
+    // === PLAYER DEBUG VISUALIZATION ===
+    float playerX = playerTransform->x;
+    float playerY = playerTransform->y;
+    
+    // Draw player center as BLUE cross (8px)
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue
+    SDL_RenderLine(renderer, playerX - 8, playerY, playerX + 8, playerY);
+    SDL_RenderLine(renderer, playerX, playerY - 8, playerX, playerY + 8);
+    
+    // Draw player rotation direction (30px line from center)
+    float playerRotX = std::cos(playerTransform->rotation) * 30.0f;
+    float playerRotY = std::sin(playerTransform->rotation) * 30.0f;
+    SDL_SetRenderDrawColor(renderer, 0, 150, 255, 255); // Light blue
+    SDL_RenderLine(renderer, playerX, playerY, playerX + playerRotX, playerY + playerRotY);
+    
+    // === WEAPON DEBUG VISUALIZATION ===
+    float weaponX = weaponTransform->x;
+    float weaponY = weaponTransform->y;
+    
+    // Draw weapon position as YELLOW cross (6px)
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
+    SDL_RenderLine(renderer, weaponX - 6, weaponY, weaponX + 6, weaponY);
+    SDL_RenderLine(renderer, weaponX, weaponY - 6, weaponX, weaponY + 6);
+    
+    // Draw weapon direction line (50 pixels long)
+    float aimX = weaponAiming->aimDirection.x * 50.0f;
+    float aimY = weaponAiming->aimDirection.y * 50.0f;
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green
+    SDL_RenderLine(renderer, weaponX, weaponY, weaponX + aimX, weaponY + aimY);
+    
+    // Draw line connecting player center to weapon position
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+    SDL_RenderLine(renderer, playerX, playerY, weaponX, weaponY);
+    
+    // === MOUSE DEBUG VISUALIZATION ===
+    // Draw mouse position as RED cross (10px)
+    float mouseX = weaponInput->mousePosition.x;
+    float mouseY = weaponInput->mousePosition.y;
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
+    SDL_RenderLine(renderer, mouseX - 10, mouseY, mouseX + 10, mouseY);
+    SDL_RenderLine(renderer, mouseX, mouseY - 10, mouseX, mouseY + 10);
+    
 }
 
 } // namespace ZombieSurvivor

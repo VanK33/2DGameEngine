@@ -20,6 +20,11 @@ void SystemManager::AddSystem(std::unique_ptr<System> system, int priority) {
 
     if (world_) {
         system->SetWorld(world_);
+        std::cout << "[SystemManager] Calling Init() on system: " << name << std::endl;
+        system->Init();  // Initialize the system after setting world
+        std::cout << "[SystemManager] Init() completed for system: " << name << std::endl;
+    } else {
+        std::cout << "[SystemManager] Warning: No world set, skipping Init() for system: " << name << std::endl;
     }
     
     // Add system

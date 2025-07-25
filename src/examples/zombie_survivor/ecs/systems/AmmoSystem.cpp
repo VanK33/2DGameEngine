@@ -143,6 +143,12 @@ void AmmoSystem::SetAmmo(uint32_t entityId, int currentAmmo, int totalAmmo) {
     int oldCurrent = ammo->currentAmmo;
     int oldTotal = ammo->totalAmmo;
     
+    // DEBUG: Show what SetAmmo is trying to set and current state
+    std::cout << "[AmmoSystem] SetAmmo called for entity " << entityId 
+              << " with values: currentAmmo=" << currentAmmo << ", totalAmmo=" << totalAmmo << std::endl;
+    std::cout << "[AmmoSystem] Entity " << entityId << " ammo BEFORE SetAmmo: " 
+              << oldCurrent << "/" << oldTotal << " (max: " << ammo->maxTotalAmmo << ")" << std::endl;
+    
     ammo->currentAmmo = std::max(0, currentAmmo);
     ammo->totalAmmo = std::max(0, totalAmmo);
     
@@ -205,6 +211,15 @@ void AmmoSystem::HandleGameEvent(const std::shared_ptr<engine::event::Event>& ev
 void AmmoSystem::HandleAmmoConsumeRequest(const std::shared_ptr<void>& eventData) {
     auto data = std::static_pointer_cast<Events::AmmoConsumeRequestData>(eventData);
     if (!data) return;
+    
+    // Debug: Show current ammo status before attempting to consume
+    auto* ammo = GetAmmoComponent(data->playerId);
+    if (ammo) {
+        std::cout << "[AmmoSystem] Player " << data->playerId << " ammo status BEFORE consumption: " 
+                  << ammo->currentAmmo << "/" << ammo->totalAmmo << " (max: " << ammo->maxTotalAmmo << ")" << std::endl;
+    } else {
+        std::cout << "[AmmoSystem] ERROR: Player " << data->playerId << " has NO AmmoComponent!" << std::endl;
+    }
     
     if (!CanConsume(data->playerId, data->amount)) {
         std::cout << "[AmmoSystem] Player " << data->playerId << " cannot consume " 

@@ -10,7 +10,7 @@ class SpriteRenderer {
 public:
     explicit SpriteRenderer(SDL_Renderer* renderer);
 
-    void Draw(SDL_Texture* texture, float x, float y, float width, float height, float rotation = 0.0f, SDL_FlipMode flip = SDL_FLIP_NONE);
+    void Draw(SDL_Texture* texture, float x, float y, float width, float height, float rotation = 0.0f, SDL_FlipMode flip = SDL_FLIP_NONE, const SDL_FPoint* pivot = nullptr);
 
 private:
     SDL_Renderer* renderer_;

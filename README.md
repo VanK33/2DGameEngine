@@ -316,14 +316,6 @@ The engine provides generic systems while games implement specific components li
 
 ---
 
-## 🤝 Contributing
-
-- PRs and suggestions welcome!
-- Focus on generic engine systems, not game-specific features
-- Maintain clean separation between engine and game logic
-- Follow existing code style and architecture patterns
-
----
 
 
 

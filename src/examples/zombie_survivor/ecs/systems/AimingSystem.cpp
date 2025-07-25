@@ -51,12 +51,17 @@ void AimingSystem::UpdateAiming(uint32_t entityId) {
     
     engine::Vector2 entityPos{transform->x, transform->y};
     aiming->aimDirection = CalculateAimDirection(entityPos, aiming->mouseWorldPos);
+    
+    // Apply rotation to Transform2D so entity faces mouse direction
+    transform->rotation = std::atan2(aiming->aimDirection.y, aiming->aimDirection.x);
 }
 
 engine::Vector2 AimingSystem::CalculateAimDirection(const engine::Vector2& fromPos, const engine::Vector2& toPos) const {
-    engine::Vector2 direction{toPos.x - fromPos.x, toPos.y - fromPos.y};
+    // Note: In SDL, Y increases downward, but for aiming we want standard math coordinates
+    // So we flip the Y direction to make aiming feel natural
+    engine::Vector2 direction{toPos.x - fromPos.x, -(toPos.y - fromPos.y)};
     
-    // 归一化方向向量
+    // Normalize direction vector
     float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
     if (length > 0.001f) {
         direction.x /= length;

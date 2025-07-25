@@ -62,6 +62,7 @@ void RotationSystem::UpdateRotation(uint32_t entityId, float deltaTime) {
     if (!aiming || !transform) return;
 
     float targetRotation = CalculateTargetRotation(aiming->aimDirection);
+    float oldRotation = transform->rotation;
 
     auto it = rotationSmoothing_.find(entityId);
     if (it != rotationSmoothing_.end()) {
@@ -70,7 +71,7 @@ void RotationSystem::UpdateRotation(uint32_t entityId, float deltaTime) {
         transform->rotation = targetRotation;
     }
 
-
+    // Normalize angle to keep it in a reasonable range
     transform->rotation = NormalizeAngle(transform->rotation);
 }
 
@@ -79,6 +80,10 @@ float RotationSystem::CalculateTargetRotation(const engine::Vector2& aimDirectio
 }
 
 float RotationSystem::SmoothRotation(float current, float target, float smoothing, float deltaTime) const {
+    // Normalize both angles to [-π, π] range for consistent difference calculation
+    current = std::atan2(std::sin(current), std::cos(current));
+    target = std::atan2(std::sin(target), std::cos(target));
+    
     float diff = target - current;
 
     // Picking the minimum rotational route
@@ -97,9 +102,8 @@ float RotationSystem::SmoothRotation(float current, float target, float smoothin
 }
 
 float RotationSystem::NormalizeAngle(float angle) const {
-    while (angle >= 2.0f * M_PI) angle -= 2.0f * M_PI;
-    while (angle < 0.0f) angle += 2.0f * M_PI;
-    return angle;
+    // Normalize to [-π, π] range to match atan2 output
+    return std::atan2(std::sin(angle), std::cos(angle));
 }
 
 } // namespace ZombieSurvivor::System

@@ -12,10 +12,10 @@ ProjectileConfig ProjectileConfigManager::GetConfig(Component::AmmoType ammoType
 
 std::unordered_map<Component::AmmoType, ProjectileConfig> ProjectileConfigManager::InitializeConfigs() {
     return {
-        // {AmmoType, {speed, lifetime, damage, penetration, type}}
-        {Component::AmmoType::PISTOL, {400.0f, 2.0f, 25.0f, 1, Component::ProjectileType::BULLET_PISTOL}},
-        {Component::AmmoType::RIFLE,  {800.0f, 4.0f, 50.0f, 2, Component::ProjectileType::BULLET_RIFLE}},
-        {Component::AmmoType::SMG,    {600.0f, 2.5f, 20.0f, 1, Component::ProjectileType::BULLET_PISTOL}},
+        // {AmmoType, {speed, range, damage, penetration, type}}
+        {Component::AmmoType::PISTOL, {400.0f, 250.0f, 25.0f, 1, Component::ProjectileType::BULLET_PISTOL}},  // 0.625s lifetime
+        {Component::AmmoType::RIFLE,  {800.0f, 500.0f, 50.0f, 2, Component::ProjectileType::BULLET_RIFLE}},   // 0.625s lifetime
+        {Component::AmmoType::SMG,    {600.0f, 250.0f, 20.0f, 1, Component::ProjectileType::BULLET_PISTOL}},  // 0.417s lifetime
     };
 }
 

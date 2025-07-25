@@ -18,9 +18,8 @@ class GameEntityFactory {
 public:
     explicit GameEntityFactory(engine::ECS::World* world, engine::resources::ResourceManager* resourceManager);
     
-    // 🎯 静态实体创建（场景初始化时）
     uint32_t CreatePlayer(const engine::Vector2& position = {400.0f, 300.0f});
-    uint32_t CreateWeapon(engine::EntityID playerEntityId, const engine::Vector2& offset = {-5.0f, 0.0f});
+    uint32_t CreateWeapon(engine::EntityID playerEntityId, const engine::Vector2& offset = {20.0f, 0.0f});
     // uint32_t CreateStaticRock(const engine::Vector2& position);
     // uint32_t CreateStaticTree(const engine::Vector2& position);
     

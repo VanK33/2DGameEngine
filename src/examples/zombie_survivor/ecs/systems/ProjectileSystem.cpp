@@ -5,10 +5,14 @@
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/ecs/components/Velocity2D.hpp"
 #include "engine/core/ecs/components/Collider2D.hpp"
+#include "engine/core/ecs/components/Sprite2D.hpp"
 #include "engine/core/ecs/components/Tag.hpp"
+#include "engine/core/ecs/components/PhysicsMode.hpp"
 #include "examples/zombie_survivor/ecs/components/ProjectileComponent.hpp"
 #include "examples/zombie_survivor/events/ProjectileEventUtils.hpp"
 #include <iostream>
+#include <iomanip>
+#include <cmath>
 
 namespace ZombieSurvivor::System {
 
@@ -100,7 +104,10 @@ void ProjectileSystem::HandleCreateProjectile(const std::shared_ptr<void>& event
         }
         
         std::cout << "[ProjectileSystem] Created projectile " << projectileId 
-                  << " for shooter " << data->shooterId << std::endl;
+                  << " for shooter " << data->shooterId 
+                  << " at (" << std::fixed << std::setprecision(1) << data->startPosition.x << ", " << data->startPosition.y << ")"
+                  << " - Expected range: " << (data->speed * data->lifetime) << "px"
+                  << " (speed=" << data->speed << "px/s, lifetime=" << std::setprecision(3) << data->lifetime << "s)" << std::endl;
     }
 }
 
@@ -145,8 +152,28 @@ engine::EntityID ProjectileSystem::CreateProjectileEntity(const ZombieSurvivor::
     componentManager.AddComponent<engine::ECS::Velocity2D>(projectileId,
         engine::ECS::Velocity2D{velocity.x, velocity.y, data.speed});
     
+    // Add PhysicsModeComponent for PhysicsSystem to process movement
+    componentManager.AddComponent<engine::ECS::PhysicsModeComponent>(projectileId,
+        engine::ECS::PhysicsModeComponent{
+            engine::ECS::PhysicsMode::TOP_DOWN,  // 2D physics mode
+            0.0f, 0.0f, 0.0f,                    // no gravity
+            false,                               // disable gravity
+            false,                               // disable friction for projectiles
+            1.0f                                 // friction factor (unused when friction disabled)
+        });
+    
     componentManager.AddComponent<engine::ECS::Collider2D>(projectileId,
         engine::ECS::Collider2D{{0, 0, 4, 4}, false, "projectile"});
+    
+    // Add Sprite2D component to make projectile visible
+    componentManager.AddComponent<engine::ECS::Sprite2D>(projectileId,
+        engine::ECS::Sprite2D{
+            "pixel.png",                    // texture path
+            {0, 0, 8, 8},                   // sourceRect - bigger 8x8 bullet for visibility
+            true,                           // visible
+            {255, 255, 0, 255},             // tint - bright yellow bullet
+            15                              // renderLayer - higher than ENTITIES (10) and WEAPON (12)
+        });
     
     Component::ProjectileComponent projectile;
     projectile.damage = data.damage;
@@ -154,6 +181,7 @@ engine::EntityID ProjectileSystem::CreateProjectileEntity(const ZombieSurvivor::
     projectile.maxLifetime = data.lifetime;
     projectile.direction = data.direction;
     projectile.velocity = velocity;
+    projectile.startPosition = data.startPosition;  // Record start position for distance tracking
     projectile.shooterId = data.shooterId;
     projectile.type = data.type;
     projectile.sourceWeaponType = data.weaponType;
@@ -176,16 +204,36 @@ void ProjectileSystem::UpdateProjectileMovement(float deltaTime) {
     
     auto projectiles = componentManager.GetEntitiesWithComponents<
         Component::ProjectileComponent,
-        engine::ECS::Velocity2D
+        engine::ECS::Velocity2D,
+        engine::ECS::Transform2D
     >();
     
     for (auto projectileId : projectiles) {
         auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
         auto* velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(projectileId);
+        auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
         
-        if (projectile && velocity && !projectile->shouldDestroy) {
+        if (projectile && velocity && transform && !projectile->shouldDestroy) {
+            // Calculate distance moved this frame
             float speed = std::sqrt(velocity->vx * velocity->vx + velocity->vy * velocity->vy);
-            projectile->distanceTraveled += speed * deltaTime;
+            float distanceThisFrame = speed * deltaTime;
+            projectile->distanceTraveled += distanceThisFrame;
+            
+            // Calculate actual straight-line distance from start position
+            float actualDistance = std::sqrt(
+                (transform->x - projectile->startPosition.x) * (transform->x - projectile->startPosition.x) +
+                (transform->y - projectile->startPosition.y) * (transform->y - projectile->startPosition.y)
+            );
+            
+            // Debug output every 0.1 seconds (roughly every 6 frames at 60fps)
+            if (static_cast<int>(projectile->currentLifetime * 10) != static_cast<int>((projectile->currentLifetime - deltaTime) * 10)) {
+                std::cout << "[DEBUG] Projectile " << projectileId 
+                          << " - Time: " << std::fixed << std::setprecision(3) << projectile->currentLifetime
+                          << "s, Traveled: " << std::setprecision(1) << projectile->distanceTraveled 
+                          << "px, Actual: " << actualDistance 
+                          << "px, Pos: (" << transform->x << ", " << transform->y << ")"
+                          << ", Start: (" << projectile->startPosition.x << ", " << projectile->startPosition.y << ")" << std::endl;
+            }
         }
     }
 }
@@ -205,7 +253,9 @@ void ProjectileSystem::UpdateProjectileLifetime(float deltaTime) {
             if (projectile->currentLifetime >= projectile->maxLifetime) {
                 projectile->shouldDestroy = true;
                 std::cout << "[ProjectileSystem] Projectile " << projectileId 
-                          << " expired after " << projectile->currentLifetime << "s" << std::endl;
+                          << " EXPIRED after " << std::fixed << std::setprecision(3) << projectile->currentLifetime 
+                          << "s (max: " << projectile->maxLifetime << "s)"
+                          << " - Distance traveled: " << std::setprecision(1) << projectile->distanceTraveled << "px" << std::endl;
             }
         }
     }
@@ -227,7 +277,10 @@ void ProjectileSystem::HandleBoundaryChecks() {
                 transform->y < -worldBounds_.y || transform->y > worldBounds_.y) {
                 projectile->shouldDestroy = true;
                 std::cout << "[ProjectileSystem] Projectile " << projectileId 
-                          << " destroyed at boundary (" << transform->x << ", " << transform->y << ")" << std::endl;
+                          << " HIT BOUNDARY at (" << std::fixed << std::setprecision(1) << transform->x << ", " << transform->y << ")"
+                          << " after " << std::setprecision(3) << projectile->currentLifetime << "s"
+                          << " - Distance: " << std::setprecision(1) << projectile->distanceTraveled << "px"
+                          << " [BOUNDARY BOUNDS: " << worldBounds_.x << "x" << worldBounds_.y << "]" << std::endl;
             }
         }
     }
@@ -247,8 +300,32 @@ void ProjectileSystem::CleanupExpiredProjectiles() {
         auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
         
         if (projectile && projectile->shouldDestroy) {
+            // Debug: Check which components exist before cleanup
+            auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
+            auto* sprite = componentManager.GetComponent<engine::ECS::Sprite2D>(projectileId);
+            auto* velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(projectileId);
+            
+            std::cout << "[ProjectileSystem] BEFORE cleanup - Projectile " << projectileId 
+                      << " Components: Transform=" << (transform ? "YES" : "NO")
+                      << ", Sprite=" << (sprite ? "YES" : "NO")
+                      << ", Velocity=" << (velocity ? "YES" : "NO") << std::endl;
+            
+            // Use ComponentManager's unified cleanup - removes ALL components
+            componentManager.RemoveAllComponents(projectileId);
+            
+            // Then destroy entity ID from EntityFactory
             entityFactory.DestroyEntity(projectileId);
             toRemove.push_back(projectileId);
+            
+            // Debug: Verify all components are gone
+            transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
+            sprite = componentManager.GetComponent<engine::ECS::Sprite2D>(projectileId);
+            velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(projectileId);
+            
+            std::cout << "[ProjectileSystem] AFTER unified cleanup - Projectile " << projectileId 
+                      << " Components: Transform=" << (transform ? "YES" : "NO")
+                      << ", Sprite=" << (sprite ? "YES" : "NO")
+                      << ", Velocity=" << (velocity ? "YES" : "NO") << std::endl;
             
             std::cout << "[ProjectileSystem] Cleaned up projectile " << projectileId << std::endl;
         }
@@ -284,6 +361,8 @@ void ProjectileSystem::DestroyProjectile(engine::EntityID projectileId) {
     
     auto* world = GetWorld();
     if (world) {
+        // Use unified cleanup for consistency
+        world->GetComponentManager().RemoveAllComponents(projectileId);
         world->GetEntityFactory().DestroyEntity(projectileId);
     }
 }

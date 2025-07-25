@@ -1,8 +1,8 @@
 #include "WeaponFollowSystem.hpp"
 #include "engine/core/ecs/World.hpp"
 #include "examples/zombie_survivor/ecs/components/InputComponent.hpp"
-#include "examples/zombie_survivor/ecs/components/AimingComponent.hpp"
 #include <iostream>
+#include <cmath>
 
 namespace ZombieSurvivor::System {
 
@@ -23,8 +23,8 @@ void WeaponFollowSystem::Update(float deltaTime) {
 
         UpdateFollowPosition(entityId, *followComponent, deltaTime);
         
-        // Also copy mouse input from player to weapon for aiming
-        CopyMouseInputFromPlayer(entityId, *followComponent);
+        // Copy input from player to weapon so weapon can aim independently
+        CopyInputFromPlayer(entityId, *followComponent);
     }
 }
 
@@ -38,32 +38,43 @@ void WeaponFollowSystem::UpdateFollowPosition(engine::EntityID followerId, const
     auto* followerTransform = componentManager.GetComponent<engine::ECS::Transform2D>(followerId);
     if (!followerTransform) return;
 
-    // Get the target's transform
+    // Get the target's transform (player)
     auto* targetTransform = componentManager.GetComponent<engine::ECS::Transform2D>(follow.targetEntityId);
     if (!targetTransform) return;
 
-    // Get weapon's aiming component to get aim direction
-    auto* weaponAiming = componentManager.GetComponent<Component::AimingComponent>(followerId);
-    if (!weaponAiming) return;
+    // Get weapon's input component to access mouse position
+    auto* weaponInput = componentManager.GetComponent<Component::InputComponent>(followerId);
+    if (!weaponInput) return;
 
-    // Calculate weapon position like a clock hand
-    // Center point: player position + offset (5 pixels to the left)
-    float centerX = targetTransform->x + follow.offset.x;
-    float centerY = targetTransform->y + follow.offset.y;
+    // Calculate weapon position using clock needle logic
+    // IMPORTANT: Transform2D(x,y) represents TOP-LEFT corner, not center
+    // For 64x64 player sprite, center is at (x+32, y+32)
+    engine::Vector2 playerPos{targetTransform->x + 32.0f, targetTransform->y + 32.0f};
+    engine::Vector2 mousePos = weaponInput->mousePosition;
     
-    // Calculate angle from aim direction
-    float angle = std::atan2(weaponAiming->aimDirection.y, weaponAiming->aimDirection.x);
+    // 1. Calculate angle from player to mouse
+    float playerToMouseAngle = std::atan2(mousePos.y - playerPos.y, mousePos.x - playerPos.x);
     
-    // Position weapon at the center (like clock center)
-    // The weapon will rotate around this point, but start at center
-    followerTransform->x = centerX;
-    followerTransform->y = centerY;
+    // 2. Needle direction = mouse direction + 90 degrees (perpendicular)
+    float needleAngle = playerToMouseAngle + M_PI / 2.0f;
     
-    // Set rotation to point in aim direction
-    followerTransform->rotation = angle;
+    // 3. Calculate weapon attachment position (needle tip)
+    float needleLength = 25.0f; // Distance from player center to weapon grip point
+    engine::Vector2 weaponAttachPos{
+        playerPos.x + std::cos(needleAngle) * needleLength,
+        playerPos.y + std::sin(needleAngle) * needleLength
+    };
+    
+    // 4. Set weapon position to attachment point
+    // IMPORTANT: We calculated attachment position in world space (center-based)
+    // But Transform2D expects TOP-LEFT corner, so we need to convert back
+    // For 40x12 weapon with pivot at {0.25, 0.5}, the grip point is at (10, 6) from top-left
+    followerTransform->x = weaponAttachPos.x - 10.0f;  // subtract grip point X offset
+    followerTransform->y = weaponAttachPos.y - 6.0f;   // subtract grip point Y offset
+
 }
 
-void WeaponFollowSystem::CopyMouseInputFromPlayer(engine::EntityID weaponId, const Component::FollowComponent& follow) {
+void WeaponFollowSystem::CopyInputFromPlayer(engine::EntityID weaponId, const Component::FollowComponent& follow) {
     auto* world = GetWorld();
     if (!world) return;
 
@@ -73,11 +84,11 @@ void WeaponFollowSystem::CopyMouseInputFromPlayer(engine::EntityID weaponId, con
     auto* playerInput = componentManager.GetComponent<Component::InputComponent>(follow.targetEntityId);
     if (!playerInput) return;
 
-    // Get weapon's input component (needs mouse data for AimingSystem)
+    // Get weapon's input component (needs mouse data for independent aiming)
     auto* weaponInput = componentManager.GetComponent<Component::InputComponent>(weaponId);
     if (!weaponInput) return;
 
-    // Copy mouse position from player to weapon's input component
+    // Copy mouse position from player to weapon so weapon can aim at same target
     weaponInput->mousePosition = playerInput->mousePosition;
 }
 

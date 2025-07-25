@@ -10,13 +10,8 @@ EntityFactory::EntityFactory() : nextId_(1), totalCreated_(0) {}
 EntityID EntityFactory::CreateEntity(const std::string& name) {
     std::lock_guard<std::mutex> lock(mutex_);
     
-    EntityID id;
-    if (!availableIds_.empty()) {
-        id = availableIds_.back();
-        availableIds_.pop_back();
-    } else {
-        id = nextId_++;
-    }
+    // Use unique IDs - no reuse to avoid component conflicts
+    EntityID id = nextId_++;
     
     activeIds_.insert(id);
     totalCreated_++;
@@ -28,7 +23,7 @@ void EntityFactory::DestroyEntity(EntityID id) {
     
     if (activeIds_.find(id) != activeIds_.end()) {
         activeIds_.erase(id);
-        availableIds_.push_back(id);
+        // No longer add to availableIds_ - use unique IDs only
     }
 }
 
@@ -40,7 +35,7 @@ bool EntityFactory::IsValid(EntityID id) const {
 void EntityFactory::ClearAll() {
     std::lock_guard<std::mutex> lock(mutex_);
     activeIds_.clear();
-    availableIds_.clear();
+    availableIds_.clear();  // Keep for consistency, though no longer used
     nextId_ = 1;
     totalCreated_ = 0;
 }

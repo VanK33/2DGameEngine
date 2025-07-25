@@ -3,6 +3,7 @@
 #include "engine/graphics/renderer/Renderer.hpp"
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 
 namespace engine::ECS {
 
@@ -78,8 +79,6 @@ void RenderSystem::CollectRenderableSprites(std::vector<RenderableSprite>& rende
 void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
     SDL_Texture* texture = resourceManager_->GetTexture(renderable.sprite->texturePath);
     if (!texture) {
-        // Texture loading failed, skip rendering
-        std::cout << "[RenderSystem] ERROR: Failed to get texture for path: " << renderable.sprite->texturePath << std::endl;
         return;
     }
     
@@ -105,11 +104,23 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
     SDL_SetTextureColorMod(texture, sprite->tint.r, sprite->tint.g, sprite->tint.b);
     SDL_SetTextureAlphaMod(texture, sprite->tint.a);
     
+    // Calculate pivot point if specified
+    SDL_FPoint* pivotPtr = nullptr;
+    SDL_FPoint calculatedPivot;
+    if (sprite->pivotOffset.x >= 0.0f && sprite->pivotOffset.y >= 0.0f) {
+        // Convert relative pivot offset to absolute pixel coordinates
+        calculatedPivot.x = spriteWidth * sprite->pivotOffset.x;
+        calculatedPivot.y = spriteHeight * sprite->pivotOffset.y;
+        pivotPtr = &calculatedPivot;
+    }
+    
     // Call SpriteRenderer for rendering
     spriteRenderer_->Draw(texture, 
                          transform->x, transform->y,
                          spriteWidth, spriteHeight,
-                         transform->rotation);
+                         transform->rotation,
+                         SDL_FLIP_NONE,
+                         pivotPtr);
 
     
     renderedSpriteCount_++;

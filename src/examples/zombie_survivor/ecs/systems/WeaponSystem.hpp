@@ -31,7 +31,7 @@ private:
         bool isReloading = false;
         
         // Current weapon stats (updated when weapon switches)
-        float fireRate = 2.0f;
+        float fireRate = 1.0f;
         float reloadTime = 1.5f;
     };
     
