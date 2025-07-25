@@ -130,6 +130,15 @@ public:
         return finalResult;
     }
 
+    // Remove all components for a given entity
+    void RemoveAllComponents(EntityID entityId) {
+        for (auto& [typeIndex, store] : stores_) {
+            if (store) {
+                store->Remove(entityId);
+            }
+        }
+    }
+
 private:
     std::unordered_map<std::type_index, std::unique_ptr<IComponentStore>> stores_;
 

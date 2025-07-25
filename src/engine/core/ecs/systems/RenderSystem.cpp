@@ -3,6 +3,7 @@
 #include "engine/graphics/renderer/Renderer.hpp"
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 
 namespace engine::ECS {
 
@@ -78,8 +79,6 @@ void RenderSystem::CollectRenderableSprites(std::vector<RenderableSprite>& rende
 void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
     SDL_Texture* texture = resourceManager_->GetTexture(renderable.sprite->texturePath);
     if (!texture) {
-        // Texture loading failed, skip rendering
-        // std::cout << "[RenderSystem] ERROR: Failed to get texture for path: " << renderable.sprite->texturePath << std::endl;
         return;
     }
     

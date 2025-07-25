@@ -300,8 +300,32 @@ void ProjectileSystem::CleanupExpiredProjectiles() {
         auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
         
         if (projectile && projectile->shouldDestroy) {
+            // Debug: Check which components exist before cleanup
+            auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
+            auto* sprite = componentManager.GetComponent<engine::ECS::Sprite2D>(projectileId);
+            auto* velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(projectileId);
+            
+            std::cout << "[ProjectileSystem] BEFORE cleanup - Projectile " << projectileId 
+                      << " Components: Transform=" << (transform ? "YES" : "NO")
+                      << ", Sprite=" << (sprite ? "YES" : "NO")
+                      << ", Velocity=" << (velocity ? "YES" : "NO") << std::endl;
+            
+            // Use ComponentManager's unified cleanup - removes ALL components
+            componentManager.RemoveAllComponents(projectileId);
+            
+            // Then destroy entity ID from EntityFactory
             entityFactory.DestroyEntity(projectileId);
             toRemove.push_back(projectileId);
+            
+            // Debug: Verify all components are gone
+            transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
+            sprite = componentManager.GetComponent<engine::ECS::Sprite2D>(projectileId);
+            velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(projectileId);
+            
+            std::cout << "[ProjectileSystem] AFTER unified cleanup - Projectile " << projectileId 
+                      << " Components: Transform=" << (transform ? "YES" : "NO")
+                      << ", Sprite=" << (sprite ? "YES" : "NO")
+                      << ", Velocity=" << (velocity ? "YES" : "NO") << std::endl;
             
             std::cout << "[ProjectileSystem] Cleaned up projectile " << projectileId << std::endl;
         }
@@ -337,6 +361,8 @@ void ProjectileSystem::DestroyProjectile(engine::EntityID projectileId) {
     
     auto* world = GetWorld();
     if (world) {
+        // Use unified cleanup for consistency
+        world->GetComponentManager().RemoveAllComponents(projectileId);
         world->GetEntityFactory().DestroyEntity(projectileId);
     }
 }

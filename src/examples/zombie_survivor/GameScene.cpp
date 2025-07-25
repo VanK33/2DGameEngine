@@ -60,14 +60,10 @@ void GameScene::Unload() {
 
 void GameScene::Update(float deltaTime) {
     if (!world_) return;
-    // world_->GetSystemManager().Update(deltaTime);
 }
 
 void GameScene::Render(SDL_Renderer* renderer) {
     if (!world_) return;
-    
-    // Background is already cleared by Renderer::BeginFrame()
-    // Don't clear again here - it would wipe out all sprite rendering!
     
     // Debug: Draw weapon aim direction and mouse position
     RenderDebugAiming(renderer);
@@ -142,7 +138,7 @@ void GameScene::InitializeSystems() {
     systemManager.AddSystem(std::move(weaponFireSystem), 45);
 
     auto projectileSystem = std::make_unique<ZombieSurvivor::System::ProjectileSystem>();
-    systemManager.AddSystem(std::move(projectileSystem), 50);
+    systemManager.AddSystem(std::move(projectileSystem), 48);  // Before RenderSystem(50) to ensure cleanup
     
     std::cout << "[GameScene] Systems initialized successfully!" << std::endl;
 }
