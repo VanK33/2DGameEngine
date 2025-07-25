@@ -34,7 +34,6 @@ void WeaponInputSystem::Update(float deltaTime) {
         
         // Process shoot input
         if (input->shootButtonPressed) {
-            std::cout << "[WeaponInputSystem] Shoot button pressed for PLAYER " << entityId << std::endl;
             ProcessShootInput(entityId, true);
         }
         

@@ -62,10 +62,6 @@ void WeaponFireSystem::HandleGameEvent(const std::shared_ptr<engine::event::Even
             }
             break;
         }
-        case Events::GameEventType::AMMO_CONSUMED: {
-            HandleAmmoConsumed(gameEvent->GetData());
-            break;
-        }
     }
 }
 
@@ -89,10 +85,18 @@ void WeaponFireSystem::HandleFireInput(uint32_t playerId) {
         return;
     }
     
-    // Request ammo consumption
-    PublishAmmoConsumeRequest(playerId, ammoType);
-    
-    // Debug: Fire request sent
+    // Try to consume ammo directly
+    if (TryConsumeAmmo(playerId, ammoType, 1)) {
+        // Ammo consumed successfully, create projectile
+        CreateProjectile(playerId, ammoType);
+        
+        // Notify WeaponSystem for cooldown
+        PublishWeaponFiredEvent(playerId);
+        
+        std::cout << "[WeaponFireSystem] Successfully fired projectile for player " << playerId << std::endl;
+    } else {
+        std::cout << "[WeaponFireSystem] Failed to consume ammo for player " << playerId << std::endl;
+    }
 }
 
 bool WeaponFireSystem::CanFire(uint32_t playerId) const {
@@ -124,40 +128,41 @@ Component::AmmoType WeaponFireSystem::GetWeaponAmmoType(uint32_t playerId) const
     return weapon->currentAmmoType;
 }
 
-void WeaponFireSystem::PublishAmmoConsumeRequest(uint32_t playerId, Component::AmmoType ammoType) {
+bool WeaponFireSystem::TryConsumeAmmo(uint32_t playerId, Component::AmmoType ammoType, int amount) {
+    auto* world = GetWorld();
+    if (!world) return false;
+    
+    auto& componentManager = world->GetComponentManager();
+    auto* ammo = componentManager.GetComponent<Component::AmmoComponent>(playerId);
+    if (!ammo || ammo->currentAmmo < amount) {
+        return false;
+    }
+    
+    // Consume ammo directly
+    ammo->currentAmmo -= amount;
+    
+    std::cout << "[WeaponFireSystem] Consumed " << amount << " ammo for player " << playerId 
+              << ", remaining: " << ammo->currentAmmo << "/" << ammo->totalAmmo << std::endl;
+    
+    return true;
+}
+
+void WeaponFireSystem::PublishWeaponFiredEvent(uint32_t playerId) {
     auto* world = GetWorld();
     if (!world) return;
     
     auto& eventManager = world->GetEventManager();
     
-    auto consumeData = std::make_shared<Events::AmmoConsumeRequestData>();
-    consumeData->playerId = playerId;
-    consumeData->ammoType = ammoType;
-    consumeData->amount = 1;  // Consume 1 bullet per shot
+    auto firedData = std::make_shared<Events::WeaponFiredData>();
+    firedData->entityId = playerId;
     
-    auto consumeEvent = std::make_shared<Events::GameEvent>(
-        Events::GameEventType::AMMO_CONSUME_REQUEST,
-        std::static_pointer_cast<void>(consumeData)
+    auto firedEvent = std::make_shared<Events::GameEvent>(
+        Events::GameEventType::WEAPON_FIRED,
+        std::static_pointer_cast<void>(firedData)
     );
-    eventManager.Publish(consumeEvent);
+    eventManager.Publish(firedEvent);
 }
 
-void WeaponFireSystem::HandleAmmoConsumed(const std::shared_ptr<void>& eventData) {
-    auto data = std::static_pointer_cast<Events::AmmoConsumedData>(eventData);
-    if (!data) return;
-    
-    auto* world = GetWorld();
-    if (!world) return;
-    
-    auto& componentManager = world->GetComponentManager();
-    auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(data->entityId);
-    if (!weapon) return;
-    
-    CreateProjectile(data->entityId, weapon->currentAmmoType);
-    
-    std::cout << "[WeaponFireSystem] Ammo consumed, creating projectile for player " 
-              << data->entityId << std::endl;
-}
 
 void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType ammoType) {
     auto* world = GetWorld();
@@ -235,16 +240,6 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
         std::static_pointer_cast<void>(projectileData)
     );
     eventManager.Publish(projectileEvent);
-    
-    // Publish WEAPON_FIRED event to trigger weapon cooldown
-    auto weaponFiredData = std::make_shared<Events::WeaponFiredData>();
-    weaponFiredData->entityId = playerId;
-    
-    auto weaponFiredEvent = std::make_shared<Events::GameEvent>(
-        Events::GameEventType::WEAPON_FIRED,
-        std::static_pointer_cast<void>(weaponFiredData)
-    );
-    eventManager.Publish(weaponFiredEvent);
     
     std::cout << "[WeaponFireSystem] Created " << static_cast<int>(ammoType) 
               << " projectile for player " << playerId 

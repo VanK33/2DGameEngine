@@ -135,9 +135,6 @@ void WeaponSystem::OnWeaponFired(uint32_t playerId) {
     
     // Set cooldown based on fire rate
     state.cooldown = 1.0f / state.fireRate;
-    
-    std::cout << "[WeaponSystem] Player " << playerId << " fired, cooldown: " 
-              << state.cooldown << "s" << std::endl;
 }
 
 void WeaponSystem::OnReloadStarted(uint32_t playerId) {

@@ -30,7 +30,6 @@ void InputSystem::Update(float deltaTime) {
             continue;
         }
 
-
         ResetTriggerInputs(input);
 
         input->moveInput = GetMoveInputVector();
