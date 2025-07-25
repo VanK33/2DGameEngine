@@ -59,7 +59,7 @@ void GameScene::Unload() {
 
 void GameScene::Update(float deltaTime) {
     if (!world_) return;
-    world_->GetSystemManager().Update(deltaTime);
+    // world_->GetSystemManager().Update(deltaTime);
 }
 
 void GameScene::Render(SDL_Renderer* renderer) {
@@ -223,17 +223,6 @@ void GameScene::RenderDebugAiming(SDL_Renderer* renderer) {
     SDL_RenderLine(renderer, mouseX - 10, mouseY, mouseX + 10, mouseY);
     SDL_RenderLine(renderer, mouseX, mouseY - 10, mouseX, mouseY + 10);
     
-    // === DEBUG TEXT INFO ===
-    // Print debug info to console (every 60 frames to avoid spam)
-    static int frameCount = 0;
-    frameCount++;
-    if (frameCount % 60 == 0) {
-        std::cout << "\n[DEBUG] Player center: (" << playerX << ", " << playerY << ")" << std::endl;
-        std::cout << "[DEBUG] Player rotation: " << playerTransform->rotation << " radians" << std::endl;
-        std::cout << "[DEBUG] Weapon position: (" << weaponX << ", " << weaponY << ")" << std::endl;
-        std::cout << "[DEBUG] Weapon direction: (" << weaponAiming->aimDirection.x << ", " << weaponAiming->aimDirection.y << ")" << std::endl;
-        std::cout << "[DEBUG] Expected weapon position for facing up: player + (0, 20) = (" << playerX << ", " << playerY + 20 << ")" << std::endl;
-    }
 }
 
 } // namespace ZombieSurvivor

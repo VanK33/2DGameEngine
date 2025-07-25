@@ -19,6 +19,9 @@ void InputManager::HandleEvent(const SDL_Event& event) {
         case SDL_EVENT_KEY_DOWN:
             keyDown_[event.key.key] = true;
             keyHeld_[event.key.key] = true;
+            if (event.key.key == SDLK_R) {
+                std::cout << "[InputManager] R key pressed detected!" << std::endl;
+            }
             PublishKeyEvent(engine::event::EventType::KEY_DOWN, event);
             break;
         case SDL_EVENT_KEY_UP:

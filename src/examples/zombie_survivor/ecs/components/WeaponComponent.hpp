@@ -17,9 +17,9 @@ struct WeaponComponent {
     WeaponType type = WeaponType::PISTOL;
     float damage = 15.0f;  // Likely be over-written by bullet property
     float range = 250.0f;  // Likely be over-written by bullet property
-    float fireRate = 3.0f;
+    float fireRate = 0.3f;
     float reloadTime = 2.0f;
-    bool isReloading = false;     // 是否正在装弹
+    bool isReloading = false; 
     float lastFireTime = 0.0f; 
 
     int magazineCapacity = 12;

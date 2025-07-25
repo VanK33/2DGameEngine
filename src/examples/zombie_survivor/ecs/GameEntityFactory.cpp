@@ -1,6 +1,7 @@
 // src/examples/zombie_survivor/ecs/GameEntityFactory.cpp
 #include "GameEntityFactory.hpp"
 #include "engine/core/ecs/components/PhysicsMode.hpp"
+#include "engine/core/ecs/components/Tag.hpp"
 #include "examples/zombie_survivor/ecs/components/InputComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/MovementComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/FollowComponent.hpp"
@@ -43,7 +44,7 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             {0.5f, 0.5f}                    // pivotOffset: center of sprite for proper rotation
         });
     
-    // 添加s碰撞组件
+    // 添加碰撞组件
     componentManager.AddComponent<engine::ECS::Collider2D>(playerId,
         engine::ECS::Collider2D{
             {-16, -16, 32, 32},    // 32x32碰撞框
@@ -93,6 +94,7 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             250.0f           // maxAimRange
         });
     
+    // TODO: 这里需要修复一下,应该是从config读取而不是hardcode
     // Add WeaponComponent to player for WeaponInputSystem to find
     componentManager.AddComponent<ZombieSurvivor::Component::WeaponComponent>(playerId,
         ZombieSurvivor::Component::WeaponComponent{
@@ -118,6 +120,19 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
             false,  // isReloading
             0.0f    // reloadProgress
         });
+    
+    // Adding "Player" Tag to player
+    componentManager.AddComponent<engine::ECS::Tag>(playerId, 
+        engine::ECS::Tag{"player"});
+    
+    // DEBUG: Verify ammo was set correctly
+    auto* ammoCheck = componentManager.GetComponent<ZombieSurvivor::Component::AmmoComponent>(playerId);
+    if (ammoCheck) {
+        std::cout << "[GameEntityFactory] Player " << playerId << " ammo after creation: " 
+                  << ammoCheck->currentAmmo << "/" << ammoCheck->totalAmmo << " (max: " << ammoCheck->maxTotalAmmo << ")" << std::endl;
+    } else {
+        std::cout << "[GameEntityFactory] ERROR: Player " << playerId << " has no AmmoComponent after creation!" << std::endl;
+    }
     
     std::cout << "[GameEntityFactory] Created player entity: " << playerId << std::endl;
     return playerId;
@@ -199,6 +214,10 @@ uint32_t GameEntityFactory::CreateWeapon(engine::EntityID playerEntityId, const 
             300,                            // maxTotalAmmo
             Component::AmmoType::PISTOL     // currentAmmoType
         });
+    
+    // Add "Weapon" tag for weapon
+    componentManager.AddComponent<engine::ECS::Tag>(weaponId, 
+        engine::ECS::Tag{"weapon"});
     
     std::cout << "[GameEntityFactory] Created weapon entity: " << weaponId << " for player: " << playerEntityId << std::endl;
     return weaponId;

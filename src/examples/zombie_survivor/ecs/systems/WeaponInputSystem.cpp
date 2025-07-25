@@ -22,24 +22,30 @@ void WeaponInputSystem::Update(float deltaTime) {
     // Get all entities with input components (players)
     auto entities = componentManager.GetEntitiesWithComponent<Component::InputComponent>();
     
-    for (const auto& playerId : entities) {
-        auto* input = componentManager.GetComponent<Component::InputComponent>(playerId);
+    for (const auto& entityId : entities) {
+        auto* input = componentManager.GetComponent<Component::InputComponent>(entityId);
         if (!input) continue;
+        
+        // Skipping non-player entity
+        auto* tag = componentManager.GetComponent<engine::ECS::Tag>(entityId);
+        if (!tag || tag->tag != "player") {
+            continue;
+        }
         
         // Process shoot input
         if (input->shootButtonPressed) {
-            std::cout << "[WeaponInputSystem] Shoot button pressed for player " << playerId << std::endl;
-            ProcessShootInput(playerId, true);
+            std::cout << "[WeaponInputSystem] Shoot button pressed for PLAYER " << entityId << std::endl;
+            ProcessShootInput(entityId, true);
         }
         
         // Process reload input
         if (input->reloadButtonPressed) {
-            ProcessReloadInput(playerId, true);
+            ProcessReloadInput(entityId, true);
         }
         
         // Process weapon switch (number keys 1-3)
         if (input->weaponSwitchPressed >= 0) {
-            ProcessWeaponSwitch(playerId, input->weaponSwitchPressed);
+            ProcessWeaponSwitch(entityId, input->weaponSwitchPressed);
         }
     }
 }
@@ -56,6 +62,7 @@ void WeaponInputSystem::ProcessShootInput(uint32_t playerId, bool shootPressed) 
 
 void WeaponInputSystem::ProcessReloadInput(uint32_t playerId, bool reloadPressed) {
     if (reloadPressed) {
+        std::cout << "[WeaponInputSystem] Reload button pressed for player " << playerId << std::endl;
         PublishReloadInput(playerId);
     }
 }
@@ -83,8 +90,7 @@ void WeaponInputSystem::PublishFireInput(uint32_t playerId) {
     );
     eventManager.Publish(fireEvent);
     
-    std::cout << "[WeaponInputSystem] Published FIRE_INPUT event for player " << playerId 
-              << " (type: " << static_cast<int>(Events::GameEventType::FIRE_INPUT) << ")" << std::endl;
+    // Debug: Published FIRE_INPUT event
 }
 
 void WeaponInputSystem::PublishReloadInput(uint32_t playerId) {
@@ -101,6 +107,9 @@ void WeaponInputSystem::PublishReloadInput(uint32_t playerId) {
         std::static_pointer_cast<void>(reloadData)
     );
     eventManager.Publish(reloadEvent);
+    
+    std::cout << "[WeaponInputSystem] Published RELOAD_INPUT event for player " << playerId 
+              << " (type: " << static_cast<int>(Events::GameEventType::RELOAD_INPUT) << ")" << std::endl;
 }
 
 void WeaponInputSystem::PublishWeaponSwitchInput(uint32_t playerId, int weaponSlot) {

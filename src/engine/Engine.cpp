@@ -122,10 +122,12 @@ void Engine::InitializeSystems() {
 }
 
 void Engine::UpdateSystems() {
-    inputManager_.Update();
+    // Don't clear input states before systems process them!
+    // inputManager_.Update(); // Move this to end of frame
     eventManager_.Update();
     world_->Update(deltaTime_);
     sceneManager_.Update(deltaTime_);
+    inputManager_.Update(); // Clear input states after systems have processed them
 }
 
 void Engine::HandleEvents() {
@@ -133,6 +135,11 @@ void Engine::HandleEvents() {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_EVENT_QUIT) {
             RequestExit();
+        }
+        
+        // DEBUG: Log R key events at the engine level
+        if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_R) {
+            std::cout << "[Engine] R key event received from SDL!" << std::endl;
         }
         
         inputManager_.HandleEvent(event);

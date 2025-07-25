@@ -71,14 +71,7 @@ void WeaponFollowSystem::UpdateFollowPosition(engine::EntityID followerId, const
     // For 40x12 weapon with pivot at {0.25, 0.5}, the grip point is at (10, 6) from top-left
     followerTransform->x = weaponAttachPos.x - 10.0f;  // subtract grip point X offset
     followerTransform->y = weaponAttachPos.y - 6.0f;   // subtract grip point Y offset
-    
-    // DEBUG: Print coordinates for diagnosis
-    std::cout << "[DEBUG] Player: (" << playerPos.x << ", " << playerPos.y << ")" << std::endl;
-    std::cout << "[DEBUG] Mouse: (" << mousePos.x << ", " << mousePos.y << ")" << std::endl;
-    std::cout << "[DEBUG] Player->Mouse Angle: " << (playerToMouseAngle * 180.0f / M_PI) << "°" << std::endl;
-    std::cout << "[DEBUG] Needle Angle: " << (needleAngle * 180.0f / M_PI) << "°" << std::endl;
-    std::cout << "[DEBUG] Weapon Attach Position: (" << weaponAttachPos.x << ", " << weaponAttachPos.y << ")" << std::endl;
-    std::cout << "----------------------------------------" << std::endl;
+
 }
 
 void WeaponFollowSystem::CopyInputFromPlayer(engine::EntityID weaponId, const Component::FollowComponent& follow) {

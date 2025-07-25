@@ -67,6 +67,18 @@
         "stack": "cpp",
         "cinttypes": "cpp",
         "forward_list": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "__bits": "cpp",
+        "__debug": "cpp",
+        "__errc": "cpp",
+        "__mutex_base": "cpp",
+        "__nullptr": "cpp",
+        "__tuple": "cpp",
+        "atomic": "cpp",
+        "bit": "cpp",
+        "exception": "cpp",
+        "memory": "cpp",
+        "system_error": "cpp",
+        "type_traits": "cpp"
     }
 }

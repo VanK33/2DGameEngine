@@ -2,6 +2,7 @@
 
 #include "InputSystem.hpp"
 #include "engine/core/ecs/World.hpp"
+#include "engine/core/ecs/components/Tag.hpp"
 #include <cmath>
 
 namespace ZombieSurvivor::System {
@@ -24,13 +25,18 @@ void InputSystem::Update(float deltaTime) {
         auto* input = componentManager.GetComponent<ZombieSurvivor::Component::InputComponent>(entityId);
         if (!input) continue;
 
+        auto* tag = componentManager.GetComponent<engine::ECS::Tag>(entityId);
+        if (!tag || tag->tag != "player") {
+            continue;
+        }
+
+
         ResetTriggerInputs(input);
 
         input->moveInput = GetMoveInputVector();
         input->mousePosition = GetMouseScreenPosition();
 
         if (IsShootButtonPressed()) {
-            std::cout << "[InputSystem] Mouse button detected for entity " << entityId << std::endl;
             input->shootButtonPressed = true;
         }
 
@@ -49,7 +55,11 @@ bool InputSystem::IsShootButtonPressed() const {
 }
 
 bool InputSystem::IsReloadButtonPressed() const {
-    return inputManager_.IsKeyDown(SDLK_R);
+    bool result = inputManager_.IsKeyDown(SDLK_R);
+    if (result) {
+        std::cout << "[InputSystem] SDLK_R detected by InputManager!" << std::endl;
+    }
+    return result;
 }
 
 engine::Vector2 InputSystem::GetMouseScreenPosition() const {

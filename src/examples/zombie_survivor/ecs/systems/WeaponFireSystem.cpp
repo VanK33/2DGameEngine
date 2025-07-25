@@ -53,7 +53,6 @@ void WeaponFireSystem::HandleGameEvent(const std::shared_ptr<engine::event::Even
     auto gameEvent = std::dynamic_pointer_cast<Events::GameEvent>(event);
     if (!gameEvent) return;
     
-    std::cout << "[WeaponFireSystem] Received GameEvent type: " << static_cast<int>(gameEvent->GetGameEventType()) << std::endl;
     
     switch (gameEvent->GetGameEventType()) {
         case Events::GameEventType::FIRE_INPUT: {
@@ -71,24 +70,29 @@ void WeaponFireSystem::HandleGameEvent(const std::shared_ptr<engine::event::Even
 }
 
 void WeaponFireSystem::HandleFireInput(uint32_t playerId) {
-    std::cout << "[WeaponFireSystem] Received FIRE_INPUT event for player " << playerId << std::endl;
+    
+    engine::EntityID weaponEntityId = FindWeaponEntityForPlayer(playerId);
+    if (weaponEntityId == 0) {
+        return;
+    }
+    
+    // Check if weapon is ready (cooldown, reloading) 
     if (!CanFire(playerId)) {
-        std::cout << "[WeaponFireSystem] Player " << playerId << " cannot fire" << std::endl;
+        std::cout << "[WeaponFireSystem] Player " << playerId << " weapon not ready (cooldown/reloading)" << std::endl;
         return;
     }
     
     // Get weapon's ammo type
     Component::AmmoType ammoType = GetWeaponAmmoType(playerId);
     if (ammoType == Component::AmmoType::NONE) {
-        std::cout << "[WeaponFireSystem] Player " << playerId << " has no valid weapon" << std::endl;
+        std::cout << "[WeaponFireSystem] Player " << playerId << " weapon has invalid ammo type" << std::endl;
         return;
     }
     
     // Request ammo consumption
     PublishAmmoConsumeRequest(playerId, ammoType);
     
-    std::cout << "[WeaponFireSystem] Player " << playerId << " fire request sent for ammo type " 
-              << static_cast<int>(ammoType) << std::endl;
+    // Debug: Fire request sent
 }
 
 bool WeaponFireSystem::CanFire(uint32_t playerId) const {
@@ -165,7 +169,6 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
     // Find the weapon entity for this player
     engine::EntityID weaponEntityId = FindWeaponEntityForPlayer(playerId);
     if (weaponEntityId == 0) {
-        std::cout << "[WeaponFireSystem] No weapon found for player " << playerId << std::endl;
         return;
     }
     
@@ -175,7 +178,6 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
     auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(weaponEntityId);
     
     if (!weaponTransform || !weapon) {
-        std::cout << "[WeaponFireSystem] Missing weapon components for entity " << weaponEntityId << std::endl;
         return;
     }
     
@@ -203,10 +205,6 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
             direction = engine::Vector2{1.0f, 0.0f}; // fallback to right
         }
         
-        std::cout << "[WeaponFireSystem] Using direct SDL coordinates - Mouse: (" 
-                  << mousePos.x << ", " << mousePos.y << "), Weapon: (" 
-                  << weaponPos.x << ", " << weaponPos.y << "), Direction: (" 
-                  << direction.x << ", " << direction.y << ")" << std::endl;
     } else if (weaponAiming) {
         // Fallback to existing aiming direction (with Y-flip)
         direction = weaponAiming->aimDirection;
@@ -215,7 +213,6 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
             direction.x /= length;
             direction.y /= length;
         }
-        std::cout << "[WeaponFireSystem] Using AimingComponent direction (Y-flipped)" << std::endl;
     }
     
     // Calculate weapon tip position for projectile spawn
@@ -239,6 +236,16 @@ void WeaponFireSystem::CreateProjectile(uint32_t playerId, Component::AmmoType a
     );
     eventManager.Publish(projectileEvent);
     
+    // Publish WEAPON_FIRED event to trigger weapon cooldown
+    auto weaponFiredData = std::make_shared<Events::WeaponFiredData>();
+    weaponFiredData->entityId = playerId;
+    
+    auto weaponFiredEvent = std::make_shared<Events::GameEvent>(
+        Events::GameEventType::WEAPON_FIRED,
+        std::static_pointer_cast<void>(weaponFiredData)
+    );
+    eventManager.Publish(weaponFiredEvent);
+    
     std::cout << "[WeaponFireSystem] Created " << static_cast<int>(ammoType) 
               << " projectile for player " << playerId 
               << " (damage=" << projectileConfig.damage 
@@ -251,23 +258,16 @@ engine::EntityID WeaponFireSystem::FindWeaponEntityForPlayer(uint32_t playerId) 
     
     auto& componentManager = world->GetComponentManager();
     
-    std::cout << "[WeaponFireSystem] Finding weapon for player " << playerId << std::endl;
-    
     // Find weapon entity that follows this player
     auto entities = componentManager.GetEntitiesWithComponent<Component::FollowComponent>();
-    std::cout << "[WeaponFireSystem] Found " << entities.size() << " entities with FollowComponent" << std::endl;
     
     for (const auto& entityId : entities) {
         auto* follow = componentManager.GetComponent<Component::FollowComponent>(entityId);
         if (follow) {
-            std::cout << "[WeaponFireSystem] Entity " << entityId << " follows " << follow->targetEntityId << std::endl;
             if (follow->targetEntityId == playerId) {
                 // This entity follows the player - check if it's a weapon
                 auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(entityId);
-                std::cout << "[WeaponFireSystem] Entity " << entityId << " follows player " << playerId 
-                          << ", has weapon: " << (weapon ? "yes" : "no") << std::endl;
                 if (weapon) {
-                    std::cout << "[WeaponFireSystem] Found weapon entity " << entityId << " for player " << playerId << std::endl;
                     return entityId;
                 }
             }
