@@ -12,6 +12,10 @@
 #include "examples/zombie_survivor/ecs/systems/WeaponFollowSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/HUDRenderSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/HUDDataSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/EnemySpawnSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/ZombieAISystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/DamageSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/HealthSystem.hpp"
 
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
@@ -143,6 +147,20 @@ void GameScene::InitializeSystems() {
 
     auto projectileSystem = std::make_unique<ZombieSurvivor::System::ProjectileSystem>();
     systemManager.AddSystem(std::move(projectileSystem), 48);  // Before RenderSystem(50) to ensure cleanup
+
+    auto enemySpawnSystem = std::make_unique<ZombieSurvivor::System::EnemySpawnSystem>();
+    enemySpawnSystem->SetViewportSize(850.0f, 850.0f);  // Set game world viewport size
+    enemySpawnSystem->SetEntityFactory(gameEntityFactory_.get());  // Inject factory dependency
+    systemManager.AddSystem(std::move(enemySpawnSystem), 49);  // After projectiles, before rendering
+
+    auto zombieAISystem = std::make_unique<ZombieSurvivor::System::ZombieAISystem>();
+    systemManager.AddSystem(std::move(zombieAISystem), 46);  // Before projectiles for AI decisions
+
+    auto damageSystem = std::make_unique<ZombieSurvivor::System::DamageSystem>();
+    systemManager.AddSystem(std::move(damageSystem), 47);  // Process damage after AI, before projectiles
+
+    auto healthSystem = std::make_unique<ZombieSurvivor::System::HealthSystem>();
+    systemManager.AddSystem(std::move(healthSystem), 51);  // Process health changes after damage
 
     auto hudDataSystem = std::make_unique<ZombieSurvivor::System::HUDDataSystem>();
     systemManager.AddSystem(std::move(hudDataSystem), 52);  // Update HUD data before rendering

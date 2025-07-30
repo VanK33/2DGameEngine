@@ -45,17 +45,22 @@ void ZombieAISystem::ChaseTarget(EntityID zombieEntity, engine::ECS::AIComponent
         return;
     }
     
+    Vector2 zombiePos = GetEntityPosition(zombieEntity);
     Vector2 targetPos = GetEntityPosition(target->targetEntity);
+    float distance = GetDistance(zombieEntity, target->targetEntity);
+    
     MoveTowards(zombieEntity, targetPos, ai.speed);
     
-    // Debug output
-    float distance = GetDistance(zombieEntity, target->targetEntity);
-    if (distance < 50.0f) {
-        // Only log every 60 frames (~1 second at 60fps)
-        static int frameCounter = 0;
-        if (++frameCounter % 60 == 0) {
-            std::cout << "[ZombieAISystem] Zombie " << zombieEntity << " is close to target! Distance: " << distance << std::endl;
-        }
+    // Debug output - log movement every 120 frames (~2 seconds at 60fps)
+    static int frameCounter = 0;
+    if (++frameCounter % 120 == 0) {
+        auto* velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(zombieEntity);
+        std::cout << "[ZombieAISystem] Zombie " << zombieEntity 
+                  << " pos(" << zombiePos.x << "," << zombiePos.y << ")"
+                  << " -> target(" << targetPos.x << "," << targetPos.y << ")"
+                  << " distance=" << distance
+                  << " velocity=(" << (velocity ? velocity->vx : 0) << "," << (velocity ? velocity->vy : 0) << ")"
+                  << " speed=" << ai.speed << std::endl;
     }
 }
 

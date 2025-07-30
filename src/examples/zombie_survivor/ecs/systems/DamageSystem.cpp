@@ -21,7 +21,6 @@ void DamageSystem::Init() {
     
     auto& eventManager = world->GetEventManager();
     
-    eventManager.Subscribe(engine::event::EventType::ENTITY_COLLISION, this);
     eventManager.Subscribe(engine::event::EventType::COLLISION_STARTED, this);
     eventManager.Subscribe(engine::event::EventType::CUSTOM, this);
     
@@ -40,7 +39,6 @@ void DamageSystem::Shutdown() {
     
     auto& eventManager = world->GetEventManager();
     
-    eventManager.Unsubscribe(engine::event::EventType::ENTITY_COLLISION, this);
     eventManager.Unsubscribe(engine::event::EventType::COLLISION_STARTED, this);
     eventManager.Unsubscribe(engine::event::EventType::CUSTOM, this);
     
@@ -51,7 +49,6 @@ void DamageSystem::onEvent(const std::shared_ptr<engine::event::Event>& event) {
     if (!event) return;
     
     switch (event->GetType()) {
-        case engine::event::EventType::ENTITY_COLLISION:
         case engine::event::EventType::COLLISION_STARTED:
             HandleCollisionEvent(event);
             break;
@@ -241,6 +238,19 @@ void DamageSystem::HandleProjectileEnemyCollision(engine::ECS::EntityID projecti
     
     auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
     if (!projectile) return;
+    
+    std::cout << "[DamageSystem] COLLISION EVENT: Projectile " << projectileId 
+              << " hit Enemy " << enemyId << " (hasHit=" << projectile->hasHit << ")" << std::endl;
+    
+    // Prevent duplicate damage from same projectile
+    if (projectile->hasHit) {
+        std::cout << "[DamageSystem] DUPLICATE HIT PREVENTED: Projectile " << projectileId 
+                  << " already hit a target, ignoring collision" << std::endl;
+        return;
+    }
+    
+    // Mark projectile as hit immediately to prevent duplicate processing in same frame
+    projectile->hasHit = true;
     
     DealDamage(enemyId, projectile->shooterId, 
                static_cast<int>(projectile->damage), "projectile");

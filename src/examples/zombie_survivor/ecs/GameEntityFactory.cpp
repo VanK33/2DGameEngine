@@ -2,6 +2,9 @@
 #include "GameEntityFactory.hpp"
 #include "engine/core/ecs/components/PhysicsMode.hpp"
 #include "engine/core/ecs/components/Tag.hpp"
+#include "engine/core/ecs/components/Velocity2D.hpp"
+#include "engine/core/ecs/components/Collider2D.hpp"
+#include "engine/core/ecs/components/AIComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/InputComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/MovementComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/BoundaryComponent.hpp"
@@ -12,6 +15,9 @@
 #include "examples/zombie_survivor/ecs/components/HUDComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/ExperienceComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/EnemyComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/TargetComponent.hpp"
+#include "examples/zombie_survivor/ecs/RenderLayer.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::ECS {
@@ -363,29 +369,75 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
     return healthHudId;
 }
 
-uint32_t GameEntityFactory::SpawnZombie(const engine::Vector2& position) {
+uint32_t GameEntityFactory::CreateZombie(const engine::Vector2& position) {
     if (!ValidateWorld()) return 0;
     
     auto& entityFactory = world_->GetEntityFactory();
     auto& componentManager = world_->GetComponentManager();
     
-    uint32_t zombieId = entityFactory.CreateEntity("Zombie");
+    engine::EntityID zombie = entityFactory.CreateEntity("Zombie");
     
-    // 添加组件...
-    componentManager.AddComponent<engine::ECS::Transform2D>(zombieId,
+    componentManager.AddComponent<engine::ECS::Transform2D>(zombie, 
         engine::ECS::Transform2D{position.x, position.y, 0.0f, 1.0f, 1.0f});
+    componentManager.AddComponent<engine::ECS::Velocity2D>(zombie, 
+        engine::ECS::Velocity2D{0.0f, 0.0f, 100.0f});
     
-    componentManager.AddComponent<engine::ECS::Sprite2D>(zombieId,
-        engine::ECS::Sprite2D{
-            "pixel.png",
-            {0, 0, 30, 30},
-            true,
-            {255, 0, 0, 255},              
-            ToInt(RenderLayer::ENTITIES)
+    // Add PhysicsModeComponent for PhysicsSystem to process movement
+    componentManager.AddComponent<engine::ECS::PhysicsModeComponent>(zombie,
+        engine::ECS::PhysicsModeComponent{
+            engine::ECS::PhysicsMode::TOP_DOWN,  // 2D physics mode
+            0.0f, 0.0f, 0.0f,                    // no gravity
+            false,                               // disable gravity
+            false,                               // disable friction for smooth movement
+            1.0f                                 // no friction factor
         });
     
-    std::cout << "[GameEntityFactory] Spawned zombie: " << zombieId << std::endl;
-    return zombieId;
+    componentManager.AddComponent<engine::ECS::Sprite2D>(zombie, 
+        engine::ECS::Sprite2D{
+            "pixel.png",                                           // texturePath - use same texture as player
+            {0, 0, 30, 30},                                        // sourceRect
+            true,                                                   // visible
+            {0, 255, 0, 255},                                      // tint (green for zombie)
+            ECS::ToInt(ECS::RenderLayer::ENTITIES),                // renderLayer
+            {0.5f, 0.5f}                                           // pivotOffset (use center)
+        });
+    
+    componentManager.AddComponent<engine::ECS::Collider2D>(zombie, 
+        engine::ECS::Collider2D{{0, 0, 30, 30}, false, "enemy"});
+    
+    componentManager.AddComponent<engine::ECS::AIComponent>(zombie, 
+        engine::ECS::AIComponent{
+            engine::ECS::AIState::ACTIVE,  // State
+            0,                              // targetEntity (will be set by AI system)
+            {0, 0},                        // targetPosition
+            50.0f,                         // speed
+            150.0f,                        // detectionRadius
+            0.0f,                          // updateTimer
+            0.1f                           // updateInterval
+        });
+    
+    componentManager.AddComponent<Component::EnemyComponent>(zombie, Component::EnemyComponent{});
+    auto* enemy = componentManager.GetComponent<Component::EnemyComponent>(zombie);
+    if (enemy) {
+        enemy->type = Component::EnemyType::ZOMBIE_BASIC;
+        enemy->damage = 10.0f;
+        enemy->damageCooldown = 1.0f;
+        enemy->expValue = 10.0f;
+    }
+    
+    componentManager.AddComponent<Component::HealthComponent>(zombie, Component::HealthComponent{});
+    auto* health = componentManager.GetComponent<Component::HealthComponent>(zombie);
+    if (health) {
+        health->health = 50.0f;
+        health->maxHealth = 50.0f;
+        health->isAlive = true;
+    }
+    
+    componentManager.AddComponent<Component::TargetComponent>(zombie, Component::TargetComponent{});
+    componentManager.AddComponent<engine::ECS::Tag>(zombie, engine::ECS::Tag{"enemy"});
+    
+    std::cout << "[GameEntityFactory] Created complete zombie entity: " << zombie << std::endl;
+    return zombie;
 }
 
 uint32_t GameEntityFactory::CreateProjectile(const engine::Vector2& position, 

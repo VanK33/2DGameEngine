@@ -25,7 +25,7 @@ public:
     // uint32_t CreateStaticTree(const engine::Vector2& position);
     
     // 🎯 动态实体创建（运行时）
-    uint32_t SpawnZombie(const engine::Vector2& position);
+    uint32_t CreateZombie(const engine::Vector2& position);
     uint32_t CreateProjectile(const engine::Vector2& position, const engine::Vector2& direction, float speed);
     // uint32_t CreatePickup(const engine::Vector2& position, const std::string& type);
     // uint32_t CreateExplosion(const engine::Vector2& position, float radius);

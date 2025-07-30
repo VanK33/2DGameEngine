@@ -136,7 +136,20 @@ void HealthSystem::ProcessDeath(uint32_t entityId) {
     
     health->isAlive = false;
     
+    std::cout << "[HealthSystem] Entity " << entityId << " died! Destroying entity..." << std::endl;
+    
     PublishDeathEvent(entityId);
+    
+    // Use same cleanup pattern as ProjectileSystem to ensure complete removal
+    auto& entityFactory = world->GetEntityFactory();
+    
+    // 1. First remove all components (including Sprite2D to stop rendering)
+    componentManager.RemoveAllComponents(entityId);
+    
+    // 2. Then destroy the entity ID
+    entityFactory.DestroyEntity(entityId);
+    
+    std::cout << "[HealthSystem] Entity " << entityId << " destroyed successfully with full component cleanup" << std::endl;
 }
 
 void HealthSystem::PublishHealthChangedEvent(uint32_t entityId, float oldHealth, float newHealth) {
