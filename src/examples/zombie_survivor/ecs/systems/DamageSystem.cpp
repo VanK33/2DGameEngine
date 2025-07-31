@@ -11,6 +11,7 @@
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include "examples/zombie_survivor/events/ProjectileEventUtils.hpp"
+#include "engine/core/ecs/systems/ParticleSystem.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::System {
@@ -267,6 +268,22 @@ void DamageSystem::HandleProjectileEnemyCollision(engine::ECS::EntityID projecti
     
     auto& eventManager = world->GetEventManager();
     auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
+    auto* enemyTransform = componentManager.GetComponent<engine::ECS::Transform2D>(enemyId);
+    
+    // Create hit particle effect
+    if (enemyTransform) {
+        auto* particleSystem = dynamic_cast<engine::ECS::ParticleSystem*>(
+            world->GetSystemManager().GetSystem("ParticleSystem"));
+        if (particleSystem) {
+            // Red blood splatter effect
+            particleSystem->CreateParticleBurst(
+                {enemyTransform->x, enemyTransform->y},
+                15,  // particle count
+                {255, 50, 50, 255},  // red color
+                150.0f  // speed
+            );
+        }
+    }
     
     Events::ProjectileEventUtils::PublishProjectileHit(
         eventManager,

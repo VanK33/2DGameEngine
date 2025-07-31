@@ -84,7 +84,7 @@ engine::Vector2 InputSystem::GetMouseScreenPosition() const {
     auto mousePos = inputManager_.GetMousePosition();
     
     // Convert window coordinates to game world coordinates by subtracting viewport offset
-    const float GAME_WORLD_OFFSET_X = 331.0f; // (1512-850)/2
+    const float GAME_WORLD_OFFSET_X = 231.0f; // (1312-850)/2
     const float GAME_WORLD_OFFSET_Y = 66.0f;  // (982-850)/2
     
     float gameWorldX = static_cast<float>(mousePos.x) - GAME_WORLD_OFFSET_X;

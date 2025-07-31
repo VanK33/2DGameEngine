@@ -288,7 +288,7 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
     Component::HUDComponent healthHUD; 
     healthHUD.type = Component::HUDElementType::HEALTH_BAR;
     healthHUD.position = Component::HUDPosition::CUSTOM;
-    healthHUD.bounds = {331, 935, 120, 6};  // 游戏窗口左下角：x=331, y=905+30=935 (向下移动30px)
+    healthHUD.bounds = {231, 935, 120, 6};  // 游戏窗口左下角：x=231, y=905+30=935 (向下移动30px)
     healthHUD.visible = true;
     healthHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
 
@@ -327,7 +327,7 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
     Component::HUDComponent expHUD;
     expHUD.type = Component::HUDElementType::EXPERIENCE_BAR;
     expHUD.position = Component::HUDPosition::CUSTOM;
-    expHUD.bounds = {331, 927, 120, 6};  // 游戏窗口左下角血量条上方：x=331, y=935-8=927 (向下移动30px)
+    expHUD.bounds = {231, 927, 120, 6};  // 游戏窗口左下角血量条上方：x=231, y=935-8=927 (向下移动30px)
     expHUD.visible = true;
     expHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
     
@@ -368,7 +368,7 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
     Component::HUDComponent ammoHUD;
     ammoHUD.type = Component::HUDElementType::AMMO_COUNTER;
     ammoHUD.position = Component::HUDPosition::CUSTOM;
-    ammoHUD.bounds = {1181, 935, 120, 6};  // 游戏窗口右下角：x=1181 (右边界), y=905+30=935 (右对齐，向左生长，向下移动30px)
+    ammoHUD.bounds = {1081, 935, 120, 6};  // 游戏窗口右下角：x=1081 (右边界), y=905+30=935 (右对齐，向左生长，向下移动30px)
     ammoHUD.visible = true;
     ammoHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
     

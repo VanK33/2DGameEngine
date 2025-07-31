@@ -9,6 +9,8 @@
 #include "examples/zombie_survivor/ecs/components/CombatStatsComponent.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
+#include "engine/core/ecs/systems/ParticleSystem.hpp"
+#include "engine/core/ecs/components/Transform2D.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::System {
@@ -139,6 +141,27 @@ void HealthSystem::ProcessDeath(uint32_t entityId) {
     health->isAlive = false;
     
     std::cout << "[HealthSystem] Entity " << entityId << " died! Destroying entity..." << std::endl;
+    
+    // Create death particle effect
+    auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(entityId);
+    if (transform) {
+        auto& systemManager = world->GetSystemManager();
+        auto* particleSystem = dynamic_cast<engine::ECS::ParticleSystem*>(
+            systemManager.GetSystem("ParticleSystem"));
+        if (particleSystem) {
+            // Check if it's an enemy for a bigger death effect
+            auto* enemyComponent = componentManager.GetComponent<Component::EnemyComponent>(entityId);
+            if (enemyComponent) {
+                // Big red explosion for enemy death
+                particleSystem->CreateParticleBurst(
+                    {transform->x, transform->y},
+                    30,  // more particles
+                    {255, 0, 0, 255},  // red color
+                    200.0f  // higher speed
+                );
+            }
+        }
+    }
     
     PublishDeathEvent(entityId);
     

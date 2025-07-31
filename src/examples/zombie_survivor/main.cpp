@@ -11,7 +11,7 @@ int main() {
     // 配置引擎
     engine::EngineConfig config;
     config.windowTitle = "ZombieSurvivor - 2D Game Engine";
-    config.windowWidth = 1512;
+    config.windowWidth = 1312;
     config.windowHeight = 982;
     config.targetFPS = 60;
     

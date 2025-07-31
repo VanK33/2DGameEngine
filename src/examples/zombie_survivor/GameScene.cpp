@@ -187,7 +187,7 @@ void GameScene::InitializeSystems() {
     systemManager.AddSystem(std::move(hudDataSystem), 53);  // Update HUD data before rendering
 
     auto hudRenderSystem = std::make_unique<ZombieSurvivor::System::HUDRenderSystem>();
-    hudRenderSystem->SetScreenSize(1512, 982); // Set correct window dimensions
+    hudRenderSystem->SetScreenSize(1312, 982); // Set correct window dimensions
     systemManager.AddSystem(std::move(hudRenderSystem), 55); // After HUDDataSystem and RenderSystem
     
     std::cout << "[GameScene] Systems initialized successfully!" << std::endl;
@@ -222,12 +222,12 @@ void GameScene::CreateEntities() {
 void GameScene::SetupGameWorldViewport() {
     if (!world_) return;
     
-    const float WINDOW_WIDTH = 1512.0f;
+    const float WINDOW_WIDTH = 1312.0f;
     const float WINDOW_HEIGHT = 982.0f;
     const float GAME_WORLD_WIDTH = 850.0f;
     const float GAME_WORLD_HEIGHT = 850.0f;
     
-    float offsetX = (WINDOW_WIDTH - GAME_WORLD_WIDTH) / 2.0f;   // (1512-850)/2 = 331
+    float offsetX = (WINDOW_WIDTH - GAME_WORLD_WIDTH) / 2.0f;   // (1312-850)/2 = 231
     float offsetY = (WINDOW_HEIGHT - GAME_WORLD_HEIGHT) / 2.0f; // (982-850)/2 = 66
     
     auto* renderSystem = static_cast<engine::ECS::RenderSystem*>(
