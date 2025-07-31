@@ -2,6 +2,9 @@
 
 #include "HUDRenderSystem.hpp"
 #include "engine/core/ecs/World.hpp"
+#include "engine/core/ecs/components/Tag.hpp"
+#include "examples/zombie_survivor/ecs/components/WeaponComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/AmmoComponent.hpp"
 #include <iostream>
 #include <algorithm>
 
@@ -171,7 +174,7 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
     auto& entityFactory = world->GetEntityFactory();
     auto& componentManager = world->GetComponentManager();
     
-    uint32_t backgroundEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type, "Background"));
+    uint32_t visualEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type));
     
     std::cout << "[HUDRenderSystem] Creating health bar with bounds: (" 
               << hud->bounds.x << "," << hud->bounds.y << "," << hud->bounds.w << "," << hud->bounds.h << ")" << std::endl;
@@ -190,7 +193,7 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
     std::cout << "[HUDRenderSystem] Final screen position: (" 
               << screenPos.x << "," << screenPos.y << "," << screenPos.w << "," << screenPos.h << ")" << std::endl;
     
-    componentManager.AddComponent<engine::ECS::Transform2D>(backgroundEntityId,
+    componentManager.AddComponent<engine::ECS::Transform2D>(visualEntityId,
         engine::ECS::Transform2D{
             static_cast<float>(screenPos.x),
             static_cast<float>(screenPos.y),
@@ -199,53 +202,25 @@ uint32_t HUDRenderSystem::CreateHealthBarVisual(const Component::HUDComponent* h
             1.0f
         });
     
-    componentManager.AddComponent<engine::ECS::Sprite2D>(backgroundEntityId,
+    // Create simple health bar (similar to ammo bars)
+    float healthPercentage = (hud->maxValue > 0) ? (hud->currentValue / hud->maxValue) : 0.0f;
+    int healthBarWidth = static_cast<int>(healthPercentage * 120); // 120px wide like ammo bars
+    
+    SDL_Color healthColor = {255, 100, 100, 255}; // Fixed red color for health
+    
+    // Create simple health bar sprite (similar style to ammo bars)
+    componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
             "pixel.png",
-            {0, 0, hud->bounds.w, hud->bounds.h},
+            {0, 0, healthBarWidth, 6}, // 6px high like ammo bars
             hud->visible,
-            {hud->backgroundColor.r, hud->backgroundColor.g, hud->backgroundColor.b, hud->backgroundColor.a},
+            healthColor,
             ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI)
         });
     
-    // Create foreground bar
-    uint32_t foregroundEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type, "Foreground"));
+    std::cout << "[HUDRenderSystem] Created health bar visual entity (simple style like ammo bars)" << std::endl;
     
-    componentManager.AddComponent<engine::ECS::Transform2D>(foregroundEntityId,
-        engine::ECS::Transform2D{
-            static_cast<float>(screenPos.x),
-            static_cast<float>(screenPos.y),
-            0.0f,
-            1.0f,
-            1.0f
-        });
-    
-    int fillWidth = static_cast<int>((hud->currentValue / hud->maxValue) * hud->bounds.w);
-    SDL_Color barColor = GetStatusColor(hud, hud->currentValue / hud->maxValue);
-    
-    componentManager.AddComponent<engine::ECS::Sprite2D>(foregroundEntityId,
-        engine::ECS::Sprite2D{
-            "pixel.png",
-            {0, 0, fillWidth, hud->bounds.h},
-            hud->visible,
-            {barColor.r, barColor.g, barColor.b, barColor.a},
-            ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI) + 1
-        });
-    
-    visualEntities_.push_back(foregroundEntityId);
-    
-    // Store the foreground entity for later updates - we'll set this after the background is mapped
-    // Note: We can't set hudToForegroundMap_ here because the hudEntityId mapping isn't established yet
-    // We'll need to handle this in the calling code
-    
-    std::cout << "[HUDRenderSystem] Created health bar visual entities (bg: " << backgroundEntityId 
-              << ", fg: " << foregroundEntityId << ")" << std::endl;
-              
-    // Store the foreground entity ID in a temporary way that we can retrieve later
-    // We'll create a special mapping right after this method returns
-    lastCreatedForegroundEntity_ = foregroundEntityId;
-    
-    return backgroundEntityId;
+    return visualEntityId;
 }
 
 uint32_t HUDRenderSystem::CreateAmmoCounterVisual(const Component::HUDComponent* hud) {
@@ -257,7 +232,22 @@ uint32_t HUDRenderSystem::CreateAmmoCounterVisual(const Component::HUDComponent*
     
     uint32_t visualEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type));
     
-    SDL_Rect screenPos = CalculateScreenPosition(hud->position, hud->bounds.w, hud->bounds.h);
+    std::cout << "[HUDRenderSystem] Creating ammo counter with bounds: (" 
+              << hud->bounds.x << "," << hud->bounds.y << "," << hud->bounds.w << "," << hud->bounds.h << ")" << std::endl;
+    std::cout << "[HUDRenderSystem] Ammo counter position type: " << static_cast<int>(hud->position) << std::endl;
+    
+    SDL_Rect screenPos;
+    
+    if (hud->position == Component::HUDPosition::CUSTOM) {
+        screenPos = CalculateCustomPosition(hud->bounds);
+        std::cout << "[HUDRenderSystem] Ammo counter using CUSTOM position from bounds" << std::endl;
+    } else {
+        screenPos = CalculateScreenPosition(hud->position, hud->bounds.w, hud->bounds.h);
+        std::cout << "[HUDRenderSystem] Ammo counter using calculated position for preset position" << std::endl;
+    }
+    
+    std::cout << "[HUDRenderSystem] Ammo counter final screen position: (" 
+              << screenPos.x << "," << screenPos.y << "," << screenPos.w << "," << screenPos.h << ")" << std::endl;
     
     componentManager.AddComponent<engine::ECS::Transform2D>(visualEntityId,
         engine::ECS::Transform2D{
@@ -268,16 +258,124 @@ uint32_t HUDRenderSystem::CreateAmmoCounterVisual(const Component::HUDComponent*
             1.0f
         });
     
+    // Create magazine ammo indicator (top bar) 
+    // Need to get magazine capacity from player's weapon component
+    auto& compManager = world->GetComponentManager();
+    int magazineCapacity = 12; // Default pistol capacity
+    
+    // Try to get actual magazine capacity from player's weapon
+    if (hud->targetEntityId != 0) {
+        auto* weapon = compManager.GetComponent<Component::WeaponComponent>(hud->targetEntityId);
+        if (weapon) {
+            magazineCapacity = weapon->magazineCapacity;
+        }
+    }
+    
+    // Magazine indicator: currentAmmo / magazineCapacity
+    float magPercentage = (magazineCapacity > 0) ? (hud->currentValue / magazineCapacity) : 0.0f;
+    int magBarWidth = static_cast<int>(magPercentage * 120); // 120px wide for better visibility
+    
+    SDL_Color magColor = {220, 220, 220, 255}; // Fixed light gray color for magazine
+    
+    // For right-aligned ammo bars, adjust position to grow leftward from right edge
+    float rightAlignedX = screenPos.x - magBarWidth; // Start from right edge, move left by bar width
+    
+    componentManager.AddComponent<engine::ECS::Transform2D>(visualEntityId,
+        engine::ECS::Transform2D{
+            rightAlignedX, // Right-aligned position
+            static_cast<float>(screenPos.y),
+            0.0f,
+            1.0f,
+            1.0f
+        });
+    
+    // Create magazine indicator bar (this visualEntityId represents the magazine bar)
     componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
             "pixel.png",
-            {0, 0, hud->bounds.w, hud->bounds.h},
+            {0, 0, magBarWidth, 6}, // 6px high magazine bar (increased height)
             hud->visible,
-            {hud->backgroundColor.r, hud->backgroundColor.g, hud->backgroundColor.b, hud->backgroundColor.a},
+            magColor,
             ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI)
         });
     
-    std::cout << "[HUDRenderSystem] Created ammo counter visual entity" << std::endl;
+    // Create reserve ammo indicator (bottom bar) - separate entity
+    uint32_t reserveEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type, "Reserve"));
+    
+    componentManager.AddComponent<engine::ECS::Transform2D>(reserveEntityId,
+        engine::ECS::Transform2D{
+            static_cast<float>(screenPos.x),
+            static_cast<float>(screenPos.y + 8), // 8px below magazine bar (more spacing)
+            0.0f,
+            1.0f,
+            1.0f
+        });
+    
+    // Reserve ammo indicator: totalAmmo / maxTotalAmmo
+    float reservePercentage = (hud->maxValue > 0) ? (hud->maxValue / 300.0f) : 0.0f; // maxValue is totalAmmo, 300 is maxTotalAmmo
+    int reserveBarWidth = static_cast<int>(reservePercentage * 120); // 120px wide for reserve (same as magazine)
+    
+    SDL_Color reserveColor = {150, 180, 255, 255}; // Fixed light blue color for reserve
+    
+    // Right-align reserve bar too
+    float reserveRightAlignedX = screenPos.x - reserveBarWidth;
+    
+    componentManager.AddComponent<engine::ECS::Transform2D>(reserveEntityId,
+        engine::ECS::Transform2D{
+            reserveRightAlignedX, // Right-aligned position for reserve bar
+            static_cast<float>(screenPos.y + 8), // 8px below magazine bar (more spacing)
+            0.0f,
+            1.0f,
+            1.0f
+        });
+    
+    componentManager.AddComponent<engine::ECS::Sprite2D>(reserveEntityId,
+        engine::ECS::Sprite2D{
+            "pixel.png",
+            {0, 0, reserveBarWidth, 6}, // 6px high reserve bar (increased height)
+            hud->visible,
+            reserveColor,
+            ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI)
+        });
+    
+    // Add tag to reserve entity so we can find it during updates
+    componentManager.AddComponent<engine::ECS::Tag>(reserveEntityId, 
+        engine::ECS::Tag{GenerateVisualName(hud->type, "Reserve")});
+    
+    // Create reload progress bar (third bar) - separate entity, initially hidden
+    uint32_t reloadEntityId = entityFactory.CreateEntity(GenerateVisualName(hud->type, "Reload"));
+    
+    // Right-align reload bar too (start from right edge initially with 0 width)
+    componentManager.AddComponent<engine::ECS::Transform2D>(reloadEntityId,
+        engine::ECS::Transform2D{
+            static_cast<float>(screenPos.x), // Will be adjusted during reload updates
+            static_cast<float>(screenPos.y + 16), // 16px below magazine bar (below reserve bar)
+            0.0f,
+            1.0f,
+            1.0f
+        });
+    
+    // Initially hide the reload bar - it will show only when reloading
+    componentManager.AddComponent<engine::ECS::Sprite2D>(reloadEntityId,
+        engine::ECS::Sprite2D{
+            "pixel.png",
+            {0, 0, 0, 6}, // Start with 0 width, 6px high
+            false, // Initially hidden
+            {255, 200, 100, 255}, // Orange color for reload progress
+            ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI)
+        });
+    
+    // Add tag to reload entity so we can find it during updates
+    componentManager.AddComponent<engine::ECS::Tag>(reloadEntityId, 
+        engine::ECS::Tag{GenerateVisualName(hud->type, "Reload")});
+    
+    // Store both reserve and reload entities for cleanup later
+    visualEntities_.push_back(reserveEntityId);
+    visualEntities_.push_back(reloadEntityId);
+    
+    std::cout << "[HUDRenderSystem] Created ammo counter with magazine bar (entity " << visualEntityId 
+              << "), reserve bar (entity " << reserveEntityId << "), and reload bar (entity " 
+              << reloadEntityId << ")" << std::endl;
     return visualEntityId;
 }
 
@@ -315,16 +413,25 @@ uint32_t HUDRenderSystem::CreateExperienceBarVisual(const Component::HUDComponen
             1.0f
         });
     
+    // Create simple experience bar (similar to ammo bars)
+    float expPercentage = (hud->maxValue > 0) ? (hud->currentValue / hud->maxValue) : 0.0f;
+    int expBarWidth = static_cast<int>(expPercentage * 120); // 120px wide like ammo bars
+    
+    SDL_Color expColor = {100, 200, 255, 255}; // Fixed blue color for experience
+    
+    // Only show experience bar if there's actually experience to show
+    bool showExpBar = (expBarWidth > 0);
+    
     componentManager.AddComponent<engine::ECS::Sprite2D>(visualEntityId,
         engine::ECS::Sprite2D{
             "pixel.png",
-            {0, 0, hud->bounds.w, hud->bounds.h},
-            hud->visible,
-            {hud->foregroundColor.r, hud->foregroundColor.g, hud->foregroundColor.b, hud->foregroundColor.a},
+            {0, 0, expBarWidth, 6}, // 6px high like ammo bars
+            (hud->visible && showExpBar), // Only visible if there's experience to show
+            expColor,
             ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI)
         });
     
-    std::cout << "[HUDRenderSystem] Created experience bar visual entity" << std::endl;
+    std::cout << "[HUDRenderSystem] Created experience bar visual entity (simple style like ammo bars)" << std::endl;
     return visualEntityId;
 }
 
@@ -434,34 +541,142 @@ uint32_t HUDRenderSystem::CreateCrosshairVisual(const Component::HUDComponent* h
 }
 
 void HUDRenderSystem::UpdateHealthBarVisual(uint32_t visualEntityId, const Component::HUDComponent* hud) {
-    // For health bars, we need to update the foreground entity, not the background
-    // Find the HUD entity ID that corresponds to this visual entity
-    uint32_t hudEntityId = 0;
-    for (const auto& [hudId, bgVisualId] : hudToVisualMap_) {
-        if (bgVisualId == visualEntityId) {
-            hudEntityId = hudId;
-            break;
-        }
-    }
+    auto* world = GetWorld();
+    if (!world) return;
     
-    if (hudEntityId != 0) {
-        auto foregroundIt = hudToForegroundMap_.find(hudEntityId);
-        if (foregroundIt != hudToForegroundMap_.end()) {
-            UpdateBarVisual(foregroundIt->second, hud);
-            return;
-        }
-    }
+    auto& componentManager = world->GetComponentManager();
+    auto* healthSprite = componentManager.GetComponent<engine::ECS::Sprite2D>(visualEntityId);
+    if (!healthSprite) return;
     
-    // Fallback to updating the background entity (shouldn't happen for health bars)
-    UpdateBarVisual(visualEntityId, hud);
+    healthSprite->visible = hud->visible;
+    
+    // Update health bar: currentHealth / maxHealth
+    float healthPercentage = (hud->maxValue > 0) ? (hud->currentValue / hud->maxValue) : 0.0f;
+    int healthBarWidth = static_cast<int>(healthPercentage * 120); // 120px wide like ammo bars
+    healthSprite->sourceRect.w = healthBarWidth;
+    
+    // Fixed color - no color changes
+    SDL_Color healthColor = {255, 100, 100, 255}; // Red for health
+    healthSprite->tint = healthColor;
 }
 
 void HUDRenderSystem::UpdateAmmoCounterVisual(uint32_t visualEntityId, const Component::HUDComponent* hud) {
-    UpdateTextVisual(visualEntityId, hud);
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& componentManager = world->GetComponentManager();
+    auto* magSprite = componentManager.GetComponent<engine::ECS::Sprite2D>(visualEntityId);
+    if (!magSprite) return;
+    
+    magSprite->visible = hud->visible;
+    
+    // Get magazine capacity from player's weapon
+    int magazineCapacity = 12; // Default pistol capacity
+    if (hud->targetEntityId != 0) {
+        auto* weapon = componentManager.GetComponent<Component::WeaponComponent>(hud->targetEntityId);
+        if (weapon) {
+            magazineCapacity = weapon->magazineCapacity;
+        }
+    }
+    
+    // Update magazine bar: currentAmmo / magazineCapacity
+    float magPercentage = (magazineCapacity > 0) ? (hud->currentValue / magazineCapacity) : 0.0f;
+    int magBarWidth = static_cast<int>(magPercentage * 120); // 120px wide for better visibility
+    magSprite->sourceRect.w = magBarWidth;
+    
+    // Update position for right-alignment (grow leftward from right edge)
+    auto* magTransform = componentManager.GetComponent<engine::ECS::Transform2D>(visualEntityId);
+    if (magTransform) {
+        // For ammo bars, bounds.x represents the right edge (1181), so grow leftward
+        float rightEdgeX = static_cast<float>(hud->bounds.x);
+        magTransform->x = rightEdgeX - magBarWidth; // Position bar to grow leftward
+    }
+    
+    // Fixed color - no color changes
+    SDL_Color magColor = {220, 220, 220, 255}; // Light gray for magazine
+    magSprite->tint = magColor;
+    
+    // Update reserve bar (look for the next entity ID, which should be the reserve bar)
+    // This is a simple approach - we created the reserve entity right after the magazine entity
+    uint32_t reserveEntityId = visualEntityId + 1;
+    auto* reserveSprite = componentManager.GetComponent<engine::ECS::Sprite2D>(reserveEntityId);
+    if (reserveSprite) {
+        reserveSprite->visible = hud->visible;
+        
+        // Update reserve bar: totalAmmo / maxTotalAmmo  
+        float reservePercentage = (hud->maxValue > 0) ? (hud->maxValue / 300.0f) : 0.0f;
+        int reserveBarWidth = static_cast<int>(reservePercentage * 120); // 120px wide for better visibility
+        reserveSprite->sourceRect.w = reserveBarWidth;
+        
+        // Update position for right-alignment (grow leftward from right edge)
+        auto* reserveTransform = componentManager.GetComponent<engine::ECS::Transform2D>(reserveEntityId);
+        if (reserveTransform) {
+            float rightEdgeX = static_cast<float>(hud->bounds.x);
+            reserveTransform->x = rightEdgeX - reserveBarWidth; // Position bar to grow leftward
+        }
+        
+        // Fixed color - no color changes
+        SDL_Color reserveColor = {150, 180, 255, 255}; // Light blue for reserve
+        reserveSprite->tint = reserveColor;
+    }
+    
+    // Update reload progress bar (third bar - look for reload entity)
+    uint32_t reloadEntityId = visualEntityId + 2; // Reserve is +1, reload is +2
+    auto* reloadSprite = componentManager.GetComponent<engine::ECS::Sprite2D>(reloadEntityId);
+    if (reloadSprite) {
+        // Check if player is reloading by looking at AmmoComponent
+        bool isReloading = false;
+        float reloadProgress = 0.0f;
+        
+        if (hud->targetEntityId != 0) {
+            auto* ammo = componentManager.GetComponent<Component::AmmoComponent>(hud->targetEntityId);
+            if (ammo) {
+                isReloading = ammo->isReloading;
+                reloadProgress = ammo->reloadProgress;
+            }
+        }
+        
+        if (isReloading) {
+            // Show reload progress bar
+            reloadSprite->visible = true;
+            int reloadBarWidth = static_cast<int>(reloadProgress * 120); // Same width as other bars
+            reloadSprite->sourceRect.w = reloadBarWidth;
+            
+            // Update position for right-alignment (grow leftward from right edge)
+            auto* reloadTransform = componentManager.GetComponent<engine::ECS::Transform2D>(reloadEntityId);
+            if (reloadTransform) {
+                float rightEdgeX = static_cast<float>(hud->bounds.x);
+                reloadTransform->x = rightEdgeX - reloadBarWidth; // Position bar to grow leftward
+            }
+            
+            reloadSprite->tint = {255, 200, 100, 255}; // Orange color for reload
+        } else {
+            // Hide reload progress bar when not reloading
+            reloadSprite->visible = false;
+        }
+    }
 }
 
 void HUDRenderSystem::UpdateExperienceBarVisual(uint32_t visualEntityId, const Component::HUDComponent* hud) {
-    UpdateBarVisual(visualEntityId, hud);
+    auto* world = GetWorld();
+    if (!world) return;
+    
+    auto& componentManager = world->GetComponentManager();
+    auto* expSprite = componentManager.GetComponent<engine::ECS::Sprite2D>(visualEntityId);
+    if (!expSprite) return;
+    
+    // Update experience bar: currentExp / maxExp
+    float expPercentage = (hud->maxValue > 0) ? (hud->currentValue / hud->maxValue) : 0.0f;
+    int expBarWidth = static_cast<int>(expPercentage * 120); // 120px wide like ammo bars
+    expSprite->sourceRect.w = expBarWidth;
+    
+    // Only show experience bar if there's actually experience to show
+    bool showExpBar = (expBarWidth > 0);
+    expSprite->visible = (hud->visible && showExpBar);
+    
+    // Fixed color - no color changes
+    SDL_Color expColor = {100, 200, 255, 255}; // Blue for experience
+    expSprite->tint = expColor;
 }
 
 void HUDRenderSystem::UpdateTextVisual(uint32_t visualEntityId, const Component::HUDComponent* hud) {

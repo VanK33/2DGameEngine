@@ -73,8 +73,8 @@ void GameScene::Update(float deltaTime) {
 void GameScene::Render(SDL_Renderer* renderer) {
     if (!world_) return;
     
-    // Debug: Draw weapon aim direction and mouse position
-    RenderDebugAiming(renderer);
+    // Debug: Draw weapon aim direction and mouse position (disabled to remove yellow square)
+    // RenderDebugAiming(renderer);
 }
 
 void GameScene::HandleEvent(const SDL_Event& event) {

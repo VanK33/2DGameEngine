@@ -287,7 +287,7 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
     Component::HUDComponent healthHUD; 
     healthHUD.type = Component::HUDElementType::HEALTH_BAR;
     healthHUD.position = Component::HUDPosition::CUSTOM;
-    healthHUD.bounds = {20, 932, 200, 20};  // 左下角：x=20, y=932 (距底部50px)
+    healthHUD.bounds = {331, 935, 120, 6};  // 游戏窗口左下角：x=331, y=905+30=935 (向下移动30px)
     healthHUD.visible = true;
     healthHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
 
@@ -326,7 +326,7 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
     Component::HUDComponent expHUD;
     expHUD.type = Component::HUDElementType::EXPERIENCE_BAR;
     expHUD.position = Component::HUDPosition::CUSTOM;
-    expHUD.bounds = {20, 957, 200, 15};  // 左下角：x=20, y=957 (距底部25px)
+    expHUD.bounds = {331, 927, 120, 6};  // 游戏窗口左下角血量条上方：x=331, y=935-8=927 (向下移动30px)
     expHUD.visible = true;
     expHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
     
@@ -360,7 +360,50 @@ uint32_t GameEntityFactory::CreatePlayerHUD(engine::EntityID playerEntityId) {
         engine::ECS::Tag{"player_experience_hud"});
     
     std::cout << "[GameEntityFactory] Created player experience HUD: " << expHudId << std::endl;
+
+    // Create Ammo Counter HUD (positioned in bottom-right area)
+    engine::EntityID ammoHudId = entityFactory.CreateEntity("PlayerAmmoHUD");
     
+    Component::HUDComponent ammoHUD;
+    ammoHUD.type = Component::HUDElementType::AMMO_COUNTER;
+    ammoHUD.position = Component::HUDPosition::CUSTOM;
+    ammoHUD.bounds = {1181, 935, 120, 6};  // 游戏窗口右下角：x=1181 (右边界), y=905+30=935 (右对齐，向左生长，向下移动30px)
+    ammoHUD.visible = true;
+    ammoHUD.renderLayer = ZombieSurvivor::ECS::ToInt(ZombieSurvivor::ECS::RenderLayer::UI);
+    
+    ammoHUD.targetEntityId = playerEntityId;
+    ammoHUD.componentProperty = "ammo";
+    
+    ammoHUD.backgroundColor = {80, 80, 80, 120};        // 半透明灰色背景
+    ammoHUD.foregroundColor = {255, 255, 255, 255};     // 白色文字
+    ammoHUD.criticalColor = {255, 165, 0, 255};         // 弹药不足时橙色警告
+    ammoHUD.criticalThreshold = 0.25f;                  // 25%以下显示警告色
+    
+    // Set ammo values from player's ammo component
+    auto* playerAmmo = componentManager.GetComponent<Component::AmmoComponent>(playerEntityId);
+    if (playerAmmo) {
+        ammoHUD.currentValue = static_cast<float>(playerAmmo->currentAmmo);
+        ammoHUD.maxValue = static_cast<float>(playerAmmo->totalAmmo);
+    } else {
+        ammoHUD.currentValue = 12.0f;  // Default pistol ammo
+        ammoHUD.maxValue = 120.0f;     // Default total ammo
+    }
+    
+    ammoHUD.showNumbers = true;
+    ammoHUD.showPercentage = false;
+    ammoHUD.textFormat = "Ammo: {0}/{1}";  // "Ammo: 12/120" format
+    
+    ammoHUD.animateChanges = true;
+    ammoHUD.animationSpeed = 15.0f;
+    
+    componentManager.AddComponent<Component::HUDComponent>(ammoHudId, ammoHUD);
+    componentManager.AddComponent<engine::ECS::Tag>(ammoHudId, 
+        engine::ECS::Tag{"player_ammo_hud"});
+    
+    std::cout << "[GameEntityFactory] Created player ammo HUD: " << ammoHudId 
+              << " at position (" << ammoHUD.bounds.x << ", " << ammoHUD.bounds.y << ")" << std::endl;
+    
+    std::cout << "[GameEntityFactory] All HUD elements created successfully!" << std::endl;
     std::cout << "[GameEntityFactory] Health HUD created with bounds: " 
     << healthHUD.bounds.x << "," << healthHUD.bounds.y << " " 
     << healthHUD.bounds.w << "x" << healthHUD.bounds.h << std::endl;
