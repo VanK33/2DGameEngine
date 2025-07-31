@@ -118,9 +118,15 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
             renderX += gameWorldOffsetX_;
             renderY += gameWorldOffsetY_;
 
-            float spriteLeft = renderX - (spriteWidth * sprite->pivotOffset.x);
+            // When pivotOffset is set, adjust the render position so the pivot point is at transform position
+            if (sprite->pivotOffset.x >= 0.0f && sprite->pivotOffset.y >= 0.0f) {
+                renderX -= spriteWidth * sprite->pivotOffset.x;
+                renderY -= spriteHeight * sprite->pivotOffset.y;
+            }
+
+            float spriteLeft = renderX;
             float spriteRight = spriteLeft + spriteWidth;
-            float spriteTop = renderY - (spriteHeight * sprite->pivotOffset.y);
+            float spriteTop = renderY;
             float spriteBottom = spriteTop + spriteHeight;
             
             float worldLeft = gameWorldOffsetX_;

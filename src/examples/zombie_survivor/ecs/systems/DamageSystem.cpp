@@ -76,10 +76,18 @@ void DamageSystem::HandleCollisionEvent(const std::shared_ptr<engine::event::Eve
     engine::EntityID entityA = collisionData->entityA;
     engine::EntityID entityB = collisionData->entityB;
     
+    std::cout << "[DamageSystem] Collision event: A=" << entityA << " B=" << entityB 
+              << " LayerA=" << collisionData->layerA << " LayerB=" << collisionData->layerB << std::endl;
+    
     bool isProjectileA = componentManager.HasComponent<Component::ProjectileComponent>(entityA);
     bool isProjectileB = componentManager.HasComponent<Component::ProjectileComponent>(entityB);
     bool isEnemyA = componentManager.HasComponent<Component::EnemyComponent>(entityA);
     bool isEnemyB = componentManager.HasComponent<Component::EnemyComponent>(entityB);
+    bool isPlayerA = IsPlayer(entityA);
+    bool isPlayerB = IsPlayer(entityB);
+    
+    std::cout << "[DamageSystem] Entity check - A=" << entityA << "(Enemy:" << isEnemyA << ", Player:" << isPlayerA << ") "
+              << "B=" << entityB << "(Enemy:" << isEnemyB << ", Player:" << isPlayerB << ")" << std::endl;
     
     if (isProjectileA && isEnemyB) {
         HandleProjectileEnemyCollision(entityA, entityB);
@@ -87,7 +95,9 @@ void DamageSystem::HandleCollisionEvent(const std::shared_ptr<engine::event::Eve
         HandleProjectileEnemyCollision(entityB, entityA);
     }
     
-    if ((isEnemyA && IsPlayer(entityB)) || (isEnemyB && IsPlayer(entityA))) {
+    if ((isEnemyA && isPlayerB) || (isEnemyB && isPlayerA)) {
+        std::cout << "[DamageSystem] Enemy-Player collision detected! EntityA=" << entityA 
+                  << " EntityB=" << entityB << std::endl;
         HandleEnemyPlayerCollision(entityA, entityB);
     }
 }
@@ -219,7 +229,7 @@ bool DamageSystem::IsPlayer(uint32_t entityId) {
     if (!world) return false;
     
     auto* tag = world->GetComponentManager().GetComponent<engine::ECS::Tag>(entityId);
-    return tag && tag->tag == "Player";
+    return tag && tag->tag == "player";
 }
 
 bool DamageSystem::IsEnemy(uint32_t entityId) {

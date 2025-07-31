@@ -53,7 +53,7 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
     
     componentManager.AddComponent<engine::ECS::Collider2D>(playerId,
         engine::ECS::Collider2D{
-            {-16, -16, 32, 32},    // 32x32碰撞框
+            {-32, -32, 64, 64},    // 64x64碰撞框，中心对齐
             false,                  // 不是触发器
             "player"               // 玩家层
         });
@@ -446,7 +446,7 @@ uint32_t GameEntityFactory::CreateZombie(const engine::Vector2& position) {
         });
     
     componentManager.AddComponent<engine::ECS::Collider2D>(zombie, 
-        engine::ECS::Collider2D{{0, 0, 30, 30}, false, "enemy"});
+        engine::ECS::Collider2D{{-15, -15, 30, 30}, false, "enemy"});
     
     componentManager.AddComponent<engine::ECS::AIComponent>(zombie, 
         engine::ECS::AIComponent{

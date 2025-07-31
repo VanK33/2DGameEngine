@@ -16,6 +16,7 @@
 #include "examples/zombie_survivor/ecs/systems/ZombieAISystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/DamageSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/HealthSystem.hpp"
+#include "engine/core/ecs/systems/CollisionSystem.hpp"
 
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
@@ -111,6 +112,22 @@ void GameScene::InitializeSystems() {
     }
     
     auto& systemManager = world_->GetSystemManager();
+    
+    // Configure collision rules
+    auto* collisionSystem = dynamic_cast<engine::ECS::CollisionSystem*>(
+        systemManager.GetSystem("engine::ECS::CollisionSystem"));
+    if (collisionSystem) {
+        collisionSystem->AddCollisionLayer("player", true);
+        collisionSystem->AddCollisionLayer("enemy", true);
+        collisionSystem->AddCollisionLayer("projectile", true);
+        
+        // Enable collisions between layers
+        collisionSystem->SetCollisionRule("player", "enemy", true);
+        collisionSystem->SetCollisionRule("projectile", "enemy", true);
+        collisionSystem->SetCollisionRule("player", "projectile", false);
+        
+        std::cout << "[GameScene] Collision rules configured!" << std::endl;
+    }
     
     auto groundSystem = std::make_unique<System::GroundRenderSystem>();
     systemManager.AddSystem(std::move(groundSystem), 15);

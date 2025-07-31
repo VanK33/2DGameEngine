@@ -47,9 +47,8 @@ void WeaponFollowSystem::UpdateFollowPosition(engine::EntityID followerId, const
     if (!weaponInput) return;
 
     // Calculate weapon position using clock needle logic
-    // IMPORTANT: Transform2D(x,y) represents TOP-LEFT corner, not center
-    // For 64x64 player sprite, center is at (x+32, y+32)
-    engine::Vector2 playerPos{targetTransform->x + 32.0f, targetTransform->y + 32.0f};
+    // Since player now uses pivotOffset {0.5, 0.5}, Transform2D position is already the center
+    engine::Vector2 playerPos{targetTransform->x, targetTransform->y};
     engine::Vector2 mousePos = weaponInput->mousePosition;
     
     // 1. Calculate angle from player to mouse
@@ -66,11 +65,10 @@ void WeaponFollowSystem::UpdateFollowPosition(engine::EntityID followerId, const
     };
     
     // 4. Set weapon position to attachment point
-    // IMPORTANT: We calculated attachment position in world space (center-based)
-    // But Transform2D expects TOP-LEFT corner, so we need to convert back
-    // For 40x12 weapon with pivot at {0.25, 0.5}, the grip point is at (10, 6) from top-left
-    followerTransform->x = weaponAttachPos.x - 10.0f;  // subtract grip point X offset
-    followerTransform->y = weaponAttachPos.y - 6.0f;   // subtract grip point Y offset
+    // The weapon's pivotOffset is {0.25, 0.5}, so its grip point will be properly positioned
+    // WeaponAttachPos is where we want the weapon's grip point to be
+    followerTransform->x = weaponAttachPos.x;
+    followerTransform->y = weaponAttachPos.y;
 
 }
 
