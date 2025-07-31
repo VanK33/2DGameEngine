@@ -16,6 +16,7 @@
 #include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/ExperienceComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/EnemyComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/CombatStatsComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/TargetComponent.hpp"
 #include "examples/zombie_survivor/ecs/RenderLayer.hpp"
 #include <iostream>
@@ -475,6 +476,9 @@ uint32_t GameEntityFactory::CreateZombie(const engine::Vector2& position) {
         health->maxHealth = 50.0f;
         health->isAlive = true;
     }
+    
+    // Add CombatStatsComponent to track damage sources
+    componentManager.AddComponent<Component::CombatStatsComponent>(zombie, Component::CombatStatsComponent{});
     
     componentManager.AddComponent<Component::TargetComponent>(zombie, Component::TargetComponent{});
     componentManager.AddComponent<engine::ECS::Tag>(zombie, engine::ECS::Tag{"enemy"});

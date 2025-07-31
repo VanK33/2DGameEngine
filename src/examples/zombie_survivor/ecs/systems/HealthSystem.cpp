@@ -5,6 +5,8 @@
 #include "engine/core/ecs/World.hpp"
 #include "engine/core/event/EventManager.hpp"
 #include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/EnemyComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/CombatStatsComponent.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
 #include <iostream>
@@ -177,8 +179,37 @@ void HealthSystem::PublishDeathEvent(uint32_t entityId) {
     if (!world) return;
     
     auto& eventManager = world->GetEventManager();
+    auto& componentManager = world->GetComponentManager();
     
-    /* Example codes*/
+    // Check if the entity is an enemy
+    auto* enemyComponent = componentManager.GetComponent<Component::EnemyComponent>(entityId);
+    if (enemyComponent) {
+        // This is an enemy, publish ENEMY_KILLED event
+        auto enemyKilledData = std::make_shared<Events::EnemyKilledData>();
+        enemyKilledData->enemyId = entityId;
+        enemyKilledData->expReward = static_cast<int>(enemyComponent->expValue);
+        
+        // Find the killer (usually the last damage source)
+        auto* combatStats = componentManager.GetComponent<Component::CombatStatsComponent>(entityId);
+        if (combatStats) {
+            enemyKilledData->playerId = combatStats->lastDamageSource;
+        } else {
+            // Default to player entity (ID 4) if no combat stats
+            enemyKilledData->playerId = 4;  // TODO: Better way to find player
+        }
+        
+        auto enemyKilledEvent = std::make_shared<Events::GameEvent>(
+            Events::GameEventType::ENEMY_KILLED,
+            std::static_pointer_cast<void>(enemyKilledData)
+        );
+        enemyKilledEvent->SetPriority(engine::event::EventPriority::HIGH);
+        eventManager.Publish(enemyKilledEvent);
+        
+        std::cout << "[HealthSystem] Enemy " << entityId << " killed! Exp reward: " 
+                  << enemyKilledData->expReward << " to player " << enemyKilledData->playerId << std::endl;
+    }
+    
+    // Always publish the general death event too
     auto deathData = std::make_shared<Events::EntityDiedData>();
     deathData->entityId = entityId;
     deathData->deathCause = "health_depleted";

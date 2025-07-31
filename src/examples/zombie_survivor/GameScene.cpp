@@ -16,6 +16,7 @@
 #include "examples/zombie_survivor/ecs/systems/ZombieAISystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/DamageSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/HealthSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/ExperienceSystem.hpp"
 #include "engine/core/ecs/systems/CollisionSystem.hpp"
 
 // 组件
@@ -178,9 +179,12 @@ void GameScene::InitializeSystems() {
 
     auto healthSystem = std::make_unique<ZombieSurvivor::System::HealthSystem>();
     systemManager.AddSystem(std::move(healthSystem), 51);  // Process health changes after damage
+    
+    auto experienceSystem = std::make_unique<ZombieSurvivor::System::ExperienceSystem>();
+    systemManager.AddSystem(std::move(experienceSystem), 52);  // Process experience after health
 
     auto hudDataSystem = std::make_unique<ZombieSurvivor::System::HUDDataSystem>();
-    systemManager.AddSystem(std::move(hudDataSystem), 52);  // Update HUD data before rendering
+    systemManager.AddSystem(std::move(hudDataSystem), 53);  // Update HUD data before rendering
 
     auto hudRenderSystem = std::make_unique<ZombieSurvivor::System::HUDRenderSystem>();
     hudRenderSystem->SetScreenSize(1512, 982); // Set correct window dimensions
