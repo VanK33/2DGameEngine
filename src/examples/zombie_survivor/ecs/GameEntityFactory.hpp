@@ -11,6 +11,7 @@
 #include "examples/zombie_survivor/ecs/RenderLayer.hpp"
 #include "engine/core/Types.hpp"
 #include "engine/resource/ResourceManager.hpp"
+#include "engine/animation/SpriteSheetLoader.hpp"
 
 namespace ZombieSurvivor::ECS {
 
@@ -36,6 +37,7 @@ public:
 private:
     engine::ECS::World* world_;
     engine::resources::ResourceManager* resourceManager_;
+    std::unique_ptr<engine::animation::SpriteSheetLoader> spriteSheetLoader_;
     
     // 辅助方法
     bool ValidateWorld() const;

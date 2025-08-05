@@ -18,6 +18,7 @@
 #include "examples/zombie_survivor/ecs/systems/HealthSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/ExperienceSystem.hpp"
 #include "engine/core/ecs/systems/CollisionSystem.hpp"
+#include "engine/core/ecs/systems/SpriteStateSystem.hpp"
 
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
@@ -150,6 +151,9 @@ void GameScene::InitializeSystems() {
 
     auto rotationSystem = std::make_unique<ZombieSurvivor::System::RotationSystem>();
     systemManager.AddSystem(std::move(rotationSystem), 40);
+
+    // SpriteStateSystem is already added by Engine at priority 44
+    // Removing duplicate registration to avoid conflicts
 
     auto weaponInputSystem = std::make_unique<ZombieSurvivor::System::WeaponInputSystem>();
     systemManager.AddSystem(std::move(weaponInputSystem), 42);

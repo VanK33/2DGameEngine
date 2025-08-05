@@ -180,13 +180,27 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
         // UI elements render without clipping
     }
     
+    // Prepare sourceRect for sprite sheet rendering
+    SDL_FRect* sourceRectPtr = nullptr;
+    SDL_FRect sourceRect;
+    if (sprite->sourceRect.w > 0 && sprite->sourceRect.h > 0) {
+        sourceRect = {
+            static_cast<float>(sprite->sourceRect.x),
+            static_cast<float>(sprite->sourceRect.y),
+            static_cast<float>(sprite->sourceRect.w),
+            static_cast<float>(sprite->sourceRect.h)
+        };
+        sourceRectPtr = &sourceRect;
+    }
+    
     // Call SpriteRenderer for rendering
     spriteRenderer_->Draw(texture, 
                          renderX, renderY,
                          spriteWidth, spriteHeight,
                          transform->rotation,
                          SDL_FLIP_NONE,
-                         pivotPtr);
+                         pivotPtr,
+                         sourceRectPtr);
     
     if (needsClipping) {
         auto* sdlRenderer = renderer_->GetSDLRenderer();

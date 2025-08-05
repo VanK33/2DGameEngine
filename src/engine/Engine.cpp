@@ -7,6 +7,8 @@
 #include "core/ecs/systems/RenderSystem.hpp"
 #include "core/ecs/systems/DebugRenderSystem.hpp"
 #include "core/ecs/systems/ParticleSystem.hpp"
+#include "core/ecs/systems/AnimationSystem.hpp"
+#include "core/ecs/systems/SpriteStateSystem.hpp"
 
 namespace engine {
 
@@ -114,6 +116,14 @@ void Engine::InitializeSystems() {
     // 4. Add particle system (before render system)
     auto particleSystem = std::make_unique<ECS::ParticleSystem>();
     systemManager.AddSystem(std::move(particleSystem), 40);
+    
+    // 4.3. Add sprite state system (before animation system)
+    auto spriteStateSystem = std::make_unique<ECS::SpriteStateSystem>(resourceManager_.get());
+    systemManager.AddSystem(std::move(spriteStateSystem), 44);
+    
+    // 4.5. Add animation system (before render system, after sprite state)
+    auto animationSystem = std::make_unique<ECS::AnimationSystem>(resourceManager_.get());
+    systemManager.AddSystem(std::move(animationSystem), 45);
     
     // 5. Add render system (lowest priority - render after all logic updates)
     auto renderSystem = std::make_unique<ECS::RenderSystem>(spriteRenderer_.get(), resourceManager_.get(), &renderer_);

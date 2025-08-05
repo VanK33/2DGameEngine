@@ -19,19 +19,33 @@
 #include "examples/zombie_survivor/ecs/components/CombatStatsComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/TargetComponent.hpp"
 #include "examples/zombie_survivor/ecs/RenderLayer.hpp"
+#include "engine/core/ecs/components/SpriteAnimation.hpp"
+#include "engine/core/ecs/components/AnimationState.hpp"
+#include "engine/core/ecs/components/SpriteStateComponent.hpp"
+#include "engine/animation/SpriteSheetLoader.hpp"
 #include <iostream>
+#include <cmath>
 
 namespace ZombieSurvivor::ECS {
 
 GameEntityFactory::GameEntityFactory(engine::ECS::World* world, engine::resources::ResourceManager* resourceManager) 
-    : world_(world), resourceManager_(resourceManager) {}
+    : world_(world), resourceManager_(resourceManager) {
+    spriteSheetLoader_ = std::make_unique<engine::animation::SpriteSheetLoader>(resourceManager);
+}
 
 uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
     if (!ValidateWorld()) return 0;
     
-    // Load texture for player sprite
+    // Load all player walk sprites for directional movement
     if (resourceManager_) {
-        resourceManager_->LoadTexture("pixel.png");
+        resourceManager_->LoadTexture("pixel.png"); // Keep as fallback
+        resourceManager_->LoadTexture("Walk/walk_up.png");
+        resourceManager_->LoadTexture("Walk/walk_down.png");
+        resourceManager_->LoadTexture("Walk/walk_left_up.png");
+        resourceManager_->LoadTexture("Walk/walk_left_down.png");
+        resourceManager_->LoadTexture("Walk/walk_right_up.png");
+        resourceManager_->LoadTexture("Walk/walk_right_down.png");
+        resourceManager_->LoadTexture("Walk/walk.png"); // fallback for left/right
     }
     
     auto& entityFactory = world_->GetEntityFactory();
@@ -42,19 +56,75 @@ uint32_t GameEntityFactory::CreatePlayer(const engine::Vector2& position) {
     componentManager.AddComponent<engine::ECS::Transform2D>(playerId,
         engine::ECS::Transform2D{position.x, position.y, 0.0f, 1.0f, 1.0f});
     
+    // Analyze sprite sheet to get correct frame dimensions
+    auto spriteInfo = spriteSheetLoader_->AnalyzeSpriteSheet("Walk/walk_down.png");
+    
     componentManager.AddComponent<engine::ECS::Sprite2D>(playerId,
         engine::ECS::Sprite2D{
-            "pixel.png",                    // 16x16 white texture
-            {0, 0, 64, 64},                 // 64x64 pixel display
+            "Walk/walk_down.png",           // Start with down-facing walk sprite
+            {0, 0, spriteInfo.frameWidth, spriteInfo.frameHeight}, // Auto-calculated frame size
             true,                           // visible
-            {255, 0, 0, 255},               // RED tint to make visible
+            {255, 255, 255, 255},           // Normal colors (no tint)
             ToInt(RenderLayer::ENTITIES),   // ENTITIES layer (10) - player should be below weapon
             {0.5f, 0.5f}                    // pivotOffset: center of sprite for proper rotation
         });
     
+    // Add animation components using intelligent sprite sheet detection
+    auto playerAnimation = spriteSheetLoader_->CreateAnimation(
+        "Walk/walk_down.png",   // texturePath
+        0,                      // expectedFrameCount (0 = auto-detect)
+        0.1f,                   // frameDuration
+        true                    // loop
+    );
+    componentManager.AddComponent<engine::ECS::SpriteAnimation>(playerId, playerAnimation);
+    
+    componentManager.AddComponent<engine::ECS::AnimationState>(playerId,
+        engine::ECS::AnimationState{
+            0,       // currentFrame
+            0.0f,    // elapsedTime
+            true,    // isPlaying
+            0,       // loopCount
+            false    // hasCompleted
+        });
+    
+    // Add SpriteStateComponent for directional sprite switching
+    engine::ECS::SpriteStateComponent playerSpriteState;
+    playerSpriteState.currentDirection = engine::ECS::SpriteStateComponent::Direction::DOWN;
+    playerSpriteState.currentState = engine::ECS::SpriteStateComponent::State::WALKING;
+    playerSpriteState.fallbackSprite = "Walk/walk.png";
+    
+    // Configure sprite mappings for all directions and states
+    using Direction = engine::ECS::SpriteStateComponent::Direction;
+    using State = engine::ECS::SpriteStateComponent::State;
+    
+    // Walking state mappings for all 8 directions
+    playerSpriteState.AddSpriteMapping(Direction::UP, State::WALKING, "Walk/walk_up.png");
+    playerSpriteState.AddSpriteMapping(Direction::DOWN, State::WALKING, "Walk/walk_down.png");
+    playerSpriteState.AddSpriteMapping(Direction::LEFT_UP, State::WALKING, "Walk/walk_left_up.png");
+    playerSpriteState.AddSpriteMapping(Direction::LEFT_DOWN, State::WALKING, "Walk/walk_left_down.png");
+    playerSpriteState.AddSpriteMapping(Direction::RIGHT_UP, State::WALKING, "Walk/walk_right_up.png");
+    playerSpriteState.AddSpriteMapping(Direction::RIGHT_DOWN, State::WALKING, "Walk/walk_right_down.png");
+    // Use diagonal sprites for pure LEFT/RIGHT directions since no pure left/right sprites exist
+    playerSpriteState.AddSpriteMapping(Direction::LEFT, State::WALKING, "Walk/walk_left_up.png");  // Use left_up for pure left
+    playerSpriteState.AddSpriteMapping(Direction::RIGHT, State::WALKING, "Walk/walk_right_up.png"); // Use right_up for pure right
+    
+    // Idle state mappings (use same sprites as walking for now)
+    playerSpriteState.AddSpriteMapping(Direction::UP, State::IDLE, "Walk/walk_up.png");
+    playerSpriteState.AddSpriteMapping(Direction::DOWN, State::IDLE, "Walk/walk_down.png");
+    playerSpriteState.AddSpriteMapping(Direction::LEFT_UP, State::IDLE, "Walk/walk_left_up.png");
+    playerSpriteState.AddSpriteMapping(Direction::LEFT_DOWN, State::IDLE, "Walk/walk_left_down.png");
+    playerSpriteState.AddSpriteMapping(Direction::RIGHT_UP, State::IDLE, "Walk/walk_right_up.png");
+    playerSpriteState.AddSpriteMapping(Direction::RIGHT_DOWN, State::IDLE, "Walk/walk_right_down.png");
+    // Use diagonal sprites for pure LEFT/RIGHT directions in idle state too
+    playerSpriteState.AddSpriteMapping(Direction::LEFT, State::IDLE, "Walk/walk_left_up.png");     // Use left_up for pure left
+    playerSpriteState.AddSpriteMapping(Direction::RIGHT, State::IDLE, "Walk/walk_right_up.png");   // Use right_up for pure right
+    
+    componentManager.AddComponent<engine::ECS::SpriteStateComponent>(playerId, playerSpriteState);
+    
+    // Update collider to match sprite dimensions (48x64)
     componentManager.AddComponent<engine::ECS::Collider2D>(playerId,
         engine::ECS::Collider2D{
-            {-32, -32, 64, 64},    // 64x64碰撞框，中心对齐
+            {-24, -32, 48, 64},    // 48x64碰撞框，匹配精灵尺寸，中心对齐
             false,                  // 不是触发器
             "player"               // 玩家层
         });
@@ -436,15 +506,76 @@ uint32_t GameEntityFactory::CreateZombie(const engine::Vector2& position) {
             1.0f                                 // no friction factor
         });
     
+    // Load zombie textures
+    if (resourceManager_) {
+        resourceManager_->LoadTexture("Zombie_1/Idle.png");
+        resourceManager_->LoadTexture("Zombie_1/Walk.png");
+        resourceManager_->LoadTexture("Zombie_1/Attack.png");
+        resourceManager_->LoadTexture("Zombie_1/Hurt.png");
+        resourceManager_->LoadTexture("Zombie_1/Dead.png");
+    }
+    
+    // Analyze zombie sprite sheet to get correct frame dimensions
+    auto zombieSpriteInfo = spriteSheetLoader_->AnalyzeSpriteSheet("Zombie_1/Idle.png");
+    
     componentManager.AddComponent<engine::ECS::Sprite2D>(zombie, 
         engine::ECS::Sprite2D{
-            "pixel.png",                                           // texturePath - use same texture as player
-            {0, 0, 30, 30},                                        // sourceRect
+            "Zombie_1/Idle.png",                                   // Start with idle sprite
+            {0, 0, zombieSpriteInfo.frameWidth, zombieSpriteInfo.frameHeight}, // Auto-calculated frame size
             true,                                                   // visible
-            {0, 255, 0, 255},                                      // tint (green for zombie)
+            {255, 255, 255, 255},                                  // no tint (use original sprite colors)
             ECS::ToInt(ECS::RenderLayer::ENTITIES),                // renderLayer
             {0.5f, 0.5f}                                           // pivotOffset (use center)
         });
+    
+    // Add SpriteAnimation component using intelligent sprite sheet detection
+    auto zombieAnimation = spriteSheetLoader_->CreateAnimation(
+        "Zombie_1/Idle.png",   // texturePath
+        0,                     // expectedFrameCount (0 = auto-detect)
+        0.15f,                 // frameDuration
+        true                   // loop
+    );
+    componentManager.AddComponent<engine::ECS::SpriteAnimation>(zombie, zombieAnimation);
+    
+    // Add AnimationState component
+    componentManager.AddComponent<engine::ECS::AnimationState>(zombie,
+        engine::ECS::AnimationState{
+            0,       // currentFrame
+            0.0f,    // elapsedTime
+            true,    // isPlaying
+            0,       // loopCount
+            false    // hasCompleted
+        });
+    
+    // Add SpriteStateComponent for state-based sprite switching
+    componentManager.AddComponent<engine::ECS::SpriteStateComponent>(zombie,
+        engine::ECS::SpriteStateComponent{
+            engine::ECS::SpriteStateComponent::Direction::DOWN,    // currentDirection
+            engine::ECS::SpriteStateComponent::State::IDLE,        // currentState
+            engine::ECS::SpriteStateComponent::Direction::DOWN,    // previousDirection
+            engine::ECS::SpriteStateComponent::State::IDLE,        // previousState
+            {},                                                     // spriteMap (will be configured below)
+            "Zombie_1/Idle.png"                                     // fallbackSprite
+        });
+    
+    // Configure zombie sprite mappings for all states
+    auto* spriteState = componentManager.GetComponent<engine::ECS::SpriteStateComponent>(zombie);
+    if (spriteState) {
+        // Zombies don't have directional sprites, so we use the same sprite for all directions
+        // but different sprites for different states
+        using Direction = engine::ECS::SpriteStateComponent::Direction;
+        using State = engine::ECS::SpriteStateComponent::State;
+        
+        // Map all directions to the same sprite for each state (zombies face all directions the same)
+        for (int dir = static_cast<int>(Direction::DOWN); dir <= static_cast<int>(Direction::RIGHT_DOWN); ++dir) {
+            Direction direction = static_cast<Direction>(dir);
+            spriteState->AddSpriteMapping(direction, State::IDLE, "Zombie_1/Idle.png");
+            spriteState->AddSpriteMapping(direction, State::WALKING, "Zombie_1/Walk.png");
+            spriteState->AddSpriteMapping(direction, State::ATTACKING, "Zombie_1/Attack.png");
+            spriteState->AddSpriteMapping(direction, State::HURT, "Zombie_1/Hurt.png");
+            spriteState->AddSpriteMapping(direction, State::DEAD, "Zombie_1/Dead.png");
+        }
+    }
     
     componentManager.AddComponent<engine::ECS::Collider2D>(zombie, 
         engine::ECS::Collider2D{{-15, -15, 30, 30}, false, "enemy"});
