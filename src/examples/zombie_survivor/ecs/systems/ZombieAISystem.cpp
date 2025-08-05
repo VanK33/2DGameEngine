@@ -5,7 +5,9 @@
 #include "engine/core/ecs/components/Transform2D.hpp"
 #include "engine/core/ecs/components/Velocity2D.hpp"
 #include "engine/core/ecs/components/Tag.hpp"
+#include "engine/core/ecs/components/SpriteStateComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/TargetComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
 #include "engine/core/Types.hpp"  // Add this for Vector2
 #include <iostream>
 #include <algorithm>
@@ -29,6 +31,7 @@ void ZombieAISystem::Shutdown() {
 
 void ZombieAISystem::ProcessAI(EntityID entity, engine::ECS::AIComponent& ai, float deltaTime) {
     ChaseTarget(entity, ai);
+    UpdateZombieSpriteState(entity, ai);
 }
 
 void ZombieAISystem::ChaseTarget(EntityID zombieEntity, engine::ECS::AIComponent& ai) {
@@ -113,6 +116,38 @@ EntityID ZombieAISystem::FindNearestEntity(EntityID fromEntity, const std::vecto
 void ZombieAISystem::OnStateChanged(EntityID entity, engine::ECS::AIState oldState, engine::ECS::AIState newState) {
     std::cout << "[ZombieAISystem] Zombie " << entity << " state changed from " 
               << static_cast<int>(oldState) << " to " << static_cast<int>(newState) << std::endl;
+}
+
+void ZombieAISystem::UpdateZombieSpriteState(EntityID zombieEntity, engine::ECS::AIComponent& ai) {
+    auto& componentManager = GetWorld()->GetComponentManager();
+    auto* spriteState = componentManager.GetComponent<engine::ECS::SpriteStateComponent>(zombieEntity);
+    auto* health = componentManager.GetComponent<ZombieSurvivor::Component::HealthComponent>(zombieEntity);
+    auto* velocity = componentManager.GetComponent<engine::ECS::Velocity2D>(zombieEntity);
+    
+    if (!spriteState) return;
+    
+    // Check for death state first (highest priority)
+    if (health && health->health <= 0.0f && !health->isAlive) {
+        spriteState->currentState = engine::ECS::SpriteStateComponent::State::DEAD;
+        return;
+    }
+    
+    // Check if zombie is moving
+    bool isMoving = false;
+    if (velocity) {
+        float speed = std::sqrt(velocity->vx * velocity->vx + velocity->vy * velocity->vy);
+        isMoving = speed > 10.0f; // Movement threshold
+    }
+    
+    // Update state based on AI behavior and movement
+    if (isMoving) {
+        spriteState->currentState = engine::ECS::SpriteStateComponent::State::WALKING;
+    } else {
+        spriteState->currentState = engine::ECS::SpriteStateComponent::State::IDLE;
+    }
+    
+    // TODO: Add ATTACKING state when in combat range
+    // TODO: Add HURT state when taking damage (requires damage event system)
 }
 
 } // namespace ZombieSurvivor::System
