@@ -6,6 +6,9 @@
 #include "core/ecs/systems/LifetimeSystem.hpp"
 #include "core/ecs/systems/RenderSystem.hpp"
 #include "core/ecs/systems/DebugRenderSystem.hpp"
+#include "core/ecs/systems/ParticleSystem.hpp"
+#include "core/ecs/systems/AnimationSystem.hpp"
+#include "core/ecs/systems/SpriteStateSystem.hpp"
 
 namespace engine {
 
@@ -110,11 +113,23 @@ void Engine::InitializeSystems() {
     auto lifetimeSystem = std::make_unique<ECS::LifetimeSystem>();
     systemManager.AddSystem(std::move(lifetimeSystem), 30);
     
-    // 4. Add render system (lowest priority - render after all logic updates)
+    // 4. Add particle system (before render system)
+    auto particleSystem = std::make_unique<ECS::ParticleSystem>();
+    systemManager.AddSystem(std::move(particleSystem), 40);
+    
+    // 4.3. Add sprite state system (before animation system)
+    auto spriteStateSystem = std::make_unique<ECS::SpriteStateSystem>(resourceManager_.get());
+    systemManager.AddSystem(std::move(spriteStateSystem), 44);
+    
+    // 4.5. Add animation system (before render system, after sprite state)
+    auto animationSystem = std::make_unique<ECS::AnimationSystem>(resourceManager_.get());
+    systemManager.AddSystem(std::move(animationSystem), 45);
+    
+    // 5. Add render system (lowest priority - render after all logic updates)
     auto renderSystem = std::make_unique<ECS::RenderSystem>(spriteRenderer_.get(), resourceManager_.get(), &renderer_);
     systemManager.AddSystem(std::move(renderSystem), 50);
 
-    // 5. Add debug render system (lowest priority - render debug info on top)
+    // 6. Add debug render system (lowest priority - render debug info on top)
     auto debugRenderSystem = std::make_unique<ECS::DebugRenderSystem>(renderer_.GetSDLRenderer(), &inputManager_);
     systemManager.AddSystem(std::move(debugRenderSystem), 100);
     

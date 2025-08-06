@@ -51,9 +51,11 @@ private:
     // Entity tracking
     engine::EntityID playerId_ = 0;
     engine::EntityID weaponId_ = 0;
+    engine::EntityID hudId_ = 0;
     
     void InitializeSystems();  // 通过SystemManager添加系统
     void CreateEntities();     // 只负责创建游戏实体
+    void SetupGameWorldViewport(); // 设置游戏世界视口
     void RenderDebugAiming(SDL_Renderer* renderer); // Debug rendering for aiming
 };
 

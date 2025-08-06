@@ -29,6 +29,10 @@ public:
     // 渲染统计信息
     size_t GetRenderedSpriteCount() const { return renderedSpriteCount_; }
     void ResetStats();
+    
+    // 游戏世界视口设置
+    void SetGameWorldViewport(float offsetX, float offsetY, float width, float height);
+    void EnableGameWorldViewport(bool enabled) { useGameWorldViewport_ = enabled; }
 
 private:
     struct RenderableSprite {
@@ -36,7 +40,6 @@ private:
         Transform2D* transform;
         Sprite2D* sprite;
         
-        // 用于排序：renderLayer越大越后渲染（显示在上层）
         bool operator<(const RenderableSprite& other) const {
             return sprite->renderLayer < other.sprite->renderLayer;
         }
@@ -50,6 +53,12 @@ private:
     engine::graphics::Renderer* renderer_;
     
     size_t renderedSpriteCount_ = 0;
+    
+    bool useGameWorldViewport_ = false;
+    float gameWorldOffsetX_ = 0.0f;
+    float gameWorldOffsetY_ = 0.0f;
+    float gameWorldWidth_ = 1000.0f;
+    float gameWorldHeight_ = 1000.0f;
 };
 
 } // namespace engine::ECS

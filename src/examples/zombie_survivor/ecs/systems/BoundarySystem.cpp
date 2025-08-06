@@ -56,15 +56,19 @@ void BoundarySystem::ApplyScreenBounds(
     float entitySize,
     float deltaTime
 ) const {
-    // Screen dimensions (matches main.cpp config)
-    const float SCREEN_WIDTH = 800.0f;
-    const float SCREEN_HEIGHT = 600.0f;
+    // Game world dimensions (850x850 game world)
+    const float GAME_WORLD_WIDTH = 850.0f;
+    const float GAME_WORLD_HEIGHT = 850.0f;
     
-    // Boundary calculation: transform is top-left corner coordinate
-    const float MIN_X = 0.0f;                           // Left boundary
-    const float MAX_X = SCREEN_WIDTH - entitySize;      // Right boundary (800 - 64 = 736)
-    const float MIN_Y = 0.0f;                           // Top boundary  
-    const float MAX_Y = SCREEN_HEIGHT - entitySize;     // Bottom boundary (600 - 64 = 536)
+    // For center-based entities (player), we need to account for half the entity size
+    // For top-left based entities, the bounds work as before
+    const float halfSize = entitySize / 2.0f;
+    
+    // Boundary calculation for center-based positioning
+    const float MIN_X = halfSize;                               // Left boundary (center can't go past half size)
+    const float MAX_X = GAME_WORLD_WIDTH - halfSize;           // Right boundary 
+    const float MIN_Y = halfSize;                               // Top boundary  
+    const float MAX_Y = GAME_WORLD_HEIGHT - halfSize;          // Bottom boundary
     
     // Predict next frame position
     float nextX = transform->x + velocity->vx * deltaTime;
@@ -99,17 +103,20 @@ void BoundarySystem::ApplyCustomBounds(
     float nextX = transform->x + velocity->vx * deltaTime;
     float nextY = transform->y + velocity->vy * deltaTime;
     
-    // Constrain to custom boundaries
-    const float maxX = boundary->maxX - boundary->entitySize;
-    const float maxY = boundary->maxY - boundary->entitySize;
+    // For center-based positioning
+    const float halfSize = boundary->entitySize / 2.0f;
+    const float minX = boundary->minX + halfSize;
+    const float maxX = boundary->maxX - halfSize;
+    const float minY = boundary->minY + halfSize;
+    const float maxY = boundary->maxY - halfSize;
     
-    if (nextX < boundary->minX) {
+    if (nextX < minX) {
         velocity->vx = std::max(0.0f, velocity->vx);
     } else if (nextX > maxX) {
         velocity->vx = std::min(0.0f, velocity->vx);
     }
     
-    if (nextY < boundary->minY) {
+    if (nextY < minY) {
         velocity->vy = std::max(0.0f, velocity->vy);
     } else if (nextY > maxY) {
         velocity->vy = std::min(0.0f, velocity->vy);

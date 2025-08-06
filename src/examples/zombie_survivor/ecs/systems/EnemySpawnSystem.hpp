@@ -4,6 +4,11 @@
 #include "engine/core/Types.hpp"
 #include <random>
 
+// Forward declaration
+namespace ZombieSurvivor::ECS {
+    class GameEntityFactory;
+}
+
 namespace ZombieSurvivor::System {
 
 using EntityID = engine::EntityID;
@@ -24,6 +29,9 @@ public:
     void SetMaxEnemies(int max) { maxEnemies_ = max; }
     void SetViewportSize(float width, float height);
     
+    // Dependency injection for factory
+    void SetEntityFactory(ZombieSurvivor::ECS::GameEntityFactory* factory) { gameEntityFactory_ = factory; }
+    
     void ClearAllEnemies();
     void ResetCounters() { totalSpawned_ = 0; currentEnemyCount_ = 0; }
     
@@ -41,9 +49,11 @@ private:
     void SpawnZombie();
     engine::Vector2 GetRandomSpawnPosition();
     SpawnEdge GetRandomEdge();
-    EntityID CreateZombieEntity(const engine::Vector2& position);
     
     void UpdateEnemyCount();
+    
+    // Factory dependency
+    ZombieSurvivor::ECS::GameEntityFactory* gameEntityFactory_ = nullptr;
     
     float viewportWidth_ = 800.0f;
     float viewportHeight_ = 600.0f;

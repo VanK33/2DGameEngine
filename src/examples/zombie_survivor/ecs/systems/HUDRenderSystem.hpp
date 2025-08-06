@@ -9,6 +9,8 @@
 #include "examples/zombie_survivor/ecs/RenderLayer.hpp"
 #include <vector>
 #include <unordered_map>
+#include <string>
+#include <SDL3/SDL.h>
 
 namespace ZombieSurvivor::System {
 
@@ -32,8 +34,10 @@ private:
     int screenHeight_ = 600;
     
     // HUD element tracking
-    std::unordered_map<uint32_t, uint32_t> hudToVisualMap_; // HUD entity ID -> Visual entity ID
+    std::unordered_map<uint32_t, uint32_t> hudToVisualMap_; // HUD entity ID -> Background Visual entity ID
+    std::unordered_map<uint32_t, uint32_t> hudToForegroundMap_; // HUD entity ID -> Foreground Visual entity ID (for bars)
     std::vector<uint32_t> visualEntities_;
+    uint32_t lastCreatedForegroundEntity_ = 0; // Temporary storage for foreground entity mapping
     
     // Visual creation methods
     uint32_t CreateHealthBarVisual(const Component::HUDComponent* hud);

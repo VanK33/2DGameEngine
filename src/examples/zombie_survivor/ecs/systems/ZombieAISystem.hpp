@@ -4,6 +4,7 @@
 
 #include "engine/core/ecs/systems/AISystem.hpp"
 #include "engine/core/ecs/components/AIComponent.hpp"
+#include "engine/core/ecs/components/SpriteStateComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/TargetComponent.hpp"
 #include "engine/core/Types.hpp"
 #include <vector>
@@ -36,6 +37,9 @@ private:
     void SetTarget(EntityID zombieEntity, EntityID targetEntity, ZombieSurvivor::Component::TargetType type);
     
     EntityID FindNearestEntity(EntityID fromEntity, const std::vector<EntityID>& candidates);
+    
+    // Update zombie sprite state based on AI behavior
+    void UpdateZombieSpriteState(EntityID zombieEntity, engine::ECS::AIComponent& ai);
 };
 
 } // namespace ZombieSurvivor::System

@@ -11,6 +11,7 @@
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include "examples/zombie_survivor/events/ProjectileEventUtils.hpp"
+#include "engine/core/ecs/systems/ParticleSystem.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::System {
@@ -21,7 +22,6 @@ void DamageSystem::Init() {
     
     auto& eventManager = world->GetEventManager();
     
-    eventManager.Subscribe(engine::event::EventType::ENTITY_COLLISION, this);
     eventManager.Subscribe(engine::event::EventType::COLLISION_STARTED, this);
     eventManager.Subscribe(engine::event::EventType::CUSTOM, this);
     
@@ -40,7 +40,6 @@ void DamageSystem::Shutdown() {
     
     auto& eventManager = world->GetEventManager();
     
-    eventManager.Unsubscribe(engine::event::EventType::ENTITY_COLLISION, this);
     eventManager.Unsubscribe(engine::event::EventType::COLLISION_STARTED, this);
     eventManager.Unsubscribe(engine::event::EventType::CUSTOM, this);
     
@@ -51,7 +50,6 @@ void DamageSystem::onEvent(const std::shared_ptr<engine::event::Event>& event) {
     if (!event) return;
     
     switch (event->GetType()) {
-        case engine::event::EventType::ENTITY_COLLISION:
         case engine::event::EventType::COLLISION_STARTED:
             HandleCollisionEvent(event);
             break;
@@ -79,10 +77,18 @@ void DamageSystem::HandleCollisionEvent(const std::shared_ptr<engine::event::Eve
     engine::EntityID entityA = collisionData->entityA;
     engine::EntityID entityB = collisionData->entityB;
     
+    std::cout << "[DamageSystem] Collision event: A=" << entityA << " B=" << entityB 
+              << " LayerA=" << collisionData->layerA << " LayerB=" << collisionData->layerB << std::endl;
+    
     bool isProjectileA = componentManager.HasComponent<Component::ProjectileComponent>(entityA);
     bool isProjectileB = componentManager.HasComponent<Component::ProjectileComponent>(entityB);
     bool isEnemyA = componentManager.HasComponent<Component::EnemyComponent>(entityA);
     bool isEnemyB = componentManager.HasComponent<Component::EnemyComponent>(entityB);
+    bool isPlayerA = IsPlayer(entityA);
+    bool isPlayerB = IsPlayer(entityB);
+    
+    std::cout << "[DamageSystem] Entity check - A=" << entityA << "(Enemy:" << isEnemyA << ", Player:" << isPlayerA << ") "
+              << "B=" << entityB << "(Enemy:" << isEnemyB << ", Player:" << isPlayerB << ")" << std::endl;
     
     if (isProjectileA && isEnemyB) {
         HandleProjectileEnemyCollision(entityA, entityB);
@@ -90,7 +96,9 @@ void DamageSystem::HandleCollisionEvent(const std::shared_ptr<engine::event::Eve
         HandleProjectileEnemyCollision(entityB, entityA);
     }
     
-    if ((isEnemyA && IsPlayer(entityB)) || (isEnemyB && IsPlayer(entityA))) {
+    if ((isEnemyA && isPlayerB) || (isEnemyB && isPlayerA)) {
+        std::cout << "[DamageSystem] Enemy-Player collision detected! EntityA=" << entityA 
+                  << " EntityB=" << entityB << std::endl;
         HandleEnemyPlayerCollision(entityA, entityB);
     }
 }
@@ -222,7 +230,7 @@ bool DamageSystem::IsPlayer(uint32_t entityId) {
     if (!world) return false;
     
     auto* tag = world->GetComponentManager().GetComponent<engine::ECS::Tag>(entityId);
-    return tag && tag->tag == "Player";
+    return tag && tag->tag == "player";
 }
 
 bool DamageSystem::IsEnemy(uint32_t entityId) {
@@ -242,11 +250,40 @@ void DamageSystem::HandleProjectileEnemyCollision(engine::ECS::EntityID projecti
     auto* projectile = componentManager.GetComponent<Component::ProjectileComponent>(projectileId);
     if (!projectile) return;
     
+    std::cout << "[DamageSystem] COLLISION EVENT: Projectile " << projectileId 
+              << " hit Enemy " << enemyId << " (hasHit=" << projectile->hasHit << ")" << std::endl;
+    
+    // Prevent duplicate damage from same projectile
+    if (projectile->hasHit) {
+        std::cout << "[DamageSystem] DUPLICATE HIT PREVENTED: Projectile " << projectileId 
+                  << " already hit a target, ignoring collision" << std::endl;
+        return;
+    }
+    
+    // Mark projectile as hit immediately to prevent duplicate processing in same frame
+    projectile->hasHit = true;
+    
     DealDamage(enemyId, projectile->shooterId, 
                static_cast<int>(projectile->damage), "projectile");
     
     auto& eventManager = world->GetEventManager();
     auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(projectileId);
+    auto* enemyTransform = componentManager.GetComponent<engine::ECS::Transform2D>(enemyId);
+    
+    // Create hit particle effect
+    if (enemyTransform) {
+        auto* particleSystem = dynamic_cast<engine::ECS::ParticleSystem*>(
+            world->GetSystemManager().GetSystem("ParticleSystem"));
+        if (particleSystem) {
+            // Red blood splatter effect
+            particleSystem->CreateParticleBurst(
+                {enemyTransform->x, enemyTransform->y},
+                15,  // particle count
+                {255, 50, 50, 255},  // red color
+                150.0f  // speed
+            );
+        }
+    }
     
     Events::ProjectileEventUtils::PublishProjectileHit(
         eventManager,

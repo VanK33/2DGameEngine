@@ -1,13 +1,8 @@
 #include "EnemySpawnSystem.hpp"
 #include "engine/core/ecs/World.hpp"
-#include "engine/core/ecs/components/Transform2D.hpp"
-#include "engine/core/ecs/components/Velocity2D.hpp"
-#include "engine/core/ecs/components/Collider2D.hpp"
-#include "engine/core/ecs/components/Tag.hpp"
-#include "engine/core/ecs/components/AIComponent.hpp"
+#include "examples/zombie_survivor/ecs/GameEntityFactory.hpp"
 #include "examples/zombie_survivor/ecs/components/EnemyComponent.hpp"
 #include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
-#include "examples/zombie_survivor/ecs/components/TargetComponent.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::System {
@@ -51,8 +46,13 @@ void EnemySpawnSystem::SetViewportSize(float width, float height) {
 }
 
 void EnemySpawnSystem::SpawnZombie() {
+    if (!gameEntityFactory_) {
+        std::cerr << "[EnemySpawnSystem] Error: GameEntityFactory not set!" << std::endl;
+        return;
+    }
+    
     Vector2 spawnPos = GetRandomSpawnPosition();
-    EntityID zombie = CreateZombieEntity(spawnPos);
+    EntityID zombie = gameEntityFactory_->CreateZombie(spawnPos);
     
     if (zombie != 0) {
         totalSpawned_++;
@@ -98,59 +98,6 @@ EnemySpawnSystem::SpawnEdge EnemySpawnSystem::GetRandomEdge() {
     return static_cast<SpawnEdge>(edgeDist_(gen_));
 }
 
-EntityID EnemySpawnSystem::CreateZombieEntity(const Vector2& position) {
-    auto* world = GetWorld();
-    if (!world) {
-        std::cerr << "[EnemySpawnSystem] Error: No world available" << std::endl;
-        return 0;
-    }
-    
-    auto& entityFactory = world->GetEntityFactory();
-    auto& componentManager = world->GetComponentManager();
-    
-    EntityID zombie = entityFactory.CreateEntity("Zombie");
-    
-    componentManager.AddComponent<engine::ECS::Transform2D>(zombie, 
-        engine::ECS::Transform2D{position.x, position.y, 0.0f, 1.0f, 1.0f});
-    componentManager.AddComponent<engine::ECS::Velocity2D>(zombie, 
-        engine::ECS::Velocity2D{0.0f, 0.0f, 100.0f});
-    
-    componentManager.AddComponent<engine::ECS::Collider2D>(zombie, 
-        engine::ECS::Collider2D{{0, 0, 30, 30}, false, "enemy"});
-    
-    componentManager.AddComponent<engine::ECS::AIComponent>(zombie, 
-        engine::ECS::AIComponent{
-            engine::ECS::AIState::ACTIVE,  // 修正：没有CHASING状态
-            0,                              // targetEntity (稍后由AI系统设置)
-            {0, 0},                        // targetPosition
-            50.0f,                         // speed
-            150.0f,                        // detectionRadius
-            0.0f,                          // updateTimer
-            0.1f                           // updateInterval
-        });
-    
-    componentManager.AddComponent<Component::EnemyComponent>(zombie, Component::EnemyComponent{});
-    auto* enemy = componentManager.GetComponent<Component::EnemyComponent>(zombie);
-    if (enemy) {
-        enemy->type = Component::EnemyType::ZOMBIE_BASIC;
-        enemy->damage = 10.0f;
-        enemy->damageCooldown = 1.0f;
-        enemy->expValue = 10.0f;
-    }
-    
-    componentManager.AddComponent<Component::HealthComponent>(zombie, Component::HealthComponent{});
-    auto* health = componentManager.GetComponent<Component::HealthComponent>(zombie);
-    if (health) {
-        health->health = 50.0f;
-        health->maxHealth = 50.0f;
-        health->isAlive = true;
-    }
-    
-    componentManager.AddComponent<Component::TargetComponent>(zombie, Component::TargetComponent{});
-    componentManager.AddComponent<engine::ECS::Tag>(zombie, engine::ECS::Tag{"enemy"});
-    
-    return zombie;
-}
 
 void EnemySpawnSystem::UpdateEnemyCount() {
     auto* world = GetWorld();

@@ -34,3 +34,6 @@ Makefile
 .idea
 .vscode
 .claude
+
+# Agent communication directory
+agent-comm/

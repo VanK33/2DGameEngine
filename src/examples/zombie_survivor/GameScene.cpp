@@ -4,11 +4,21 @@
 #include "engine/core/ecs/SystemManager.hpp"
 #include "engine/core/ecs/ComponentManager.hpp"
 #include "engine/core/ecs/EntityFactory.hpp"
+#include "engine/core/ecs/systems/RenderSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/InputSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/MovementSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/BoundarySystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/RotationSystem.hpp"
 #include "examples/zombie_survivor/ecs/systems/WeaponFollowSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/HUDRenderSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/HUDDataSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/EnemySpawnSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/ZombieAISystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/DamageSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/HealthSystem.hpp"
+#include "examples/zombie_survivor/ecs/systems/ExperienceSystem.hpp"
+#include "engine/core/ecs/systems/CollisionSystem.hpp"
+#include "engine/core/ecs/systems/SpriteStateSystem.hpp"
 
 // 组件
 #include "engine/core/ecs/components/Transform2D.hpp"
@@ -43,6 +53,7 @@ void GameScene::Load() {
 
     InitializeSystems();
     CreateEntities();
+    SetupGameWorldViewport();
     
     std::cout << "[GameScene] Scene loaded successfully!" << std::endl;
 }
@@ -65,8 +76,8 @@ void GameScene::Update(float deltaTime) {
 void GameScene::Render(SDL_Renderer* renderer) {
     if (!world_) return;
     
-    // Debug: Draw weapon aim direction and mouse position
-    RenderDebugAiming(renderer);
+    // Debug: Draw weapon aim direction and mouse position (disabled to remove yellow square)
+    // RenderDebugAiming(renderer);
 }
 
 void GameScene::HandleEvent(const SDL_Event& event) {
@@ -104,6 +115,22 @@ void GameScene::InitializeSystems() {
     
     auto& systemManager = world_->GetSystemManager();
     
+    // Configure collision rules
+    auto* collisionSystem = dynamic_cast<engine::ECS::CollisionSystem*>(
+        systemManager.GetSystem("engine::ECS::CollisionSystem"));
+    if (collisionSystem) {
+        collisionSystem->AddCollisionLayer("player", true);
+        collisionSystem->AddCollisionLayer("enemy", true);
+        collisionSystem->AddCollisionLayer("projectile", true);
+        
+        // Enable collisions between layers
+        collisionSystem->SetCollisionRule("player", "enemy", true);
+        collisionSystem->SetCollisionRule("projectile", "enemy", true);
+        collisionSystem->SetCollisionRule("player", "projectile", false);
+        
+        std::cout << "[GameScene] Collision rules configured!" << std::endl;
+    }
+    
     auto groundSystem = std::make_unique<System::GroundRenderSystem>();
     systemManager.AddSystem(std::move(groundSystem), 15);
     
@@ -125,6 +152,9 @@ void GameScene::InitializeSystems() {
     auto rotationSystem = std::make_unique<ZombieSurvivor::System::RotationSystem>();
     systemManager.AddSystem(std::move(rotationSystem), 40);
 
+    // SpriteStateSystem is already added by Engine at priority 44
+    // Removing duplicate registration to avoid conflicts
+
     auto weaponInputSystem = std::make_unique<ZombieSurvivor::System::WeaponInputSystem>();
     systemManager.AddSystem(std::move(weaponInputSystem), 42);
 
@@ -139,6 +169,30 @@ void GameScene::InitializeSystems() {
 
     auto projectileSystem = std::make_unique<ZombieSurvivor::System::ProjectileSystem>();
     systemManager.AddSystem(std::move(projectileSystem), 48);  // Before RenderSystem(50) to ensure cleanup
+
+    auto enemySpawnSystem = std::make_unique<ZombieSurvivor::System::EnemySpawnSystem>();
+    enemySpawnSystem->SetViewportSize(850.0f, 850.0f);  // Set game world viewport size
+    enemySpawnSystem->SetEntityFactory(gameEntityFactory_.get());  // Inject factory dependency
+    systemManager.AddSystem(std::move(enemySpawnSystem), 49);  // After projectiles, before rendering
+
+    auto zombieAISystem = std::make_unique<ZombieSurvivor::System::ZombieAISystem>();
+    systemManager.AddSystem(std::move(zombieAISystem), 46);  // Before projectiles for AI decisions
+
+    auto damageSystem = std::make_unique<ZombieSurvivor::System::DamageSystem>();
+    systemManager.AddSystem(std::move(damageSystem), 47);  // Process damage after AI, before projectiles
+
+    auto healthSystem = std::make_unique<ZombieSurvivor::System::HealthSystem>();
+    systemManager.AddSystem(std::move(healthSystem), 51);  // Process health changes after damage
+    
+    auto experienceSystem = std::make_unique<ZombieSurvivor::System::ExperienceSystem>();
+    systemManager.AddSystem(std::move(experienceSystem), 52);  // Process experience after health
+
+    auto hudDataSystem = std::make_unique<ZombieSurvivor::System::HUDDataSystem>();
+    systemManager.AddSystem(std::move(hudDataSystem), 53);  // Update HUD data before rendering
+
+    auto hudRenderSystem = std::make_unique<ZombieSurvivor::System::HUDRenderSystem>();
+    hudRenderSystem->SetScreenSize(1312, 982); // Set correct window dimensions
+    systemManager.AddSystem(std::move(hudRenderSystem), 55); // After HUDDataSystem and RenderSystem
     
     std::cout << "[GameScene] Systems initialized successfully!" << std::endl;
 }
@@ -160,9 +214,37 @@ void GameScene::CreateEntities() {
     // Create weapon that follows the player
     if (playerId_ != 0) {
         weaponId_ = gameEntityFactory_->CreateWeapon(playerId_);
+
+        hudId_ = gameEntityFactory_->CreatePlayerHUD(playerId_);
+        std::cout << "[GameScene] Created HUD for player " << playerId_ 
+                  << ", HUD ID: " << hudId_ << std::endl;
     }
     
     std::cout << "[GameScene] Game entities created!" << std::endl;
+}
+
+void GameScene::SetupGameWorldViewport() {
+    if (!world_) return;
+    
+    const float WINDOW_WIDTH = 1312.0f;
+    const float WINDOW_HEIGHT = 982.0f;
+    const float GAME_WORLD_WIDTH = 850.0f;
+    const float GAME_WORLD_HEIGHT = 850.0f;
+    
+    float offsetX = (WINDOW_WIDTH - GAME_WORLD_WIDTH) / 2.0f;   // (1312-850)/2 = 231
+    float offsetY = (WINDOW_HEIGHT - GAME_WORLD_HEIGHT) / 2.0f; // (982-850)/2 = 66
+    
+    auto* renderSystem = static_cast<engine::ECS::RenderSystem*>(
+        world_->GetSystemManager().GetSystem("RenderSystem")
+    );
+    
+    if (renderSystem) {
+        renderSystem->SetGameWorldViewport(offsetX, offsetY, GAME_WORLD_WIDTH, GAME_WORLD_HEIGHT);
+        std::cout << "[GameScene] Game world viewport set: offset(" << offsetX << ", " << offsetY 
+                  << "), size(" << GAME_WORLD_WIDTH << "x" << GAME_WORLD_HEIGHT << ")" << std::endl;
+    } else {
+        std::cout << "[GameScene] WARNING: RenderSystem not found, viewport not set!" << std::endl;
+    }
 }
 
 void GameScene::RenderDebugAiming(SDL_Renderer* renderer) {

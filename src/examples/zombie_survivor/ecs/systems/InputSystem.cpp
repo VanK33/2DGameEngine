@@ -3,7 +3,9 @@
 #include "InputSystem.hpp"
 #include "engine/core/ecs/World.hpp"
 #include "engine/core/ecs/components/Tag.hpp"
+#include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
 #include <cmath>
+#include <algorithm>
 
 namespace ZombieSurvivor::System {
 
@@ -42,6 +44,23 @@ void InputSystem::Update(float deltaTime) {
         if (IsReloadButtonPressed()) {
             input->reloadButtonPressed = true;
         }
+        
+        // 测试血量减少 - 按X键减血，按C键加血
+        if (inputManager_.IsKeyDown(SDLK_X)) {
+            auto* health = componentManager.GetComponent<ZombieSurvivor::Component::HealthComponent>(entityId);
+            if (health && health->health > 0) {
+                health->health = std::max(0.0f, health->health - 10.0f);  // 每次减10血
+                std::cout << "[InputSystem] Health decreased to: " << health->health << "/" << health->maxHealth << std::endl;
+            }
+        }
+        
+        if (inputManager_.IsKeyDown(SDLK_C)) {
+            auto* health = componentManager.GetComponent<ZombieSurvivor::Component::HealthComponent>(entityId);
+            if (health && health->health < health->maxHealth) {
+                health->health = std::min(health->maxHealth, health->health + 10.0f);  // 每次加10血
+                std::cout << "[InputSystem] Health increased to: " << health->health << "/" << health->maxHealth << std::endl;
+            }
+        }
     }
 }
 
@@ -63,7 +82,15 @@ bool InputSystem::IsReloadButtonPressed() const {
 
 engine::Vector2 InputSystem::GetMouseScreenPosition() const {
     auto mousePos = inputManager_.GetMousePosition();
-    return engine::Vector2{static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)};
+    
+    // Convert window coordinates to game world coordinates by subtracting viewport offset
+    const float GAME_WORLD_OFFSET_X = 231.0f; // (1312-850)/2
+    const float GAME_WORLD_OFFSET_Y = 66.0f;  // (982-850)/2
+    
+    float gameWorldX = static_cast<float>(mousePos.x) - GAME_WORLD_OFFSET_X;
+    float gameWorldY = static_cast<float>(mousePos.y) - GAME_WORLD_OFFSET_Y;
+    
+    return engine::Vector2{gameWorldX, gameWorldY};
 }
 
 engine::Vector2 InputSystem::GetMoveInputVector() const {

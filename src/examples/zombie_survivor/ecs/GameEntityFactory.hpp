@@ -11,6 +11,7 @@
 #include "examples/zombie_survivor/ecs/RenderLayer.hpp"
 #include "engine/core/Types.hpp"
 #include "engine/resource/ResourceManager.hpp"
+#include "engine/animation/SpriteSheetLoader.hpp"
 
 namespace ZombieSurvivor::ECS {
 
@@ -20,11 +21,12 @@ public:
     
     uint32_t CreatePlayer(const engine::Vector2& position = {400.0f, 300.0f});
     uint32_t CreateWeapon(engine::EntityID playerEntityId, const engine::Vector2& offset = {20.0f, 0.0f});
+    uint32_t CreatePlayerHUD(engine::EntityID playerEntityId);
     // uint32_t CreateStaticRock(const engine::Vector2& position);
     // uint32_t CreateStaticTree(const engine::Vector2& position);
     
     // 🎯 动态实体创建（运行时）
-    uint32_t SpawnZombie(const engine::Vector2& position);
+    uint32_t CreateZombie(const engine::Vector2& position);
     uint32_t CreateProjectile(const engine::Vector2& position, const engine::Vector2& direction, float speed);
     // uint32_t CreatePickup(const engine::Vector2& position, const std::string& type);
     // uint32_t CreateExplosion(const engine::Vector2& position, float radius);
@@ -35,6 +37,7 @@ public:
 private:
     engine::ECS::World* world_;
     engine::resources::ResourceManager* resourceManager_;
+    std::unique_ptr<engine::animation::SpriteSheetLoader> spriteSheetLoader_;
     
     // 辅助方法
     bool ValidateWorld() const;

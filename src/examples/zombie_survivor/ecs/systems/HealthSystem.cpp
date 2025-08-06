@@ -5,8 +5,12 @@
 #include "engine/core/ecs/World.hpp"
 #include "engine/core/event/EventManager.hpp"
 #include "examples/zombie_survivor/ecs/components/HealthComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/EnemyComponent.hpp"
+#include "examples/zombie_survivor/ecs/components/CombatStatsComponent.hpp"
 #include "examples/zombie_survivor/events/GameEventData.hpp"
 #include "examples/zombie_survivor/events/GameEventTypes.hpp"
+#include "engine/core/ecs/systems/ParticleSystem.hpp"
+#include "engine/core/ecs/components/Transform2D.hpp"
 #include <iostream>
 
 namespace ZombieSurvivor::System {
@@ -136,7 +140,41 @@ void HealthSystem::ProcessDeath(uint32_t entityId) {
     
     health->isAlive = false;
     
+    std::cout << "[HealthSystem] Entity " << entityId << " died! Destroying entity..." << std::endl;
+    
+    // Create death particle effect
+    auto* transform = componentManager.GetComponent<engine::ECS::Transform2D>(entityId);
+    if (transform) {
+        auto& systemManager = world->GetSystemManager();
+        auto* particleSystem = dynamic_cast<engine::ECS::ParticleSystem*>(
+            systemManager.GetSystem("ParticleSystem"));
+        if (particleSystem) {
+            // Check if it's an enemy for a bigger death effect
+            auto* enemyComponent = componentManager.GetComponent<Component::EnemyComponent>(entityId);
+            if (enemyComponent) {
+                // Big red explosion for enemy death
+                particleSystem->CreateParticleBurst(
+                    {transform->x, transform->y},
+                    30,  // more particles
+                    {255, 0, 0, 255},  // red color
+                    200.0f  // higher speed
+                );
+            }
+        }
+    }
+    
     PublishDeathEvent(entityId);
+    
+    // Use same cleanup pattern as ProjectileSystem to ensure complete removal
+    auto& entityFactory = world->GetEntityFactory();
+    
+    // 1. First remove all components (including Sprite2D to stop rendering)
+    componentManager.RemoveAllComponents(entityId);
+    
+    // 2. Then destroy the entity ID
+    entityFactory.DestroyEntity(entityId);
+    
+    std::cout << "[HealthSystem] Entity " << entityId << " destroyed successfully with full component cleanup" << std::endl;
 }
 
 void HealthSystem::PublishHealthChangedEvent(uint32_t entityId, float oldHealth, float newHealth) {
@@ -164,8 +202,37 @@ void HealthSystem::PublishDeathEvent(uint32_t entityId) {
     if (!world) return;
     
     auto& eventManager = world->GetEventManager();
+    auto& componentManager = world->GetComponentManager();
     
-    /* Example codes*/
+    // Check if the entity is an enemy
+    auto* enemyComponent = componentManager.GetComponent<Component::EnemyComponent>(entityId);
+    if (enemyComponent) {
+        // This is an enemy, publish ENEMY_KILLED event
+        auto enemyKilledData = std::make_shared<Events::EnemyKilledData>();
+        enemyKilledData->enemyId = entityId;
+        enemyKilledData->expReward = static_cast<int>(enemyComponent->expValue);
+        
+        // Find the killer (usually the last damage source)
+        auto* combatStats = componentManager.GetComponent<Component::CombatStatsComponent>(entityId);
+        if (combatStats) {
+            enemyKilledData->playerId = combatStats->lastDamageSource;
+        } else {
+            // Default to player entity (ID 4) if no combat stats
+            enemyKilledData->playerId = 4;  // TODO: Better way to find player
+        }
+        
+        auto enemyKilledEvent = std::make_shared<Events::GameEvent>(
+            Events::GameEventType::ENEMY_KILLED,
+            std::static_pointer_cast<void>(enemyKilledData)
+        );
+        enemyKilledEvent->SetPriority(engine::event::EventPriority::HIGH);
+        eventManager.Publish(enemyKilledEvent);
+        
+        std::cout << "[HealthSystem] Enemy " << entityId << " killed! Exp reward: " 
+                  << enemyKilledData->expReward << " to player " << enemyKilledData->playerId << std::endl;
+    }
+    
+    // Always publish the general death event too
     auto deathData = std::make_shared<Events::EntityDiedData>();
     deathData->entityId = entityId;
     deathData->deathCause = "health_depleted";

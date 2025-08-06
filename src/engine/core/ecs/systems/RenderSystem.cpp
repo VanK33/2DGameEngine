@@ -59,6 +59,14 @@ void RenderSystem::ResetStats() {
     renderedSpriteCount_ = 0;
 }
 
+void RenderSystem::SetGameWorldViewport(float offsetX, float offsetY, float width, float height) {
+    gameWorldOffsetX_ = offsetX;
+    gameWorldOffsetY_ = offsetY;
+    gameWorldWidth_ = width;
+    gameWorldHeight_ = height;
+    useGameWorldViewport_ = true;
+}
+
 void RenderSystem::CollectRenderableSprites(std::vector<RenderableSprite>& renderables) {
     auto& componentManager = world_->GetComponentManager();
     auto entities = componentManager.GetEntitiesWithComponents<Transform2D, Sprite2D>();
@@ -89,15 +97,50 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
     // Determine sprite dimensions
     float spriteWidth, spriteHeight;
     if (sprite->sourceRect.w > 0 && sprite->sourceRect.h > 0) {
-        // Use dimensions specified by sourceRect
         spriteWidth = sprite->sourceRect.w * transform->scaleX;
         spriteHeight = sprite->sourceRect.h * transform->scaleY;
     } else {
-        // Use original texture dimensions
         float textureWidth, textureHeight;
         SDL_GetTextureSize(texture, &textureWidth, &textureHeight);
         spriteWidth = textureWidth * transform->scaleX;
         spriteHeight = textureHeight * transform->scaleY;
+    }
+    
+    // Apply game world viewport offset if enabled
+    float renderX = transform->x;
+    float renderY = transform->y;
+    
+    if (useGameWorldViewport_) {
+        // UI elements (renderLayer >= 20) are not affected by game world viewport
+        bool isUIElement = sprite->renderLayer >= 20;
+        
+        if (!isUIElement) {
+            renderX += gameWorldOffsetX_;
+            renderY += gameWorldOffsetY_;
+
+            // When pivotOffset is set, adjust the render position so the pivot point is at transform position
+            if (sprite->pivotOffset.x >= 0.0f && sprite->pivotOffset.y >= 0.0f) {
+                renderX -= spriteWidth * sprite->pivotOffset.x;
+                renderY -= spriteHeight * sprite->pivotOffset.y;
+            }
+
+            float spriteLeft = renderX;
+            float spriteRight = spriteLeft + spriteWidth;
+            float spriteTop = renderY;
+            float spriteBottom = spriteTop + spriteHeight;
+            
+            float worldLeft = gameWorldOffsetX_;
+            float worldRight = gameWorldOffsetX_ + gameWorldWidth_;
+            float worldTop = gameWorldOffsetY_;
+            float worldBottom = gameWorldOffsetY_ + gameWorldHeight_;
+            
+            // 如果精灵完全在游戏世界外，跳过渲染
+            if (spriteRight < worldLeft || spriteLeft > worldRight ||
+                spriteBottom < worldTop || spriteTop > worldBottom) {
+                return; // 精灵在视口外，不渲染
+            }
+        }
+        // UI elements use their original positions without viewport offset
     }
     
     // Set color tinting
@@ -108,20 +151,63 @@ void RenderSystem::RenderSprite(const RenderableSprite& renderable) {
     SDL_FPoint* pivotPtr = nullptr;
     SDL_FPoint calculatedPivot;
     if (sprite->pivotOffset.x >= 0.0f && sprite->pivotOffset.y >= 0.0f) {
-        // Convert relative pivot offset to absolute pixel coordinates
         calculatedPivot.x = spriteWidth * sprite->pivotOffset.x;
         calculatedPivot.y = spriteHeight * sprite->pivotOffset.y;
         pivotPtr = &calculatedPivot;
     }
     
+    SDL_Rect clipRect;
+    bool needsClipping = false;
+    
+    if (useGameWorldViewport_) {
+        // UI elements (renderLayer >= 20) are not clipped to game world
+        bool isUIElement = sprite->renderLayer >= 20;
+        
+        if (!isUIElement) {
+            clipRect = {
+                static_cast<int>(gameWorldOffsetX_),
+                static_cast<int>(gameWorldOffsetY_),
+                static_cast<int>(gameWorldWidth_),
+                static_cast<int>(gameWorldHeight_)
+            };
+            
+            auto* sdlRenderer = renderer_->GetSDLRenderer();
+            if (sdlRenderer) {
+                SDL_SetRenderClipRect(sdlRenderer, &clipRect);
+                needsClipping = true;
+            }
+        }
+        // UI elements render without clipping
+    }
+    
+    // Prepare sourceRect for sprite sheet rendering
+    SDL_FRect* sourceRectPtr = nullptr;
+    SDL_FRect sourceRect;
+    if (sprite->sourceRect.w > 0 && sprite->sourceRect.h > 0) {
+        sourceRect = {
+            static_cast<float>(sprite->sourceRect.x),
+            static_cast<float>(sprite->sourceRect.y),
+            static_cast<float>(sprite->sourceRect.w),
+            static_cast<float>(sprite->sourceRect.h)
+        };
+        sourceRectPtr = &sourceRect;
+    }
+    
     // Call SpriteRenderer for rendering
     spriteRenderer_->Draw(texture, 
-                         transform->x, transform->y,
+                         renderX, renderY,
                          spriteWidth, spriteHeight,
                          transform->rotation,
                          SDL_FLIP_NONE,
-                         pivotPtr);
-
+                         pivotPtr,
+                         sourceRectPtr);
+    
+    if (needsClipping) {
+        auto* sdlRenderer = renderer_->GetSDLRenderer();
+        if (sdlRenderer) {
+            SDL_SetRenderClipRect(sdlRenderer, nullptr);
+        }
+    }
     
     renderedSpriteCount_++;
 }
