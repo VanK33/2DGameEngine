@@ -1,0 +1,126 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: Linux
+            artifact: 2DEngine-linux
+          - os: windows-latest
+            name: Windows
+            artifact: 2DEngine-windows.exe
+          - os: macos-latest
+            name: macOS
+            artifact: 2DEngine-macos
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.16'
+
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Package (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        mkdir package
+        copy build\bin\Release\2DEngine.exe package\
+        xcopy /E /I build\bin\assets package\assets
+
+    - name: Package (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        mkdir package
+        cp build/bin/2DEngine package/${{ matrix.artifact }}
+        chmod +x package/${{ matrix.artifact }}
+        cp -r build/bin/assets package/
+
+    - name: Create macOS App Bundle
+      if: runner.os == 'macOS'
+      run: |
+        mkdir -p "package/2DEngine.app/Contents/MacOS"
+        mkdir -p "package/2DEngine.app/Contents/Resources"
+        cp build/bin/2DEngine "package/2DEngine.app/Contents/MacOS/2DEngine"
+        cp -r build/bin/assets "package/2DEngine.app/Contents/Resources/"
+        cat > "package/2DEngine.app/Contents/Info.plist" << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>2DEngine</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.cs5850.2dengine</string>
+            <key>CFBundleName</key>
+            <string>2D Engine</string>
+            <key>CFBundleVersion</key>
+            <string>1.0</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+        </dict>
+        </plist>
+        EOF
+        cd package && zip -r 2DEngine-macos.zip 2DEngine.app
+
+    - name: Create Archive
+      run: |
+        cd package
+        ${{ runner.os == 'Windows' && 'Compress-Archive -Path * -DestinationPath ../2DEngine-${{ matrix.name }}.zip' || 'zip -r ../2DEngine-${{ matrix.name }}.zip .' }}
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: 2DEngine-${{ matrix.name }}
+        path: 2DEngine-${{ matrix.name }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          2DEngine-Linux/2DEngine-Linux.zip
+          2DEngine-Windows/2DEngine-Windows.zip
+          2DEngine-macOS/2DEngine-macOS.zip
+        draft: false
+        prerelease: false
+        generate_release_notes: true
