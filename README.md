@@ -1,9 +1,131 @@
-# CS5850 2D Game Engine
+# CS5850 2D Game Engine - ZombieSurvivor
+
+## 🎮 Game Description
+
+**ZombieSurvivor** is a top-down 2D survival shooter where players must defend against endless waves of zombies. Built on our custom C++ game engine, it showcases the full capabilities of our ECS architecture, collision detection, physics system, and AI framework.
+
+### Features:
+- **Survival Gameplay**: Face increasingly difficult waves of zombies
+- **Manual Aim & Shoot**: Precision shooting mechanics with WASD movement
+- **Enemy AI**: Smart zombies that track and pursue the player
+- **Power-ups & Upgrades**: Collect items to enhance survival chances
+- **Score System**: Compete for high scores in endless survival mode
+- **Smooth Performance**: 60 FPS gameplay with hundreds of entities
+
+---
+
+## 🚀 Installation Instructions
+
+### Prerequisites
+- C++20 compatible compiler (GCC 11+, Clang 14+)
+- CMake 3.20 or higher
+- Git (for cloning the repository)
+
+### Building from Source (macOS/Linux)
+
+```bash
+# Clone the repository
+git clone [repository-url]
+cd CS5850
+
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake
+cmake ..
+
+# Build the project
+make -j4
+
+# Run the game
+./bin/2DEngine
+```
+
+### Quick Run
+```bash
+./run.sh  # Builds and runs the game automatically
+```
+
+---
+
+## 🎮 Controls
+
+### Player Movement
+- **W** - Move Up
+- **A** - Move Left
+- **S** - Move Down
+- **D** - Move Right
+
+### Combat
+- **Mouse Movement** - Aim weapon
+- **Left Click** - Fire weapon
+- **R** - Reload (when implemented)
+- **Space** - Use power-up (when implemented)
+
+### Game
+- **ESC** - Pause/Menu
+- **Enter** - Start Game / Confirm
+- **Q** - Quit to Menu
+
+---
+
+## 🎨 Asset Credits
+
+### Graphics
+- **Sprites**: Placeholder graphics created for educational purposes
+- **Environment**: Basic geometric shapes and tiles
+- **UI Elements**: Minimal UI using SDL3 rendering primitives
+
+### Audio (Planned)
+- Audio system not yet implemented
+
+### Fonts
+- System default rendering
+
+*Note: All assets are created for educational purposes within CS5850 coursework.*
+
+---
+
+## 🤖 AI Tool Usage
+
+This project was developed with assistance from AI tools in the following areas:
+
+### Claude AI (Anthropic)
+- **Architecture Design**: Assisted with ECS architecture patterns and best practices
+- **Code Implementation**: Helper functions and system implementations
+- **Debugging**: Problem-solving assistance for complex engine issues
+- **Documentation**: README formatting and technical documentation
+- **Code Review**: Suggestions for code optimization and clean architecture
+
+*All AI-generated code has been reviewed, tested, and modified to meet project requirements.*
+
+---
+
+## ⚠️ Known Issues
+
+### Current Limitations
+- **Audio System**: Not yet implemented
+- **Save/Load**: Game state persistence not available
+- **UI System**: Basic UI only, full UI framework in development
+- **Resolution**: Fixed window size (800x600)
+- **Multiplayer**: Single-player only
+
+### Performance Notes
+- Target: 60 FPS with up to 300 entities
+- Performance may degrade with 500+ simultaneous entities
+- Debug builds run slower than Release builds
+
+### Platform Support
+- **Tested on**: macOS (Intel and Apple Silicon with Rosetta 2)
+- **Linux**: Ubuntu 22.04 tested, other distributions may vary
+- **Windows**: Not tested
+
+---
+
+## 🧱 Engine Architecture
 
 A modular, reusable 2D game engine in modern C++ (using SDL3).  
 **Designed for learning, extensibility, and clean separation between engine and game/demo code.**
-
-**Current Focus: Building a complete engine for 2D top-down zombie shooting games**
 
 ---
 
@@ -285,7 +407,7 @@ The engine provides generic systems while games implement specific components li
 
 ---
 
-## 📚 Documentation
+## 📚 Additional Documentation
 
 - **ECS Documentation**: `src/engine/core/ecs/README.md`
 - **Development Plans**: 
@@ -294,6 +416,7 @@ The engine provides generic systems while games implement specific components li
   - `src/engine/input/Input-Development-Plan.md`
   - `src/engine/core/scene/Scene-Development-Plan.md`
 - **Priority List**: `src/engine/Priority_List.md`
+- **Development Guidelines**: `CLAUDE.md`
 
 ---
 
